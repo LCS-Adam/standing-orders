@@ -91,6 +91,13 @@ This writes:
 - `AGENTS.md`: the canonical instruction set, copied in full
 - `CLAUDE.md`: a single line, `@AGENTS.md`, plus a short "Project notes" section for anything
   specific to this repo (only written if `CLAUDE.md` does not already exist)
+
+  The `@` prefix is Claude Code's import syntax. `@AGENTS.md` means "load that file here", so the
+  instructions live in exactly one place and Claude reads them through this file. A symlink would
+  also work, but it needs Administrator rights on Windows and checks out as a plain text file when
+  `core.symlinks` is off, so the import is the safer default. Note that `@` is Claude-only: every
+  other tool reads `AGENTS.md` directly, which is why that file is self-contained rather than a set
+  of imports itself.
 - `.project-state/`: the tracking files covered in `docs/project-management.md`
 
 Then add modules as you need them:
@@ -200,7 +207,7 @@ Here is a full pass through the framework on a small, real change.
 | Problem | What is happening | Fix |
 |---|---|---|
 | `error: required tool not found: jq` | `harness install` checks for `jq` before merging settings and refuses to do a partial install | Install `jq` (`brew install jq` or your package manager's equivalent), then re-run |
-| A subagent spawn gets denied by a hook | This is correct behavior, not a failure. The `PreToolUse` gate is refusing to let a subagent silently inherit the parent session's model | Re-issue the dispatch with an explicit `model` parameter, or point it at an agent definition that pins one in its frontmatter |
+| A subagent spawn gets denied by a hook | A `PreToolUse` hook is a script Claude Code runs before it executes a tool call, and it can veto that call. This one vetoes any subagent dispatch that does not name a model, because the alternative is inheriting the parent's model silently and burning a frontier model on mechanical work. It will interrupt you, and that is the cost of the guarantee | Re-issue the dispatch with an explicit `model` parameter, or point it at an agent definition that pins one in its frontmatter. If it fires often, pin the model in the agent definition once instead of passing it per call |
 | A file you expected to be written says `(exists, differs - use --force to replace)` | The installer found a file already at that path with different content and chose not to overwrite it | Diff the two versions by hand; re-run the same command with `--force` only once you are sure the existing file should be replaced |
 | `harness verify` fails on a denylist term | Check 9 matched a term from your personal denylist against tracked content | Remove or rephrase the flagged line; if the match is a false positive, tighten the term in your denylist file |
 | `harness verify` reports `WARN no denylist at ...` | No denylist file exists at the default or `--denylist` path | Create one outside the repository, one term per line, if you want that check to actually run |

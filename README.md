@@ -1,7 +1,8 @@
 # agent-harness
 
 A portable operating framework for AI coding agents: instructions, subagent definitions, skills,
-slash commands, and safety hooks that install onto any machine in one command.
+slash commands, and safety hooks. One command installs the always-on core onto a new machine, and
+one more sets up a repository.
 
 One instruction set is read by Claude Code, Auggie, Intent, Codex, Cursor, Gemini CLI, Copilot and
 Windsurf, because they converged on `AGENTS.md` and `CLAUDE.md`. Be clear on what that does and
@@ -32,7 +33,34 @@ harness add --tool auggie        # another tool's pointer file
 Everything is additive. Nothing is overwritten without `--force`, and every skip is reported. Run
 anything with `--dry-run` first to see what it would touch.
 
-Requires `bash`, `git`, `jq`, and `perl`.
+Requires `bash`, `git`, `jq`, and `perl`. A missing one stops the install with a message naming it,
+rather than leaving a half-installed tree. On a locked-down machine where you cannot install `jq`,
+everything except the `settings.json` merge still works; do that step by hand.
+
+## What you get
+
+Ten subagent definitions, each named for the job it does rather than the model it runs on, so a
+roster change does not turn every filename into a lie:
+
+| Agent | Tier | For |
+|---|---|---|
+| `exec-mechanical` | SMALL | Fully specified edits a test already proves. |
+| `exec-standard` | MID | Bounded work against a pattern already in the repo. |
+| `exec-critical` | FRONTIER-DO | Correctness-critical implementation. |
+| `exec-subtle` | FRONTIER-DO | The single subtlest workstream in a plan. |
+| `adversary` | FRONTIER-DO | Tries to break a diff before it merges. |
+| `design-reviewer` | FRONTIER-THINK | Judges a plan against the code that actually exists. |
+| `plan-synthesizer` | FRONTIER-THINK | Turns scattered investigation into one execution plan. |
+| `autorun-plan-orchestrator` | FRONTIER-DO | Drives an approved multi-wave plan unattended. |
+| `data-eng-sa-orchestrator` | MID | Builds data and analytics deliverables. |
+| `data-eng-sa-reviewer` | FRONTIER-DO | Reviews them for grain and metric correctness. |
+
+Twelve skills, invocable as `/<name>`: `autorun-plan`, `brainstorming`, `deep-plan-swarm`,
+`external-llm-review`, `heartbeat`, `readme-coauthoring`, `repo-recon`, `requesting-code-review`,
+`scope-audit`, `systematic-debugging`, `test-driven-development`, `verify-unexecuted`.
+
+Six slash commands: `/deep-plan`, `/verify`, `/checkpoint`, `/handoff`, `/next-step`,
+`/phase-status`.
 
 ## How the two scopes fit together
 
