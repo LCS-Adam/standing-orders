@@ -1,0 +1,128 @@
+# Tracking work across sessions
+
+## The problem
+
+An agent session ends and takes its context with it. The next session starts cold: no memory of
+what was tried, what broke, or what the plan was. If that state only lives in your head or in a
+chat transcript you have to scroll back through, every session pays a re-discovery tax. The fix is
+to put the state that matters on disk, in a fixed set of files, so any session (yours, a
+teammate's, a different tool entirely) can read where things stand in under a minute.
+
+That is what `.project-state/` is for.
+
+## `.project-state/` as shipped in the template
+
+`harness init` writes this directory into any repo. Here is every file, what belongs in it, and who
+writes it.
+
+| File | What belongs in it | Who writes it |
+|---|---|---|
+| `PROJECT_STATE.md` | Repo name, phase, last-updated date, last tool used, a production-readiness flag, a one-paragraph purpose, current focus, blockers, and stakeholders. The single-page orientation for "what is this repo and where does it stand." | Edited by hand on the first session; phase and date fields are meant to be kept current every session after |
+| `NEXT_STEPS.md` | Immediate, short-term, medium-term, and backlog bullets. The "Immediate" section is what a resuming session reads first. | Operators and agents append bullets as they identify next actions |
+| `ERRORS.md` | An append-only table of errors, blockers, broken tests, and deployment issues, each with a date, severity, summary, and status | Appended whenever something breaks, never edited retroactively |
+| `SESSION_HANDOFF.md` | What the just-ended session accomplished, which files changed, notable commands, the single next step, and any blockers. Overwritten each session; prior versions move to `handoffs/`. | Written at the end of a session, by the agent or the operator |
+| `handoffs/` | Archived copies of past `SESSION_HANDOFF.md` snapshots | Populated automatically when a new handoff overwrites the current one |
+| `DEPENDENCIES.md` | What this repo depends on and what depends on it, hand-curated, plus auto-detected sections for manifest packages and plan-derived dependencies | Hand-curated tables edited by the operator; auto-detected sections are machine-refreshed |
+| `CLEANUP.md` | Stale files, duplicates, stale docs, dead code, and token-heavy files worth trimming out of frequent `Read` reach | Hand-curated, no automatic scanning in this version |
+| `SKILL_CANDIDATES.md` | Workflows you have run more than twice by hand, as candidates for a real skill, slash command, or agent | Noted when a repeated pattern is spotted; promoted once a third repo would benefit |
+
+## How this differs from git history
+
+Git records what changed. It does not record why you stopped, what you were about to try next, or
+what you decided against and why. A diff shows you a function got rewritten; it does not show you
+that the rewrite was blocked on a flaky test you have not yet diagnosed, or that you chose the
+simpler of two designs because the second one needed a dependency you were not ready to add.
+`.project-state/` exists to hold exactly the information a diff cannot show: intent, next steps,
+blockers, and decisions. Git and `.project-state/` are complementary records of the same work, not
+competing ones.
+
+## The `pm-*` command set
+
+> [!IMPORTANT]
+> This tooling lives in the personal fork (`harness-fork`, `pm/claude-pm/bin/`), not in
+> the upstream template. A `harness init` in the template repo gives you `.project-state/`, the
+> files above, and nothing that automates writing to them.
+
+`FORK.md` explains why: the `pm-*` set is bound to macOS BSD tooling and to a fixed
+`~/.claude-pm` install root. It is useful, but it is not yet portable, so it stays out of the
+template rather than shipping something that breaks the first time someone runs it on Linux or with
+a different install layout. `FORK.md` lists it as the largest single promotion candidate not yet
+upstream, with the concrete blockers named: hardcode the install root as a variable, and make the
+BSD-specific tool calls optional or portable.
+
+What is actually in `pm/claude-pm/bin/`, by category:
+
+**Registration and repo setup**
+- `pm-register` registers a repo and seeds `.project-state/` if it is missing.
+- `pm-ignore` / `pm-unignore` opt a repo out of the PM framework, or reverse that.
+- `pm-block-ultraplan` / `pm-allow-ultraplan` toggle whether cloud planning commands are allowed in
+  a given repo, for repos that hold sensitive material.
+- `pm-gemini-install` wires the same PM hooks into Gemini CLI's settings, so state stays shared
+  across tools.
+
+**Session lifecycle hooks**
+- `pm-session-hook`, `pm-stop-tick`, `pm-posttool-git`, and `pm-clear-warn` fire on Claude Code
+  session events (start, stop, a git-touching tool call, a context clear) to keep state current
+  without the operator remembering to run anything by hand.
+- `pm-gemini-session-hook` and `pm-gemini-handoff-hook` are the Gemini CLI equivalents.
+
+**State writers**
+- `pm-next-step` prepends a bullet to `NEXT_STEPS.md`'s "Immediate" section.
+- `pm-log-error` appends a row to `ERRORS.md`.
+- `pm-set-phase` updates the phase field in `PROJECT_STATE.md`.
+- `pm-set-plan` and `pm-append` write or extend other tracked state.
+
+**Handoff and recovery**
+- `pm-handoff-finalize` and `pm-mini-handoff` write `SESSION_HANDOFF.md` at the end of a session.
+- `pm-recover-handoff` and `where-left-off` reconstruct orientation when a handoff was missed or a
+  session ended abnormally.
+
+**Status and derivation**
+- `pm-resume` prints the resume banner a session reads on start: phase, next step, blockers.
+- `global-status` summarizes every registered repo at once.
+- `pm-derive` refreshes the auto-detected sections of `NEXT_STEPS.md` and `DEPENDENCIES.md` from
+  manifests and the active plan.
+
+**Skill promotion**
+- `pm-propose-skill` drafts a promotion contract from the highest-frequency row noted in
+  `SKILL_CANDIDATES.md`.
+
+A template-only user gets the files and the discipline of writing to them by hand. A fork user gets
+the same files kept current automatically by hooks and commands. Both are legitimate ways to use
+`.project-state/`; the fork just removes the manual step.
+
+## Practical habits
+
+- Write a next step the moment you notice one, not at the end of the session when you might forget
+  it. A bullet in `NEXT_STEPS.md` costs one sentence; a lost next step costs the next session time
+  re-deriving it.
+- Log an error as soon as it is confirmed, with enough detail that a different session (or a
+  different tool) can act on the row without re-reproducing the failure first. `ERRORS.md` is
+  append-only for a reason: it is a timeline, not a scratchpad you tidy up.
+- Set the phase when it actually changes, not on a schedule. `PROJECT_STATE.md`'s phase field
+  (Idea, Scaffolding, In-progress, Testing, Production-ready, Active production, Maintenance,
+  Archived) is what a resuming session or a `global-status` summary trusts first.
+- Treat `SESSION_HANDOFF.md` as the load-bearing document at the end of any session that changed
+  files or made a decision. Read `docs/handoff-and-resume.md` for what makes a handoff actually
+  sufficient: the short version is that it must be self-contained, including a pointer to itself,
+  because the next session pastes only the handoff, never the whole repository.
+
+## Why there are two repos
+
+If you are wondering why this framework lives in a template and a fork instead of one repository:
+the template (`agent-harness`) is the clean, shareable version, meant to be cloned by anyone,
+including onto a machine or into a repo that is not yours. The fork
+(`harness-fork`) is the working instance, carrying everything from the template plus
+material that must never ship in something a stranger clones: full learned-rule history including
+macOS and vendor-specific quirks, the `pm/` system described above, tool-specific skills tied to one
+person's local installs, and deployment-specific skills named after real infrastructure.
+
+GitHub does not let you fork your own repository into the same account, so the fork is a separate
+repository with the template wired in as a git remote named `upstream`. Pulling improvements is a
+plain `git fetch upstream && git merge upstream/main`. Sending something back up is deliberately
+more ceremonious: cut a branch from `upstream/main`, cherry-pick only the commits that generalize,
+and run `./verify.sh` on that branch before it goes anywhere. `verify.sh` passing on the fork's own
+`main` branch is not expected and would not mean anything good. The fork's `main` is full of exactly
+what the scrub gate exists to catch: host-specific skills, deployment names, machine-bound install
+paths. A green gate there would mean the gate had stopped working. Backports only get scrubbed on
+the branch that started clean, cut from the template itself.

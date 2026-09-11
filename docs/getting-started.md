@@ -88,10 +88,10 @@ harness init
 
 This writes:
 
-- `AGENTS.md` — the canonical instruction set, copied in full
-- `CLAUDE.md` — a single line, `@AGENTS.md`, plus a short "Project notes" section for anything
+- `AGENTS.md`: the canonical instruction set, copied in full
+- `CLAUDE.md`: a single line, `@AGENTS.md`, plus a short "Project notes" section for anything
   specific to this repo (only written if `CLAUDE.md` does not already exist)
-- `.project-state/` — the tracking files covered in `docs/project-management.md`
+- `.project-state/`: the tracking files covered in `docs/project-management.md`
 
 Then add modules as you need them:
 
