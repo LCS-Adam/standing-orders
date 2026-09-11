@@ -1,3 +1,6 @@
 .DS_Store
 *.bak-*
 /dist/
+
+# agent worktrees are transient and local
+.worktrees/
