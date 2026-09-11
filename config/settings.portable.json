@@ -1,0 +1,21 @@
+{
+  "includeCoAuthoredBy": false,
+  "env": {
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/require-agent-model.sh",
+            "timeout": 10,
+            "statusMessage": "Right-fit model gate"
+          }
+        ]
+      }
+    ]
+  }
+}

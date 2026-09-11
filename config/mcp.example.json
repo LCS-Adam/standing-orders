@@ -1,0 +1,10 @@
+{
+  "_comment": "MCP is the one genuinely cross-tool surface, but each tool reads it from a different path. Claude Code: .mcp.json in a project, or `claude mcp add`. Codex: ~/.codex/config.toml under [mcp_servers.NAME]. Cursor: .cursor/mcp.json or ~/.cursor/mcp.json. Augment: ~/.augment/settings.json. Intent: configured in app settings, not from a repo. Never commit credentials here; reference an environment variable instead.",
+  "mcpServers": {
+    "example": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/dir"],
+      "env": { "EXAMPLE_TOKEN": "${EXAMPLE_TOKEN}" }
+    }
+  }
+}
