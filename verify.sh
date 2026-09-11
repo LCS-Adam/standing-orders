@@ -150,6 +150,17 @@ else
   pass "no dangling ~/.claude/rules references"
 fi
 
+# ---------------------------------------------------- docs must not go stale
+# Not a numbered check (it would have to count itself). The enumerated list in
+# getting-started.md drifted from the gate the first time a check was added, so
+# this warns rather than letting a reader trust a stale number.
+doclist=$(awk '/silently passing nothing:/,/^Read the output/' docs/getting-started.md 2>/dev/null \
+          | grep -cE '^[0-9]+\. ' || echo 0)
+if [ "$doclist" -gt 0 ] && [ "$doclist" -ne "$EXPECTED_CHECKS" ]; then
+  printf '  \033[33mWARN\033[0m docs/getting-started.md enumerates %s checks, the gate runs %s\n' \
+    "$doclist" "$EXPECTED_CHECKS"
+fi
+
 # ---------------------------------------------------- assert the gate ran
 echo
 if [ "$RAN" -ne "$EXPECTED_CHECKS" ]; then

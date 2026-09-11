@@ -147,7 +147,7 @@ harness verify
 
 This runs `verify.sh`, the scrub gate. It exists because this framework is meant to be carried onto
 machines that are not yours, and a fail-open scrub looks exactly like a passing one. The gate runs
-nine checks and asserts, at the end, that it ran all nine, so a broken check fails loudly instead of
+ten checks and asserts, at the end, that it ran all ten, so a broken check fails loudly instead of
 silently passing nothing:
 
 1. No absolute home paths in tracked files.
@@ -159,6 +159,9 @@ silently passing nothing:
 7. Every shell script uses an absolute-path shebang (`#!/bin/bash`, not `#!/usr/bin/env bash`).
 8. No banned typographic glyphs (curly quotes, em dashes, and the rest) in client-facing docs.
 9. No matches against a personal-marker denylist.
+10. No instruction points at a `~/.claude/rules/` file that the installer never creates. An
+    instruction naming a file that is not there is worse than no instruction: the agent is told to
+    go read something and finds nothing.
 
 Read the output top to bottom. Each line is `PASS`, `FAIL`, or, for check 9 specifically, `WARN` if
 no denylist is configured. A `FAIL` line is followed by up to ten example matches so you can find
