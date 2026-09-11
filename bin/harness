@@ -8,6 +8,7 @@ set -euo pipefail
 
 HARNESS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLAUDE_HOME="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+STAGE=""
 FORCE=0
 DRY=0
 
@@ -74,7 +75,7 @@ put_dir() {
   local f rel
   while IFS= read -r f; do
     rel="${f#"$src"/}"
-    put "$f" "$dest/$rel" "${dest#"$HOME"/}/$rel"
+    put "$f" "$dest/$rel" "$(basename "$dest")/$rel"
   done < <(find "$src" -type f ! -name '.DS_Store')
 }
 
@@ -112,28 +113,36 @@ cmd_install() {
   c_info "Installing user scope into $CLAUDE_HOME"
   echo "  tiers: FRONTIER-THINK=$TIER_FRONTIER_THINK FRONTIER-DO=$TIER_FRONTIER_DO MID=$TIER_MID SMALL=$TIER_SMALL"
 
-  local stage; stage="$(mktemp -d)"
-  trap 'rm -rf "$stage"' RETURN
-  cp -R "$HARNESS_ROOT/agents" "$stage/agents"
-  cp -R "$HARNESS_ROOT/skills" "$stage/skills"
-  find "$stage" -type f -name '*.md' -exec bash -c 'true' \; >/dev/null 2>&1
-  while IFS= read -r f; do resolve_tiers "$f"; done < <(find "$stage" -type f -name '*.md')
+  # Staged so tier tokens resolve into a copy, never into the repo itself.
+  # agents, skills AND commands all carry pins that must become literals;
+  # rules/ deliberately does not, because it documents the token syntax.
+  STAGE="$(mktemp -d)"
+  trap 'rm -rf "${STAGE:-}"' EXIT
+  cp -R "$HARNESS_ROOT/agents"   "$STAGE/agents"
+  cp -R "$HARNESS_ROOT/skills"   "$STAGE/skills"
+  cp -R "$HARNESS_ROOT/commands" "$STAGE/commands"
+  while IFS= read -r f; do resolve_tiers "$f"; done < <(find "$STAGE" -type f -name '*.md')
 
-  put_dir "$stage/agents"            "$CLAUDE_HOME/agents"
-  put_dir "$stage/skills"            "$CLAUDE_HOME/skills"
-  put_dir "$HARNESS_ROOT/commands"   "$CLAUDE_HOME/commands"
+  if grep -rq '{{TIER_' "$STAGE" 2>/dev/null; then
+    grep -rl '{{TIER_' "$STAGE" | sed "s#$STAGE#  #"
+    die "unresolved tier tokens above; config/models.conf did not cover them"
+  fi
+
+  put_dir "$STAGE/agents"            "$CLAUDE_HOME/agents"
+  put_dir "$STAGE/skills"            "$CLAUDE_HOME/skills"
+  put_dir "$STAGE/commands"          "$CLAUDE_HOME/commands"
   put_dir "$HARNESS_ROOT/hooks"      "$CLAUDE_HOME/hooks"
   [ "$DRY" -eq 0 ] && chmod +x "$CLAUDE_HOME"/hooks/*.sh 2>/dev/null || true
 
   # The core goes into rules/, NOT CLAUDE.md: user-level rules load in every
   # session and this never clobbers a CLAUDE.md the user already wrote.
   mkdir -p "$CLAUDE_HOME/rules"
-  local tmpcore="$stage/00-harness-core.md"
+  local tmpcore="$STAGE/00-harness-core.md"
   { echo "<!-- installed by harness; edit the source repo, not this copy -->"; echo
     cat "$HARNESS_ROOT/AGENTS.md"; } > "$tmpcore"
   put "$tmpcore" "$CLAUDE_HOME/rules/00-harness-core.md" "rules/00-harness-core.md"
 
-  local tmpcc="$stage/10-claude-specifics.md"
+  local tmpcc="$STAGE/10-claude-specifics.md"
   sed '1{/^@AGENTS\.md$/d;}' "$HARNESS_ROOT/CLAUDE.md" > "$tmpcc"
   put "$tmpcc" "$CLAUDE_HOME/rules/10-claude-specifics.md" "rules/10-claude-specifics.md"
 

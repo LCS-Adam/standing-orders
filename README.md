@@ -16,7 +16,7 @@ cd ~/projects/agent-harness
 ./bin/harness verify             # confirm nothing personal or machine-specific came along
 ```
 
-Then, inside any repository you want the project layer in:
+Put `bin/` on your `PATH`, then in any repository you want the project layer in:
 
 ```bash
 harness init                     # AGENTS.md, CLAUDE.md, .project-state/
@@ -28,6 +28,24 @@ Everything is additive. Nothing is overwritten without `--force`, and every skip
 anything with `--dry-run` first to see what it would touch.
 
 Requires `bash`, `git`, `jq`, and `perl`.
+
+## How the two scopes fit together
+
+```mermaid
+flowchart TD
+    R["agent-harness repo"]
+    R -->|"harness install --user"| U["~/.claude/<br/>agents, skills, commands,<br/>hooks, rules/00-harness-core.md"]
+    R -->|"harness init"| P["your repo/<br/>AGENTS.md + CLAUDE.md<br/>.project-state/"]
+    R -->|"harness add --tool"| T["~/.codex/AGENTS.md<br/>~/.augment/rules/<br/>GEMINI.md"]
+
+    U -->|loads in every session,<br/>every repo| S["an agent session"]
+    P -->|loads only inside<br/>that repo| S
+    T -->|read by the other tools| S
+```
+
+User scope is how you work, everywhere. Project scope is how one repository works. The workspace
+brain is project scope on purpose: it mandates writing `active/` artifact directories, and you do
+not want those appearing inside every repo you touch.
 
 ## What is in it
 
@@ -83,6 +101,21 @@ leak.
 
 A scrub that has never been run against a known-bad input is unverified, so the gate is tested by
 planting each defect class into a scratch copy and confirming a non-zero exit.
+
+## Documentation
+
+New to agentic coding? Read them in this order.
+
+| Document | What it covers |
+|---|---|
+| [Getting started](docs/getting-started.md) | A guided first hour: install, scopes, your first real task. |
+| [Choosing the right mechanism](docs/choosing-your-tools.md) | Instructions, rules, skills, commands, hooks, subagents, and which to reach for. |
+| [Managing the context window](docs/context-window-management.md) | Why long sessions degrade, and the levers that actually help. |
+| [Sizing the model to the task](docs/model-tiering.md) | The four tiers, and why reviewers sit at or above the builder. |
+| [Handing off between sessions](docs/handoff-and-resume.md) | Writing a resume prompt that survives a context clear. |
+| [Planning and executing a large build](docs/planning-large-builds.md) | Scoping, phases, and machine-checkable acceptance. |
+| [Autonomous execution](docs/autorun-hitl-heartbeat.md) | AUTORUN, HEARTBEAT, and reducing interruptions without losing safety. |
+| [Tracking work across sessions](docs/project-management.md) | Project state on disk, and what the fork adds. |
 
 ## Third-party content
 
