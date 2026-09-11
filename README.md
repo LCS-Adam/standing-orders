@@ -1,8 +1,13 @@
 # agent-harness
 
 A portable operating framework for AI coding agents: instructions, subagent definitions, skills,
-slash commands, and safety hooks that install onto any machine in one command and work across
-Claude Code, Auggie, Intent, Codex, Cursor, and Gemini CLI.
+slash commands, and safety hooks that install onto any machine in one command.
+
+One instruction set is read by Claude Code, Auggie, Intent, Codex, Cursor, Gemini CLI, Copilot and
+Windsurf, because they converged on `AGENTS.md` and `CLAUDE.md`. Be clear on what that does and
+does not mean: the instruction layer is genuinely shared, while agents, skills and hooks are
+Claude Code mechanisms that other tools support partially or not at all. COSMOS reads nothing from
+a repository. `adapters/README.md` states exactly what each tool consumes, including the gaps.
 
 Most agent setups accumulate as a pile of machine-specific config that cannot leave the laptop it
 grew on. This one is built to be moved, shared, and forked.
@@ -66,9 +71,22 @@ not want those appearing inside every repo you touch.
 
 **Size the model from the task, not from convenience.** Work is sorted into four tiers by two
 questions: what a silent wrong answer costs, and whether the result is mechanically checkable.
-Tiers are described by capability rather than by model name, so a new release slots in by
-description. `config/models.conf` binds them to real models, and it is the only file to edit when a
-machine has different access. Reviewers always sit at or above the tier that produced the work.
+
+| Tier | For |
+|---|---|
+| `SMALL` | Extraction, classification, mechanical grind a test can prove. |
+| `MID` | Implementation against a pattern already in the repo, wiring, tests, prose. |
+| `FRONTIER-DO` | Correctness-critical logic and adversarial review. Is this right, and will it hold? |
+| `FRONTIER-THINK` | Root-causing an unexplained failure, greenfield design, synthesis. What is really going on here? |
+
+The two frontier tiers differ by disposition, not strength. Tiers are named by capability rather
+than by model, so a new release slots in by description instead of by a rename across every file.
+`config/models.conf` binds them to real models and is the only file to edit when a machine has
+different access. Reviewers always sit at or above the tier that produced the work, because a
+reviewer cheaper than the builder cannot see the builder's mistakes.
+
+`harness install` reads that file and writes the real model name into each agent definition, so the
+repo stays tier-named and only the installed copy carries a vendor model name.
 
 **Context is the scarce resource, and imports do not save any of it.** An imported file loads at
 launch exactly like inline text. What actually reduces per-session context is path-scoped rules,
