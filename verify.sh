@@ -15,7 +15,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DENYLIST="${HARNESS_DENYLIST:-$HOME/.agent-harness-denylist}"
 FAIL=0
 RAN=0
-EXPECTED_CHECKS=9
+EXPECTED_CHECKS=10
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -132,6 +132,22 @@ else
   RAN=$((RAN+1))
   printf '  \033[33mWARN\033[0m no denylist at %s - personal-marker check did not run\n' "$DENYLIST"
   show "create one (outside this repo), one term per line, or pass --denylist PATH"
+fi
+
+# 10 ------------------------------------------------- dangling file references
+# Instructions that point at a file which will not exist after install are worse
+# than no instruction: the agent is told to go read something and finds nothing.
+# Only these land in ~/.claude/rules/ (see cmd_install in bin/harness).
+INSTALLED_RULES="00-harness-core.md 10-claude-specifics.md shell-portability.md"
+dangling=""
+while IFS= read -r ref; do
+  base="${ref##*/}"
+  case " $INSTALLED_RULES " in *" $base "*) ;; *) dangling="$dangling $ref" ;; esac
+done < <(grep -rhoE '~/\.claude/rules/[A-Za-z0-9._-]+\.md' --include='*.md' --include='*.sh' . 2>/dev/null | sort -u)
+if [ -n "$dangling" ]; then
+  fail "references to ~/.claude/rules files that install never creates:$dangling"
+else
+  pass "no dangling ~/.claude/rules references"
 fi
 
 # ---------------------------------------------------- assert the gate ran

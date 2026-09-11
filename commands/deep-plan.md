@@ -10,7 +10,7 @@ The advisor tool itself notes that it adds most value on the first call, before 
 **Step 2 — Dispatch the Plan subagent.** Call the Agent tool with:
 
 - `subagent_type: "Plan"`
-- `model: {{TIER_FRONTIER_THINK}}` — the FRONTIER tier's *thinking* occupant, which is the right half of that tier for planning and synthesis (see `~/.claude/rules/model-tiering.md`; rebind in `config/models.conf`, not here, when a release moves the tier). Do NOT omit it — without it the subagent inherits the parent model and the frontier guarantee is lost.
+- `model: {{TIER_FRONTIER_THINK}}` — the FRONTIER tier's *thinking* occupant, which is the right half of that tier for planning and synthesis (see the "Model tiers" section of `~/.claude/rules/00-harness-core.md`; rebind in the harness repo's `config/models.conf`, not here, when a release moves the tier). Do NOT omit it — without it the subagent inherits the parent model and the frontier guarantee is lost.
 - `description: "Deep plan: $ARGUMENTS"` (truncate to ~5 words)
 - `prompt:` the directive below, prepended verbatim, followed by the user's request, followed by the advisor's pre-flight framing.
 
@@ -35,7 +35,7 @@ Directive (prepend verbatim):
 >
 > **3. Phase model/effort matrix (REQUIRED ALWAYS — even when Workflow orchestration is skipped).** Right-fit each phase/workstream to its cognitive load:
 >
-> Name the TIER, not a model — `~/.claude/rules/model-tiering.md` defines the tiers and `config/models.conf` binds them to current models, so a plan written this way survives a release. Resolve tier to model at dispatch time by reading that roster.
+> Name the TIER, not a model — the "Model tiers" section of `~/.claude/rules/00-harness-core.md` defines the tiers and the harness repo's `config/models.conf` binds them to current models, so a plan written this way survives a release. Resolve tier to model at dispatch time by reading that binding.
 >
 > - **FRONTIER** + high–max effort for correctness-critical foundations, subtle logic, and high-stakes or irreversible/outward-facing actions. Within the tier, prefer its *thinking* occupant for analysis and design and its *doing/breaking* occupant for implementation and adversarial review.
 > - **MID** + medium effort for well-bounded or mostly-mechanical work.

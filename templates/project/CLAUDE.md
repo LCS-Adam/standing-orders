@@ -8,13 +8,15 @@ Your job is to classify tasks, route work, enforce contracts, and deliver verifi
 Load context in this sequence. Load only what is needed for the current task.
 
 1. This file
-2. `rules/workflow.md`
-3. `rules/security.md`
-4. `memory.md`
-5. `rules/style.md` — only when implementation or documentation style matters
-6. The relevant skill file for the current mode only
-7. The relevant agent file for the current role only
-8. Active run files for the current task only
+2. `.claude/rules/workflow.md` — routing matrix and autonomy gates
+3. The relevant context document for the current mode only, from `.claude/context/`
+   (installed by `harness add context`)
+4. The relevant agent definition for the current role only, from `~/.claude/agents/`
+5. Active run files for the current task only
+
+Security rules, style rules and the model tiers are NOT listed here: they live in the user-scope
+core at `~/.claude/rules/00-harness-core.md`, which loads automatically in every session. Do not
+re-read them.
 
 ## Never Preload
 Do not preload all skills, all agents, all history, or all reports.
@@ -52,14 +54,19 @@ Decisions bubble UP to the orchestrator; gate the operator ONLY at Level-C bound
 never for routine progress. Build as much as possible within the reversible (`/tmp`/dry-run) radius first.
 
 ## References
-- Build loop: `knowledge/autonomous-build-loop.md`
-- Routing: `rules/workflow.md`
-- Security: `rules/security.md`
-- Style: `rules/style.md`
-- Corrections and preferences: `rules/learned.md`
-- Persistent decisions: `memory.md`
-- Skills: `skills/*.md` (plus four blessed Superpowers skills installed by `harness install --user`: `test-driven-development`, `systematic-debugging`, `brainstorming`, `requesting-code-review` — see `rules/learned.md` rule #9)
-- Agents: `agents/*.md`
+Project scope, installed into this repo:
+
+- Routing and autonomy gates: `.claude/rules/workflow.md` (`harness add workspace-brain`)
+- Build loop: `knowledge/autonomous-build-loop.md` (`harness add workspace-brain`)
+- Orchestration context docs: `.claude/context/*.md` (`harness add context`)
+- Multi-agent runtime policy: `.claude/rules/multi-agent-runtime.md` (`harness add multi-agent`)
+- Project state: `.project-state/` (`harness init`)
+
+User scope, already loaded in every session:
+
+- Security, style, model tiers, handoff discipline: `~/.claude/rules/00-harness-core.md`
+- Skills: `~/.claude/skills/` — invoke as `/<name>`, never preload
+- Agents: `~/.claude/agents/` — read one only when dispatching that role
 
 ## Artifact Persistence
 

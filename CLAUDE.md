@@ -11,8 +11,9 @@ The tier rules in `AGENTS.md` are enforced here by a `PreToolUse` hook
 parameter nor names an agent definition with a `model:` pin. `fork` agents are exempt because they
 always inherit by design. If the hook denies a call, pick a model and re-issue. Never disable it.
 
-The `model` parameter takes a literal alias, not a tier name. `config/models.conf` holds the
-binding; `harness install` resolves the `{{TIER_*}}` tokens in the shipped agent definitions.
+The `model` parameter takes a literal alias, not a tier name. The harness repo's `config/models.conf`
+holds the binding, and `harness install` resolves the `{{TIER_*}}` tokens in the shipped agent
+definitions.
 
 Surfaces the hook cannot see, which you must size by hand:
 
@@ -50,6 +51,15 @@ per-session context are:
 Keep the always-on core small. Target under 200 lines for any single instruction file: longer files
 consume more context and measurably reduce adherence. Push everything situational into a skill or a
 path-scoped rule.
+
+This harness holds itself to that per-file rule and states the cost openly. At user scope it
+installs two unconditional files: `00-harness-core.md` (179 lines) and `10-claude-specifics.md`
+(69), so roughly 250 lines load in every session before your project adds anything. Each file is
+under the limit, the combined total is not. That is a deliberate trade. The sections that could be
+made lazy are the ones you least want an agent to forget: the security hard stops, the handoff
+discipline, and the client-facing writing rules all have to be in force before the moment you would
+have thought to invoke them. Everything genuinely situational is already a skill or a path-scoped
+rule. If you do not need the writing rules, delete that section from your own copy.
 
 For a multi-phase build, give each phase its own directory with a short `CLAUDE.md` holding just
 that phase's status and task table. It stays out of context until Claude works in that phase.

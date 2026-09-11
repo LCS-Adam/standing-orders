@@ -24,5 +24,5 @@ for dir in ".claude/agents" "$HOME/.claude/agents"; do
 done
 
 cat <<'EOF'
-{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Right-fit model rule (operator hard rule): this Agent/Task spawn passes no explicit model and its agent definition pins none, so it would silently inherit the parent session's model. Re-issue the call with an explicit model sized to the task (tier bindings live in config/models.conf), and set effort where the surface supports it. Do not disable this hook; pick a model."}}
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Right-fit model rule (operator hard rule): this Agent/Task spawn passes no explicit model and its agent definition pins none, so it would silently inherit the parent session's model. Re-issue the call with an explicit model sized to the task (tier bindings live in the harness repo config/models.conf), and set effort where the surface supports it. Do not disable this hook; pick a model."}}
 EOF
