@@ -165,6 +165,8 @@ New to agentic coding? Read them in this order, newcomer to specialist.
 | [Operating process](docs/operating-process.md) | A user running their first real task after the first-day tour. |
 | [Glossary](docs/glossary.md) | Anyone who hits an unfamiliar term and wants the one place it is defined. |
 | [Managing the context window](docs/context-window-management.md) | Anyone whose sessions degrade over time and wants to know why. |
+| [Watching the context window](docs/context-health.md) | Anyone who wants the status line, and what the published research does and does not support. |
+| [Context in Augment](docs/augment-context.md) | Anyone moving between Claude Code and Auggie, where the context model is different. |
 | [Sizing the model to the task](docs/model-tiering.md) | Anyone dispatching subagents or writing plans that name a tier. |
 | [Writing your own extensions](docs/writing-your-own.md) | Someone authoring a new agent, skill, rule, command, or hook. |
 | [Handing off between sessions](docs/handoff-and-resume.md) | Anyone closing a session that another session must resume. |
