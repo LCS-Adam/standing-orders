@@ -158,7 +158,7 @@ harness verify
 
 This runs `verify.sh`, the scrub gate. It exists because this framework is meant to be carried onto
 machines that are not yours, and a fail-open scrub looks exactly like a passing one. The gate runs
-twelve checks and asserts, at the end, that it ran all twelve checks, so a broken check fails loudly
+thirteen checks and asserts, at the end, that it ran all thirteen checks, so a broken check fails loudly
 instead of silently passing nothing:
 
 1. No absolute home paths in tracked files.
@@ -184,6 +184,10 @@ instead of silently passing nothing:
 12. Every count asserted in the client-facing docs matches the repo. A number in prose that nothing
     checks drifts the moment anything is added, and a tutorial that miscounts the thing it is
     teaching you to run is worse than no tutorial.
+13. `docs/reference.md` still matches what `scripts/gen-reference.sh` generates from the repo. That
+    file is derived, not written, so the gate re-derives it and compares byte for byte. A generator
+    that is missing, that errors, or that emits nothing fails here too: an empty regeneration is
+    not the same as an up-to-date file.
 
 Read the output top to bottom. Each line is `PASS` or `FAIL`. A `FAIL` line is followed by up to ten
 example matches so you can find and fix the problem without re-running with more verbosity.
