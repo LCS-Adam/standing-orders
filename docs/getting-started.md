@@ -158,7 +158,7 @@ harness verify
 
 This runs `verify.sh`, the scrub gate. It exists because this framework is meant to be carried onto
 machines that are not yours, and a fail-open scrub looks exactly like a passing one. The gate runs
-twelve checks and asserts, at the end, that it ran all twelve checks, so a broken check fails loudly
+thirteen checks and asserts, at the end, that it ran all thirteen checks, so a broken check fails loudly
 instead of silently passing nothing:
 
 1. No absolute home paths in tracked files.
@@ -184,6 +184,10 @@ instead of silently passing nothing:
 12. Every count asserted in the client-facing docs matches the repo. A number in prose that nothing
     checks drifts the moment anything is added, and a tutorial that miscounts the thing it is
     teaching you to run is worse than no tutorial.
+13. `docs/reference.md` still matches what `scripts/gen-reference.sh` generates from the repo. That
+    file is derived, not written, so the gate re-derives it and compares byte for byte. A generator
+    that is missing, that errors, or that emits nothing fails here too: an empty regeneration is
+    not the same as an up-to-date file.
 
 Read the output top to bottom. Each line is `PASS` or `FAIL`. A `FAIL` line is followed by up to ten
 example matches so you can find and fix the problem without re-running with more verbosity.
@@ -197,24 +201,9 @@ what you have staged.
 
 ## A first real task
 
-Here is a full pass through the framework on a small, real change.
-
-1. `cd` into a repo you have run `harness init` in.
-2. Ask your agent to fix a specific bug, naming the file and the symptom.
-3. The agent reads `AGENTS.md` (loaded automatically as project instructions) and applies "read
-   before you write": it traces the actual code path the bug touches before proposing anything.
-4. If the fix requires the agent to dispatch a subagent, for example to run an isolated verification
-   pass, the `PreToolUse` hook checks that call. If it has no `model` parameter and no agent
-   definition with a pinned model, the hook denies it with a message telling the agent to re-issue
-   the call with a model. This is not a bug: it is the sizing rule from `AGENTS.md` being enforced
-   in the harness that everything else assumes.
-5. The agent fixes the bug, writes or updates a test, and reports what changed plainly: what was
-   fixed, what was tested, and whether the fix touched anything unexpected.
-6. Before committing, run `harness verify` if the repo carries harness scaffolding you want to keep
-   clean, particularly if any file you touched could plausibly contain an absolute path or a stray
-   personal term.
-7. Commit with a conventional-commit message. The agent never appends an AI co-authorship trailer;
-   `AGENTS.md` says so explicitly, and it overrides any tool default that would add one.
+`docs/first-day.md` now does this job properly: five beats, done for real, with the actual command
+output pasted below each one, ending with a fix, a test, a verify run, and a commit. Read that
+document for the full walkthrough rather than a summary here.
 
 ## Troubleshooting
 

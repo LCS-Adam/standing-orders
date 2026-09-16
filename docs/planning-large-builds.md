@@ -1,5 +1,20 @@
 # Planning and executing a large build
 
+## Before you read this
+
+This document assumes you already know three things `docs/glossary.md` defines:
+[`advisor`](glossary.md#advisor), the host's built-in
+[`Plan` subagent](glossary.md#the-host-built-in-subagent-types-plan-explore-general-purpose), and
+[the Workflow tool](glossary.md#the-workflow-tool). If your tool has no Workflow equivalent, the
+answer to "Workflow or subagents" below is always subagents.
+
+This article also describes an optional external second-opinion review step. That step requires
+one of several third-party CLIs (`skills/external-llm-review/SKILL.md:15` names codex,
+cursor-agent, and gemini) installed and authenticated on your machine. If you do not have one of
+those set up, that step does not apply to you, and the gate is the rest of the stack: the test
+command, the `adversary` agent, `/simplify`, re-running the tests, and merging. Do not treat the
+external review step as required; it is a strengthening step, not a floor.
+
 An agent session does not survive a large build. Context fills up, gets compacted, or the session
 ends and a new one starts with none of the previous one's memory. If the plan for a multi-day
 change lives only in a chat transcript, it is gone the moment that transcript rotates out of
