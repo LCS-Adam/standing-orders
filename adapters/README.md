@@ -5,6 +5,16 @@ canonical file here and `CLAUDE.md` is a one-line import of it, so a single edit
 below. What does not port is per-agent model pins, MCP server config, and anything a vendor keeps
 in its own cloud settings.
 
+> [!IMPORTANT]
+> The Auggie row below understates that tool. Research on 2026-09-16 found Auggie also has
+> **subagents** (with their own context windows), **hooks** (a matcher and type shape close to
+> Claude Code's), **skills**, **custom commands** and **plugins**, plus the `auggie cloud` bundle
+> surface described further down. So considerably more of this harness can port to Augment than
+> "the instruction layer only". The table has not been rewritten yet because doing it properly
+> means mapping each harness mechanism onto its Augment equivalent, which is planned work.
+> Local snapshots of the relevant Augment docs are in the personal fork under
+> `.project-state/research/2026-09-16_augment-docs-snapshot/`.
+
 ## What each tool reads
 
 | Tool | Project scope | User scope | Needs an adapter |
