@@ -40,7 +40,7 @@ everything except the `settings.json` merge still works; do that step by hand.
 
 ## What you get
 
-Ten subagent definitions, each named for the job it does rather than the model it runs on, so a
+Eleven subagent definitions, each named for the job it does rather than the model it runs on, so a
 roster change does not turn every filename into a lie:
 
 | Agent | Tier | For |
@@ -55,10 +55,11 @@ roster change does not turn every filename into a lie:
 | `autorun-plan-orchestrator` | FRONTIER-DO | Drives an approved multi-wave plan unattended. |
 | `data-eng-sa-orchestrator` | MID | Builds data and analytics deliverables. |
 | `data-eng-sa-reviewer` | FRONTIER-DO | Reviews them for grain and metric correctness. |
+| `code-reviewer` | FRONTIER-DO | Reviews a diff against its plan for production readiness. |
 
-Twelve skills, invocable as `/<name>`: `autorun-plan`, `brainstorming`, `deep-plan-swarm`,
+Thirteen skills, invocable as `/<name>`: `autorun-plan`, `brainstorming`, `deep-plan-swarm`,
 `external-llm-review`, `heartbeat`, `readme-coauthoring`, `repo-recon`, `requesting-code-review`,
-`scope-audit`, `systematic-debugging`, `test-driven-development`, `verify-unexecuted`.
+`scope-audit`, `simplify`, `systematic-debugging`, `test-driven-development`, `verify-unexecuted`.
 
 Four slash commands: `/deep-plan`, `/handoff`, `/next-step`, `/phase-status`.
 

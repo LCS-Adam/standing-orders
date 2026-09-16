@@ -19,24 +19,24 @@ default. It is the operating mode, not a one-off.
    hard stops (`rules/security.md`), (b) genuine Level-B forks that materially change the outcome and
    aren't resolvable from context. Everything else: decide, act, report the decision.
 
-2. **Contract-first — kill the seam before fanning out (rule #30).** The orchestrator builds the FROZEN
+2. **Contract-first — kill the seam before fanning out.** The orchestrator builds the FROZEN
    integration contract INLINE first: file/dir layout, message/data schemas (closed enums), the *pinned
    internal interfaces* between work units, shared libs, conventions, and the acceptance categorization.
    Parallelizing before this exists guarantees integration backtracking (agents invent incompatible
    schemas/paths/log-formats). Run a dependency-ordering pass: which unit NEEDS what another BUILDS.
 
-3. **Right-size + isolate the fan-out (rules #19/#29).** Emit a `SWARM CONFIG: count=N model=<m> effort=<e>
+3. **Right-size + isolate the fan-out.** Emit a `SWARM CONFIG: count=N model=<m> effort=<e>
    est_cost_tier=<…>` line before any dispatch, per-unit (read/mechanical → SMALL; research/analysis →
    MID; reasoning/critique/security → FRONTIER-DO). Each agent owns a DISJOINT work unit (no two touch the same
    file). Persist each worker's verbatim to `active/swarms/<run-id>/` and write code to disk; the
    orchestrator synthesizes FROM DISK, not re-held context (headroom). Give concurrent test runs isolated
    state (e.g. an overridable `RUN_DIR`) so they don't race.
 
-4. **Machine-checkable acceptance only (rule #27).** Every acceptance is a script that asserts and exits
+4. **Machine-checkable acceptance only.** Every acceptance is a script that asserts and exits
    non-zero on failure — never a model-self-reported "green." Categorize each check honestly: **REAL-now**
    vs **MODELED** vs **DEFERRED-to-a-gate** (needs a privilege/resource the build env lacks). A MODELED
    check must never masquerade as a boundary proof. Verification scripts that ship UNEXECUTED by
-   construction (operator-runs-later) must still be syntax-gated + body-flow-smoked in the build (rule #31).
+   construction (operator-runs-later) must still be syntax-gated + body-flow-smoked in the build.
 
 5. **Adversarial gate before done.** An independent reviewer tries to REFUTE the result against the design's
    invariants — not rubber-stamp it. Fix every blocking finding and PROVE the fix by reproducing the attack

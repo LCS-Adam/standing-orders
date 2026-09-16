@@ -8,13 +8,13 @@ description: Keep an already-approved plan executing unattended until it finishe
 **One job: the plan keeps executing instead of stopping to ask.**
 
 This is deliberately NOT `autorun-plan`. That skill carries a per-wave gate stack (tests ->
-adversary -> ponytail-review -> external-LLM fold-back), HITL doctrine, and morning-report
+adversary -> simplify -> external-LLM fold-back), HITL doctrine, and morning-report
 ceremony. For a plan that has already been reviewed, all of that costs context it does not earn.
 **If the plan needs those gates, use `autorun-plan` instead. Do not run both.**
 
 ## What this skill does NOT do
 
-No adversary pass. No `/ponytail-review`. No external-LLM review or fold-back rounds. No
+No adversary pass. No `/simplify`. No external-LLM review or fold-back rounds. No
 improvement passes. No plan-quality judgement. **The plan is already approved — execute it, do not
 re-litigate it.**
 
@@ -63,8 +63,8 @@ that stream, continue the rest, report it at the end.
 
 These stop the stream regardless of how well the plan reads:
 
-- Anything **candidate-facing** or otherwise sent outside the machine.
-- **Writes to a source of truth** the plan marks sacred (a vault, live production data).
+- Anything that **reaches a person outside the system** or otherwise sent outside the machine.
+- **Writes to a source of truth** the plan marks read-only (live production data).
 - **Deletion of tracked content**, or any irreversible act without a tested rollback.
 - A **live-data mutation** without branch + precomputed patch + snapshot + tested rollback.
 

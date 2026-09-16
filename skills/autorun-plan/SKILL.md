@@ -1,6 +1,6 @@
 ---
 name: autorun-plan
-description: Use when executing an approved multi-wave AUTORUN or overnight unattended plan; when running per-wave review gates with tests, adversary, simplify, and external-LLM fold-back; when heartbeating, writing AUTORUN-STATE, parking a branch and continuing; or when minimizing HITL via auto-proceed-on-rule.
+description: Use when executing an approved multi-wave AUTORUN or overnight unattended plan; when running per-wave review gates with tests, adversary, `/simplify`, and external-LLM fold-back; when heartbeating, writing AUTORUN-STATE, parking a branch and continuing; or when minimizing HITL via auto-proceed-on-rule.
 version: 0.1.0
 user-invocable: true
 argument-hint: "[path-to-mission-or-plan]"
@@ -10,11 +10,11 @@ tools: Agent, Bash, Read, Grep, Glob, Edit, Write
 # Autorun plan orchestration (unattended execution)
 
 Goal: **autonomous execution**. HITL only where the rule cannot be stated in advance, the
-action is candidate-facing, irreversible without tested rollback, or physically human.
+action reaches a person outside the system, irreversible without tested rollback, or physically human.
 Parking is success. Guessing is failure.
 
 **REQUIRED SUB-SKILLS:** `external-llm-review` (step 4 of every code-producing wave).
-**Heartbeat:** Cursor `/loop` dynamic (or Claude Code equivalent Monitor + fallback sleep).
+**Heartbeat:** Claude Code's built-in `/loop` (self-paced).
 **Right-fit:** named agent definitions, never inherit. Hook
 `~/.claude/hooks/require-agent-model.sh` denies unpinned spawns; name a def and re-issue.
 
@@ -58,8 +58,8 @@ Rewrite STATE after every meaningful step.
 
 ## 1. Minimize HITL (binding)
 
-A human stop exists ONLY if: (a) pass/fail cannot be stated in advance, (b) candidate-facing,
-(c) irreversible without tested rollback, or (d) physical human action.
+A human stop exists ONLY if: (a) pass/fail cannot be stated in advance, (b) it reaches a person
+outside the system, (c) irreversible without tested rollback, or (d) physical human action.
 
 Everything else: **auto-proceed-on-rule**. State the rule in the plan, proceed while it
 holds, **PARK THE BRANCH, CONTINUE THE REST** when it does not. Morning report lists parked
@@ -68,8 +68,8 @@ items. A rubber-stamp "does this look right?" gate is a defect: replace it with 
 Never auto-proceed a live-data mutation without branch + precomputed patch + snapshot +
 **tested** rollback.
 
-Never weaken, even when the rule is expressible: candidate-facing sends, deletion of tracked
-content, writes to a vault/source of truth the plan marks sacred.
+Never weaken, even when the rule is expressible: sends that reach a person outside the system,
+deletion of tracked content, writes to a source of truth the plan marks read-only.
 
 ## 2. Right-fit dispatch (custom agents/skills)
 
@@ -152,15 +152,15 @@ named Agents, gates in this session.
 
 ## 3. Per-wave review stack (code-producing waves)
 
-Bake into EVERY code-producing wave's gate, in order: **(1) `node test-all.mjs` green -> (2)
-`adversary` correctness review of the merged wave diff -> (3) **`/ponytail-review`** on the wave
+Bake into EVERY code-producing wave's gate, in order: **(1) `<the test command the plan names>` green -> (2)
+`adversary` correctness review of the merged wave diff -> (3) **`/simplify`** on the wave
 diff (quality: reuse/simplification/altitude; it applies fixes; it does NOT hunt bugs and never
 replaces step 2) -> (4) external-LLM fold-back loop on the FINAL simplified diff (review -> apply
 fixes -> re-review; **loop until a round returns no new CRITICAL/HIGH — NO ROUND CAP,
-per M3**) -> **(4.5) re-run `node test-all.mjs` + the wave's phase-specific tests AFTER the last
-step-3/4 modification (round 16: steps 3 and 4 both apply fixes after step 1's only test run,
-waves land by fast-forward, and CI fires on pull_request only — without this, modified safety
-code could deploy untested; any fix that changes code re-enters at step 2)** -> (5) merge.** Order
+per M3**) -> **(4.5) re-run `<the test command the plan names>` + the wave's phase-specific tests AFTER the last
+step-3/4 modification (steps 3 and 4 both apply fixes after step 1's only test run, waves land by
+fast-forward, and CI fires on pull_request only — without this, modified safety code could deploy
+untested; any fix that changes code re-enters at step 2)** -> (5) merge.** Order
 matters: never simplify code step 2 is about to rewrite; the external reviewer sees the final diff.
 
 Generalize the **test binary**: if the plan names a different command than `node test-all.mjs`,
@@ -296,7 +296,7 @@ exemption the last fix introduced.
 
 ## 4. Heartbeat (keep the run alive without a human)
 
-**REQUIRED:** skill `loop` (dynamic). Kickoff shape:
+**REQUIRED:** Claude Code built-in `/loop`. Kickoff shape:
 
 ```
 /loop Read <mission> and execute the mission it describes.
@@ -324,7 +324,7 @@ exiting) over one that may not (text appearing in a file), and sweep for strays 
 in the background → verify that worker's **first** STATE write landed → end this loop.
 Do not leave two orchestrators mutating the same STATE.
 
-**Wall clock: THERE IS NO DEFAULT WALL. Do not invent one (operator ruling, 2026-08-20).**
+**Wall clock: THERE IS NO DEFAULT WALL. Do not invent one; this is a dial, an organization sets it deliberately.**
 A run continues until the work is done, the operator stops it, or a real blocker parks every
 remaining stream. **"The operator will be up soon", "it is getting late", a round number of
 hours elapsed, and "this is a good place to stop" are NOT stopping conditions** — none of them
@@ -406,6 +406,6 @@ continuing on faith.
 
 - Wait on the operator for a rule you can evaluate.
 - Close a wave gate on a silent external review.
-- Inherit models. Skip `simplify`. Skip 4.5 after a late fix.
-- Execute candidate-facing or sacred-source writes because "autonomy is the goal."
+- Inherit models. Skip `/simplify`. Skip 4.5 after a late fix.
+- Execute a reaches-a-person send or a read-only-source write because "autonomy is the goal."
 - Start a second Grok/codex plan review unless the mission says this session owns it.

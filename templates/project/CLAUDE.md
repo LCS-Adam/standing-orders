@@ -47,7 +47,7 @@ Every substantial task must produce:
 
 ## Default Operating Mode (phased builds)
 When working a phased build plan, the default mode is the **Autonomous Build-Loop**
-(`knowledge/autonomous-build-loop.md`, learned rule #32): one orchestrator runs
+(`knowledge/autonomous-build-loop.md`): one orchestrator runs
 ORIENT -> advisor -> DECOMPOSE(frozen contract) -> FAN-OUT(disjoint parallel builders) ->
 INTEGRATE+VERIFY(machine-checkable) -> REVIEW(adversarial -> fix-and-prove -> advisor) -> DECIDE -> PERSIST.
 Decisions bubble UP to the orchestrator; gate the operator ONLY at Level-C boundaries and genuine forks,
