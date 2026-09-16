@@ -161,3 +161,11 @@ means whatever compaction throws away is competing with more accumulated materia
 likely to be lossy. Setting the override to 85 makes the harness compact earlier, at 85 percent of
 the window instead of waiting for the default threshold, trading a slightly more frequent
 compaction for one that runs with more headroom left to preserve detail.
+
+## Watching it happen
+
+This document is about how context works and how to spend it. `docs/context-health.md` is about
+how to watch it: what published measurements actually say degrades as a window fills, the status
+line that shows you the number as you work, and what to do at each point. It also records which
+widely repeated claims have no source behind them, including the idea that there is a universal
+token count at which models start to fail.

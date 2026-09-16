@@ -231,7 +231,9 @@ files are listed above.
 
 - `matcher: "Agent|Task"` - the hook fires before any tool call named `Agent` or `Task`, and no
   other tool.
-- `timeout: 10` - the hook has 10 seconds to respond before the call proceeds without it.
+- `timeout: 10` - the hook script has 10 seconds to run. What the host does if it does not
+  respond in time is not documented in this repo; confirm against your own tool's behavior
+  before relying on it.
 - `command` - runs the hook script with the tool-call event piped to it on stdin.
 
 `hooks/require-agent-model.sh` reads that stdin JSON and extracts two fields with `jq`:

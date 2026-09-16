@@ -27,6 +27,16 @@ to critique the plan afterward, which is the pattern to imitate for any workflow
 plan or a decision worth a second look.
 In depth: `docs/writing-your-own.md`, `docs/orientation.md`
 
+## `adversary`
+
+The read-only correctness reviewer dispatched against a merged wave diff: FRONTIER-DO tier, xhigh
+effort, and it tries specifically to break the change rather than confirm it works. It sweeps a
+fixed taxonomy first (fail-open paths, bypasses, tamper vectors, vacuous assertions) and then hunts
+freely, returning severity-ranked findings; it never edits. It is step 2 of the AUTORUN per-wave
+review gate stack, and it runs before `/simplify` because there is no point simplifying code a
+correctness review is about to rewrite.
+In depth: `agents/adversary.md`, `docs/autorun-hitl-heartbeat.md:39`
+
 ## AUTORUN
 
 The full unattended-execution mechanism, run by the `autorun-plan` skill via the
@@ -35,7 +45,7 @@ otherwise unattended for a long stretch. Every code-producing wave passes throug
 gate stack (tests, `adversary`, `/simplify`, external-LLM fold-back, a regression re-run, then
 merge) before it lands, and the run maintains a mission-scoped `AUTORUN-STATE-<mission-slug>.md`
 file that gets reconciled against the real world on every wake rather than trusted blindly.
-In depth: `docs/autorun-hitl-heartbeat.md:17`
+In depth: `docs/autorun-hitl-heartbeat.md:32`
 
 ## compaction
 
@@ -118,7 +128,15 @@ different model family entirely (`codex`, `cursor-agent`, or `gemini`, whichever
 rather than another Claude reviewer. The point is specifically to catch shared model-family blind
 spots that a same-family reviewer, however strong, cannot structurally see; this repo's own
 AUTORUN gate stack states outright that a Claude reviewer is never a substitute for this step.
-In depth: `docs/autorun-hitl-heartbeat.md:44`, `skills/external-llm-review/SKILL.md`
+In depth: `docs/autorun-hitl-heartbeat.md:59`, `skills/external-llm-review/SKILL.md`
+
+## fold-back
+
+The external-LLM review loop's stopping rule: a round of external review applies fixes, and the
+fixed diff goes back for another round rather than being taken on faith. The loop has no numeric
+round cap; it stops only when a round returns no new CRITICAL or HIGH finding, and a new instance of
+an already-known defect class resets the loop instead of being waved through as already reported.
+In depth: `docs/autorun-hitl-heartbeat.md:70`
 
 ## `fork`
 
@@ -141,7 +159,7 @@ needed, a real person reached, an untested irreversible action, or a required ph
 these are the only stopping points AUTORUN respects while otherwise running unattended. A **scrub
 gate** is this repo's own `verify.sh`, the check suite that must exit clean before a change to the
 harness itself is considered done.
-In depth: `docs/autorun-hitl-heartbeat.md:24`, `docs/autorun-hitl-heartbeat.md:88`,
+In depth: `docs/autorun-hitl-heartbeat.md:39`, `docs/autorun-hitl-heartbeat.md:103`,
 `docs/getting-started.md:159`
 
 ## handoff and resume prompt
@@ -161,7 +179,7 @@ and where the full AUTORUN gate stack would cost more context than it protects. 
 unattended until it finishes or hits a real human gate, with no review gates, no adversarial pass,
 no external-LLM loop, and no improvement rounds; its state file is named `HEARTBEAT-STATE-<mission-slug>.md`
 specifically so a reader can tell, from the filename alone, that the full gate stack did not run.
-In depth: `docs/autorun-hitl-heartbeat.md:96`, `skills/heartbeat/SKILL.md`
+In depth: `docs/autorun-hitl-heartbeat.md:119`, `skills/heartbeat/SKILL.md`
 
 ## HITL
 
@@ -170,9 +188,9 @@ approve before the run continues. AUTORUN's auto-proceed-on-rule mechanism is ex
 minimizing HITL interruptions to the four cases where a stated pass/fail rule genuinely cannot
 substitute for one: live judgment, reaching a real person, an untested irreversible action, or a
 required physical action.
-In depth: `docs/autorun-hitl-heartbeat.md:88`, `skills/autorun-plan/SKILL.md:3`
+In depth: `docs/autorun-hitl-heartbeat.md:103`, `skills/autorun-plan/SKILL.md:3`
 
-## the host's built-in subagent types (`Plan`, `Explore`, `general-purpose`)
+## the host built-in subagent types (`Plan`, `Explore`, `general-purpose`)
 
 Three subagent types the Agent tool exposes that are not defined by this repo's own agent
 definitions in `agents/*.md`. `Plan` is dispatched by `/deep-plan` and `deep-plan-swarm` for
@@ -181,7 +199,7 @@ read-only and cannot call `Write`, which matters directly for any skill with a p
 contract: dispatching such a skill via `Explore` fails that contract for every worker. General
 mechanical work that needs full tool access but has no dedicated agent definition uses
 `general-purpose`.
-In depth: `docs/planning-large-builds.md:60`, `templates/project/context/multi-agent-inline.md:21`,
+In depth: `docs/planning-large-builds.md:75`, `templates/project/context/multi-agent-inline.md:21`,
 `skills/readme-coauthoring/SKILL.md:287`
 
 ## Level A / B / C autonomy
@@ -220,7 +238,7 @@ other independent stream keeps running. The skill treats this as a first-class s
 not a failure, stated as "parking is success; guessing is failure," and the close-out report lists
 every parked branch with its reason so a human can pick each one up without re-deriving what
 stopped it.
-In depth: `docs/autorun-hitl-heartbeat.md:77`
+In depth: `docs/autorun-hitl-heartbeat.md:92`
 
 ## `paths:` frontmatter
 
@@ -243,7 +261,7 @@ In depth: `CLAUDE.md:64`, `docs/context-window-management.md:92`
 
 Not a term this repo defines or names as a discrete artifact; confirm what "plan mode" means in
 your specific tool's own documentation before relying on a definition. What this repo does define
-and use heavily is a dispatched `Plan` subagent (see the host's built-in subagent types, above) and
+and use heavily is a dispatched `Plan` subagent (see the host built-in subagent types, above) and
 the `/deep-plan` and `deep-plan-swarm` flows built on top of it.
 In depth: `docs/planning-large-builds.md`, `commands/deep-plan.md`
 
@@ -296,6 +314,14 @@ or the process exiting. A session has no memory of a prior session's conversatio
 written to a durable file survives the boundary.
 In depth: `docs/context-window-management.md:5`
 
+## `/simplify`
+
+The `simplify` skill, run as step 3 of the AUTORUN per-wave review gate stack, after `adversary` has
+cleared the wave diff for correctness. It is a quality-only pass: reuse what already exists, remove
+over-engineering, fix wrong altitude. It applies its own fixes but never hunts bugs and is never a
+substitute for the `adversary` step that runs before it.
+In depth: `skills/simplify/SKILL.md`, `docs/autorun-hitl-heartbeat.md:39`
+
 ## subagent
 
 A separate agent dispatch, started fresh with no memory of the calling session's conversation,
@@ -303,7 +329,15 @@ given a written prompt and (per this repo's own hard rule) an explicit model rat
 inheritance from whatever dispatched it. This repo defines its own subagent roles as files under
 `agents/*.md`, each carrying a `model:` tier pin in its frontmatter that `harness install` resolves
 from `config/models.conf`.
-In depth: `AGENTS.md:54`, `hooks/require-agent-model.sh:1`
+In depth: `AGENTS.md:54`, `hooks/require-agent-model.sh:2-6`
+
+## `SWARM CONFIG`
+
+A line an operator or dispatcher writes before fanning out more than one workstream, naming which
+agent runs which workstream and on which branch, so a multi-agent dispatch is auditable after the
+fact. It is not a file format or a schema this repo enforces, just a documented convention for
+making a fan-out reviewable.
+In depth: `docs/operating-process.md:85`
 
 ## tier
 
@@ -319,18 +353,27 @@ and will it hold?" `config/models.conf` is the single place that binds each tier
 name.
 In depth: `AGENTS.md:36`, `config/models.conf`
 
+## wave
+
+One code-producing unit of work inside a multi-phase build, ending in a diff that merges. Every
+wave passes through the same review gate stack before it lands: the plan's test command, `adversary`,
+`/simplify`, an optional external-LLM fold-back, a regression re-run, then merge. "Wave diff" means
+the merged diff for one wave, the unit the review stack and the adversarial review operate on.
+In depth: `docs/autorun-hitl-heartbeat.md:39`
+
 ## worktree
 
 An isolated working copy of a git repository, checked out on its own branch, letting concurrent
 workstreams edit without colliding on the same files. This repo dispatches a subagent into its own
-worktree whenever a piece of work needs isolation from other concurrent edits, and cautions that the
-git stash stack is shared across all worktrees of the same repository, so a bare `git stash` inside
-one worktree can pop another session's changes.
-Two paragraphs because the shared-stash trap above is a real, repeated failure mode worth
-restating: prefer a temporary WIP commit over stashing when setting work aside inside a worktree,
-and if a stash is unavoidable, tag it uniquely, capture its SHA immediately, and restore with
-`git stash apply <sha>` rather than a bare `pop`.
-In depth: `docs/writing-your-own.md`, `docs/choosing-your-tools.md:230`
+worktree whenever a piece of work needs isolation from other concurrent edits.
+Two paragraphs for a git behavior worth knowing before you use one, even though this repo does not
+document it itself: the stash stack is a property of the repository, not of any one worktree, so it
+is shared across every worktree checked out from the same repository, and a bare `git stash` or
+`git stash pop` run inside one worktree can pop another session's changes. Prefer a temporary WIP
+commit over stashing when setting work aside inside a worktree, and if a stash is unavoidable, tag
+it uniquely, capture its SHA immediately, and restore with `git stash apply <sha>` rather than a
+bare `pop`.
+In depth: `docs/writing-your-own.md`
 
 ## the Workflow tool
 
@@ -339,4 +382,4 @@ throughout as the mechanism for a per-call `agent({model, effort})` dispatch, di
 Agent-tool subagent call which takes `model` but has no `effort` parameter. Confirm the tool's full
 capability surface against your own tool's documentation before relying on details beyond this
 usage.
-In depth: `commands/deep-plan.md:53`, `docs/planning-large-builds.md:62`
+In depth: `commands/deep-plan.md:53`, `docs/planning-large-builds.md:77`

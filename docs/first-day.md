@@ -29,24 +29,34 @@ Done. Run 'harness verify' to check the result.
 what this repo ships); `=` means the file already matches, so a real install would skip it. Nothing
 was written because of `--dry-run`.
 
-`./verify.sh` runs the gate this repo holds itself to (see `verify.sh:14` for the check count it
-expects to run). Trailing check-count line elided per the doc's own no-counts rule; what matters is
-the exit status.
+`./verify.sh` runs the gate this repo holds itself to. This is the real output, unabridged, with
+only the home path shortened to `~`:
 
-```
+```text
 $ ./verify.sh
-Scrubbing ~/projects/agent-harness/.worktrees/t-first-day
+Scrubbing ~/projects/agent-harness
 
   PASS no absolute home paths
   PASS no vendor model names outside config/models.conf
-  PASS all agent definitions pin a tier
-  PASS all skills have name and description
+  PASS all 11 agent definitions pin a tier
+  PASS all 13 skills have name and description
   PASS CLAUDE.md imports AGENTS.md on line 1
-  ...
-  PASS documented counts match
+  PASS no permission-bypass defaults in shipped settings
+  PASS all 5 shell scripts use an absolute-path shebang
+  PASS no banned glyphs in client-facing docs (28 files)
+  PASS no dangling ~/.claude/rules references
+  PASS every backticked slash command resolves to commands/, skills/, or the built-in allowlist
+  PASS all 47 files harness install would ship are in the scanned set
+  PASS documented counts match (11 agents, 13 skills, 4 commands, 13 checks)
+  PASS docs/reference.md matches what scripts/gen-reference.sh generates
 
-OK all N checks passed
+OK all 13 checks passed
 ```
+
+The numbers in that output are not decoration. The second-to-last check reads every count asserted
+in the client-facing docs and fails the build when one of them stops matching the repo, which
+includes the numbers printed above. If you add a skill and this page still says thirteen, the gate
+goes red and tells you so.
 
 Exit code was 0. If a check fails, the script prints which one and why; it does not print a partial
 pass.
@@ -197,10 +207,11 @@ agent definition file when the call itself is silent about it.
 
 ## Beat 5: the handoff round trip
 
-`commands/handoff.md` describes a five-step procedure: archive the previous
+`commands/handoff.md` describes a six-step procedure: archive the previous
 `SESSION_HANDOFF.md` under `handoffs/<timestamp>.md`, gather `git status --short` and
-`git log --oneline -5`, write the resume block first, fill in the sections below it, then re-read
-the block alone before calling it done. Followed it by hand in the scratch repo used for beat 3.
+`git log --oneline -5`, write the resume block first, fill in the sections below it, re-read
+the block alone, then refresh its state claims at the moment of the handoff rather than when it
+was drafted. Followed it by hand in the scratch repo used for beat 3.
 
 Archived the template `harness init` had scaffolded, gathered state, then wrote the resume block
 into the real `.project-state/SESSION_HANDOFF.md` (the file also has Date, Summary, Files Changed,

@@ -31,7 +31,7 @@ and the difference matters (lines 41-49):
   configuration file on that path (line 42).
 - **`auggie cloud`** is file-based and is the path this repo can target: Experts, environments, MCP
   servers, and residents are represented as YAML bundles that "can live in a repository and be
-  reviewed like any other change" (line 45), with an explicit `init`, edit, `validate`, `diff`,
+  reviewed like any other change" (lines 46-47), with an explicit `init`, edit, `validate`, `diff`,
   `apply` workflow (lines 47-49). Augment's own docs state "the repository becomes the source of
   truth for your Cosmos configuration" (line 49, citing docs.augmentcode.com/cli/cloud).
 
@@ -46,7 +46,7 @@ before running either integration.
 |---|---|---|
 | `runtime/` | Every `exec-*` agent's verification report, defaulted there in each agent's own file (`.gitignore:8-9`). | Ignore, do not commit. `.gitignore:9-11` explains why: an unignored report lands in the shipped set and check 1 then scans the absolute worktree paths an agent naturally writes there, failing the packaging gate on output that was never meant to ship. |
 | `.project-state/` | Planning and handoff state: `PROJECT_STATE.md`, `NEXT_STEPS.md`, `ERRORS.md`, `SESSION_HANDOFF.md` and its `handoffs/` archive, `DEPENDENCIES.md`, `CLEANUP.md`, `SKILL_CANDIDATES.md` (`docs/project-management.md:19-27`). | Commit. This directory is designed to be the durable, cross-session record git history does not give you: "intent, next steps, blockers, and decisions" (`docs/project-management.md:35-37`). Treat it like any other tracked doc: review its content for anything sensitive before it ships, same as code. |
-| `active/` | Artifact directories mandated by the optional workspace-brain module (`README.md:30,81-82`: "harness add workspace-brain ... mandates writing `active/` artifact directories"). Not present unless that module was added. | Project-scope by design (`README.md:80-82`) so it does not appear in every repo you touch; if the module is added, decide per-project whether its contents are safe to commit or belong in `.gitignore`, the same review you would give any new tracked directory. |
+| `active/` | Artifact directories mandated by the optional workspace-brain module (`README.md:35`: "harness add workspace-brain ... mandates writing `active/` artifact directories"). Not present unless that module was added. | Project-scope by design (`README.md:86-88`) so it does not appear in every repo you touch; if the module is added, decide per-project whether its contents are safe to commit or belong in `.gitignore`, the same review you would give any new tracked directory. |
 
 ## Who approves a permission-bypass flag
 
@@ -98,16 +98,16 @@ files are ignored before committing.
 This harness ships with few human gates on purpose, and says so explicitly at the point where an
 autonomous run is assembled. `agents/plan-synthesizer.md:31-32` states: "Review gates - MINIMAL BY
 DEFAULT. This is a dial; an organization sets it deliberately." The rule that follows
-(`agents/plan-synthesizer.md:33-36`) is a four-part test for when a human gate exists at all: the
+(`agents/plan-synthesizer.md:34-38`) is a four-part test for when a human gate exists at all: the
 pass/fail rule cannot be stated in advance and needs live judgment, or the action reaches a person
 outside the system, or the action is irreversible and lacks a tested rollback, or it requires
-physical human action. Everything else is auto-proceed-on-rule (`agents/plan-synthesizer.md:38-41`).
+physical human action. Everything else is auto-proceed-on-rule (`agents/plan-synthesizer.md:40-43`).
 
 The same section states the dial is adjustable, not fixed: "this is a dial, and an organization sets
-it deliberately" (`agents/plan-synthesizer.md:58-59`). An organization that wants more gates than
+it deliberately" (`agents/plan-synthesizer.md:61`). An organization that wants more gates than
 this default sets its position by editing `agents/plan-synthesizer.md` directly, changing the
 four-part test or adding categories that must gate regardless of how cleanly their rule can be
-stated. `agents/plan-synthesizer.md:53-55` shows the harness already carves out a few categories
+stated. `agents/plan-synthesizer.md:55-57` shows the harness already carves out a few categories
 that never weaken under this rule regardless of how statable they are: sends that reach a person
 outside the system, deletion of tracked content, and writes to a source of truth the plan marks
 read-only.

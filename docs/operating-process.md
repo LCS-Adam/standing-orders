@@ -6,7 +6,7 @@ work. It does not redefine terms `docs/glossary.md` already owns, or repeat the 
 failure log in `docs/anti-patterns.md`, or the security list in `docs/operating-boundaries.md`. It
 points at each of those instead of restating them. Read this fifth, right after `first-day.md`.
 
-Six steps, in order. Everything after step 0 branches on the size you pick there.
+Seven steps, in order. Everything after step 0 branches on the size you pick there.
 
 ## Step 0: size the work
 
@@ -42,8 +42,8 @@ effort on dead surface.
 
 A small fix has no plan step; you already know the change and the test that proves it.
 
-For a bounded change: `/deep-plan`. It runs advisor pre-flight, a Plan subagent at FRONTIER-THINK
-effort, then an advisor critique (`commands/deep-plan.md`).
+For a bounded change: `/deep-plan`. It runs advisor pre-flight, a Plan subagent at the
+FRONTIER-THINK tier, then an advisor critique (`commands/deep-plan.md`).
 
 For a large build: the `deep-plan-swarm` skill, invoked as `/deep-plan-swarm`. It is the superset of
 `/deep-plan` for work that spans many files or subsystems, and it runs its own scope gate before any
@@ -73,8 +73,9 @@ actually ships. Run `ls agents/` before naming one; as of this writing that dire
 `adversary.md`, `autorun-plan-orchestrator.md`, `code-reviewer.md`,
 `data-eng-sa-orchestrator.md`, `data-eng-sa-reviewer.md`, `design-reviewer.md`, `exec-critical.md`,
 `exec-mechanical.md`, `exec-standard.md`, `exec-subtle.md`, and `plan-synthesizer.md` (do not treat
-this list as durable; re-run `ls agents/` yourself, since check 12 in `verify.sh` forbids writing a
-count into prose and the same reasoning applies to a name list that can drift).
+this list as durable; re-run `ls agents/` yourself. Check 12 in `verify.sh` requires any count
+written into prose to match the repo, and the same reasoning applies to a name list that can
+drift).
 
 Every `exec-*` agent body expects the dispatcher to hand it three things (`agents/exec-standard.md`
 and its siblings state this): a file-ownership list so parallel workstreams stay conflict-free, a
@@ -88,8 +89,9 @@ the fact.
 Two more decisions belong here, and `docs/autorun-hitl-heartbeat.md` is the primary source for
 choosing between them:
 
-- An approved **simple** plan that a human is actively watching: the built-in `/loop` heartbeat is
-  enough (`docs/autorun-hitl-heartbeat.md`'s HEARTBEAT section).
+- An approved **simple** plan that a human is actively watching: the shipped `heartbeat` skill is
+  enough, typically armed with the host's built-in `/loop` (`docs/autorun-hitl-heartbeat.md`'s
+  HEARTBEAT section).
 - An approved **multi-wave** plan meant to run unattended, needing per-wave review gates, state
   tracking, and HITL reduction: skill `autorun-plan`, invoked as `/autorun-plan`
   (`skills/autorun-plan/SKILL.md`).
@@ -144,7 +146,7 @@ Command: `/handoff` (`commands/handoff.md`).
 Artifact: a resume prompt whose first block is copy-pasteable on its own, per `AGENTS.md`'s
 "Session handoff" section and `docs/project-management.md`'s state-file table.
 Lands: `.project-state/SESSION_HANDOFF.md`, with any prior version archived to
-`.project-state/handoffs/<timestamp>.md` rather than overwritten (`commands/handoff.md:6-7`,
+`.project-state/handoffs/<timestamp>.md` rather than overwritten (`commands/handoff.md:8-9`,
 `docs/project-management.md:23-24`).
 Done when: the pasted block alone, with no other file open, names the handoff file itself as the
 first thing to read, per the failure `docs/anti-patterns.md` records first under "The orphaned
@@ -172,7 +174,7 @@ applicable) exits clean.
 - [ ] **2. Plan it** (skip for a small fix) - `/deep-plan` (bounded) or `/deep-plan-swarm` (large).
 - [ ] **3. Execute it** - inline (small), or `git worktree add .worktrees/<name> -b <branch>` plus
       Agent dispatch to a listed `agents/` name (bounded/large); `/autorun-plan` for unattended
-      multi-wave runs, plain `/loop` heartbeat for a watched simple run.
+      multi-wave runs, the `heartbeat` skill (armed with `/loop`) for a watched simple run.
 - [ ] **4. Review it** - the plan's test command, `adversary`, `/simplify`, the test command again;
       `skills/external-llm-review/SKILL.md` only if a third-party CLI is installed.
 - [ ] **5. Hand off** - `/handoff` before any clear or compact.
