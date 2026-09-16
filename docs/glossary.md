@@ -35,7 +35,7 @@ otherwise unattended for a long stretch. Every code-producing wave passes throug
 gate stack (tests, `adversary`, `/simplify`, external-LLM fold-back, a regression re-run, then
 merge) before it lands, and the run maintains a mission-scoped `AUTORUN-STATE-<mission-slug>.md`
 file that gets reconciled against the real world on every wake rather than trusted blindly.
-In depth: `docs/autorun-hitl-heartbeat.md:17`
+In depth: `docs/autorun-hitl-heartbeat.md:32`
 
 ## compaction
 
@@ -118,7 +118,7 @@ different model family entirely (`codex`, `cursor-agent`, or `gemini`, whichever
 rather than another Claude reviewer. The point is specifically to catch shared model-family blind
 spots that a same-family reviewer, however strong, cannot structurally see; this repo's own
 AUTORUN gate stack states outright that a Claude reviewer is never a substitute for this step.
-In depth: `docs/autorun-hitl-heartbeat.md:44`, `skills/external-llm-review/SKILL.md`
+In depth: `docs/autorun-hitl-heartbeat.md:59`, `skills/external-llm-review/SKILL.md`
 
 ## `fork`
 
@@ -141,7 +141,7 @@ needed, a real person reached, an untested irreversible action, or a required ph
 these are the only stopping points AUTORUN respects while otherwise running unattended. A **scrub
 gate** is this repo's own `verify.sh`, the check suite that must exit clean before a change to the
 harness itself is considered done.
-In depth: `docs/autorun-hitl-heartbeat.md:24`, `docs/autorun-hitl-heartbeat.md:88`,
+In depth: `docs/autorun-hitl-heartbeat.md:39`, `docs/autorun-hitl-heartbeat.md:103`,
 `docs/getting-started.md:159`
 
 ## handoff and resume prompt
@@ -161,7 +161,7 @@ and where the full AUTORUN gate stack would cost more context than it protects. 
 unattended until it finishes or hits a real human gate, with no review gates, no adversarial pass,
 no external-LLM loop, and no improvement rounds; its state file is named `HEARTBEAT-STATE-<mission-slug>.md`
 specifically so a reader can tell, from the filename alone, that the full gate stack did not run.
-In depth: `docs/autorun-hitl-heartbeat.md:96`, `skills/heartbeat/SKILL.md`
+In depth: `docs/autorun-hitl-heartbeat.md:119`, `skills/heartbeat/SKILL.md`
 
 ## HITL
 
@@ -170,7 +170,7 @@ approve before the run continues. AUTORUN's auto-proceed-on-rule mechanism is ex
 minimizing HITL interruptions to the four cases where a stated pass/fail rule genuinely cannot
 substitute for one: live judgment, reaching a real person, an untested irreversible action, or a
 required physical action.
-In depth: `docs/autorun-hitl-heartbeat.md:88`, `skills/autorun-plan/SKILL.md:3`
+In depth: `docs/autorun-hitl-heartbeat.md:103`, `skills/autorun-plan/SKILL.md:3`
 
 ## the host's built-in subagent types (`Plan`, `Explore`, `general-purpose`)
 
@@ -181,7 +181,7 @@ read-only and cannot call `Write`, which matters directly for any skill with a p
 contract: dispatching such a skill via `Explore` fails that contract for every worker. General
 mechanical work that needs full tool access but has no dedicated agent definition uses
 `general-purpose`.
-In depth: `docs/planning-large-builds.md:60`, `templates/project/context/multi-agent-inline.md:21`,
+In depth: `docs/planning-large-builds.md:75`, `templates/project/context/multi-agent-inline.md:21`,
 `skills/readme-coauthoring/SKILL.md:287`
 
 ## Level A / B / C autonomy
@@ -220,7 +220,7 @@ other independent stream keeps running. The skill treats this as a first-class s
 not a failure, stated as "parking is success; guessing is failure," and the close-out report lists
 every parked branch with its reason so a human can pick each one up without re-deriving what
 stopped it.
-In depth: `docs/autorun-hitl-heartbeat.md:77`
+In depth: `docs/autorun-hitl-heartbeat.md:92`
 
 ## `paths:` frontmatter
 
@@ -339,4 +339,4 @@ throughout as the mechanism for a per-call `agent({model, effort})` dispatch, di
 Agent-tool subagent call which takes `model` but has no `effort` parameter. Confirm the tool's full
 capability surface against your own tool's documentation before relying on details beyond this
 usage.
-In depth: `commands/deep-plan.md:53`, `docs/planning-large-builds.md:62`
+In depth: `commands/deep-plan.md:53`, `docs/planning-large-builds.md:77`

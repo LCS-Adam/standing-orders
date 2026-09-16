@@ -73,8 +73,9 @@ actually ships. Run `ls agents/` before naming one; as of this writing that dire
 `adversary.md`, `autorun-plan-orchestrator.md`, `code-reviewer.md`,
 `data-eng-sa-orchestrator.md`, `data-eng-sa-reviewer.md`, `design-reviewer.md`, `exec-critical.md`,
 `exec-mechanical.md`, `exec-standard.md`, `exec-subtle.md`, and `plan-synthesizer.md` (do not treat
-this list as durable; re-run `ls agents/` yourself, since check 12 in `verify.sh` forbids writing a
-count into prose and the same reasoning applies to a name list that can drift).
+this list as durable; re-run `ls agents/` yourself. Check 12 in `verify.sh` requires any count
+written into prose to match the repo, and the same reasoning applies to a name list that can
+drift).
 
 Every `exec-*` agent body expects the dispatcher to hand it three things (`agents/exec-standard.md`
 and its siblings state this): a file-ownership list so parallel workstreams stay conflict-free, a
