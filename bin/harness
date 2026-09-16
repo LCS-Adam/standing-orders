@@ -56,11 +56,27 @@ resolve_tiers() {
 # ---------------------------------------------------------------- copy helpers
 
 # put <src> <dest> - copy unless dest exists (or --force). Never silent.
+# MANAGED=1 marks files this installer OWNS at user scope: agents, skills,
+# commands, hooks and the core rules. Those are deployed copies of repo content,
+# not your work, so they are replaced on reinstall and any local difference is
+# backed up first. Without this, editing config/models.conf and re-running
+# install silently did nothing, because every already-installed file was skipped
+# and the whole point of models.conf is that a rebind takes one line.
+# Project-scope files (your AGENTS.md, your CLAUDE.md) are never MANAGED.
+MANAGED=0
+
 put() {
   local src="$1" dest="$2" label="${3:-$2}"
   if [ -e "$dest" ] && [ "$FORCE" -eq 0 ]; then
-    if cmp -s "$src" "$dest" 2>/dev/null; then c_skip "$label (identical)"
-    else c_skip "$label (exists, differs - use --force to replace)"; fi
+    if cmp -s "$src" "$dest" 2>/dev/null; then c_skip "$label (identical)"; return; fi
+    if [ "$MANAGED" -eq 1 ]; then
+      [ "$DRY" -eq 1 ] && { c_ok "$label (would replace, dry run)"; return; }
+      cp "$dest" "$dest.bak-$(date +%Y%m%d%H%M%S)"
+      cp "$src" "$dest"
+      c_ok "$label (replaced, previous copy kept as .bak)"
+      return
+    fi
+    c_skip "$label (exists, differs - use --force to replace)"
     return
   fi
   [ "$DRY" -eq 1 ] && { c_ok "$label (dry run)"; return; }
@@ -109,6 +125,12 @@ merge_settings() {
 # ---------------------------------------------------------------- install --user
 
 cmd_install() {
+  # Check every prerequisite BEFORE writing anything. jq used to be checked
+  # inside merge_settings, which runs after all the copying, so a machine
+  # without it got a half-installed tree and then an error. perl was never
+  # checked at all even though resolve_tiers cannot run without it.
+  need perl
+  need jq
   load_models
   c_info "Installing user scope into $CLAUDE_HOME"
   echo "  tiers: FRONTIER-THINK=$TIER_FRONTIER_THINK FRONTIER-DO=$TIER_FRONTIER_DO MID=$TIER_MID SMALL=$TIER_SMALL"
@@ -128,6 +150,7 @@ cmd_install() {
     die "unresolved tier tokens above; config/models.conf did not cover them"
   fi
 
+  MANAGED=1                          # everything below is a deployed copy, see put()
   put_dir "$STAGE/agents"            "$CLAUDE_HOME/agents"
   put_dir "$STAGE/skills"            "$CLAUDE_HOME/skills"
   put_dir "$STAGE/commands"          "$CLAUDE_HOME/commands"
@@ -148,6 +171,7 @@ cmd_install() {
 
   put "$HARNESS_ROOT/rules/shell-portability.md" "$CLAUDE_HOME/rules/shell-portability.md" "rules/shell-portability.md"
 
+  MANAGED=0
   merge_settings
   echo
   c_info "Done. Run 'harness verify' to check the result."
@@ -189,7 +213,20 @@ cmd_add() {
   [ -n "$what" ] || die "usage: harness add <module|--tool NAME>"
   git rev-parse --git-dir >/dev/null 2>&1 || die "not inside a git repository"
   local root; root="$(git rev-parse --show-toplevel)"
+
+  # Project templates carry {{TIER_*}} tokens too (context/multi-agent-worktree.md
+  # does). Stage and resolve them, or `harness add context` drops literal
+  # "{{TIER_MID}}" into the repo, which reads as a broken placeholder to anyone
+  # who opens it.
   local T="$HARNESS_ROOT/templates/project"
+  if grep -rq '{{TIER_' "$T" 2>/dev/null; then
+    load_models
+    STAGE="$(mktemp -d)"
+    trap 'rm -rf "${STAGE:-}"' EXIT
+    cp -R "$T" "$STAGE/project"
+    while IFS= read -r f; do resolve_tiers "$f"; done < <(find "$STAGE/project" -type f -name '*.md')
+    T="$STAGE/project"
+  fi
 
   case "$what" in
     workspace-brain)

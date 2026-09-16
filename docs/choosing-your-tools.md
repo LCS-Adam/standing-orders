@@ -155,7 +155,7 @@ specific flow right now. Six exist in this repo:
 | `/handoff` | Produces a copy-pasteable resume prompt for the next session |
 | `/next-step` | Notes the next action to take |
 | `/phase-status` | Reports where a multi-phase build currently stands |
-| `/verify` | Runs the scrub gate (`verify.sh`) |
+| `/verify` | Re-runs the verification steps for the task just completed. NOT the scrub gate: that is `harness verify` on the command line |
 
 **When to reach for it.** The user wants to trigger a specific, named flow right now,
 and that flow has enough steps (calling a subagent, running a script, following a

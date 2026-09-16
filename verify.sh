@@ -32,8 +32,11 @@ show() { printf '         %s\n' "$1"; }
 
 cd "$ROOT"
 
-# Files that may legitimately contain otherwise-banned strings.
-EXEMPT='^\./(config/models\.conf|verify\.sh|docs/|\.git/)'
+# Exemptions are PER CHECK on purpose. A single shared exemption list was the
+# original bug: docs/ was exempted so the docs could discuss model names, which
+# silently also disabled the absolute-path and denylist checks for every file
+# under docs/, and a real home path shipped there. Never widen this.
+EXEMPT='^\./(verify\.sh|\.git/)'
 
 echo "Scrubbing $ROOT"
 echo
@@ -50,7 +53,10 @@ else pass "no absolute home paths"; fi
 # adapters/README.md is exempt from THIS check alone: it carries the old-name ->
 # new-name migration table, which has to quote the retired model-named agents.
 # It stays subject to every other check, including paths and the denylist.
-VENDOR_EXEMPT="$EXEMPT|^\./adapters/README\.md"
+# docs/ and adapters/README.md must name real models to teach the tier binding
+# and to carry the old-name migration table. They stay subject to every OTHER
+# check, including absolute paths and the denylist.
+VENDOR_EXEMPT="$EXEMPT|^\./adapters/README\.md|^\./docs/|^\./config/models\.conf"
 hits=$(grep -rniE '\b(fable|opus|sonnet|haiku)\b' --include='*.md' --include='*.sh' --include='*.json' . 2>/dev/null \
        | grep -vE "$VENDOR_EXEMPT" || true)
 if [ -n "$hits" ]; then

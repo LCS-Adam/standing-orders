@@ -20,7 +20,7 @@ What this repo is actively working on right now. One or two sentences.
 
 ## Stakeholders
 
-- Owner: adam
+- Owner: <your name or team>
 - Reviewers: <none>
 
 ## Notes

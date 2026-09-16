@@ -115,7 +115,7 @@ rest of the file, and to whatever else it needs to read.
 ```
 RESUME: agent-harness, Phase 5 documentation set
 
-Working directory: /Users/adamlindsey/projects/agent-harness
+Working directory: ~/projects/your-repo
 Launch: claude (no special flags)
 
 Read first, in this order:
