@@ -169,30 +169,42 @@ instead of silently passing nothing:
 6. No permission-bypass defaults in the shipped `settings.portable.json`.
 7. Every shell script uses an absolute-path shebang (`#!/bin/bash`, not `#!/usr/bin/env bash`).
 8. No banned typographic glyphs (curly quotes, em dashes, and the rest) in client-facing docs.
-9. No matches against a personal-marker denylist.
+9. No matches against a personal-marker denylist, which you supply from outside the repo. If
+    there is no denylist, this check fails rather than passing: a check that did not run tells
+    you nothing about whether your name is in the files you are about to hand someone.
 10. No instruction points at a `~/.claude/rules/` file that the installer never creates. An
     instruction naming a file that is not there is worse than no instruction: the agent is told to
     go read something and finds nothing.
 11. Every backticked slash command in the docs resolves to a file in `commands/`, a
     `skills/<name>/SKILL.md`, or one of two short, reasoned allowlists in `verify.sh`. A doc that
     tells you to type a command that does not exist costs you more than saying nothing would.
-12. Every file `harness install` would write into `~/.claude` is a file the gate scanned. This is
-    the one check that holds the others up: the gate and the installer have to agree on what "the
-    repo" means, or an unscanned file installs onto someone else's machine behind a green run.
+12. Every `agents/`, `skills/`, `commands/` and `hooks/` file `harness install` would write into
+    `~/.claude` is a file the gate scanned, and the dry run has to succeed for that answer to
+    count. This is the one check that holds the others up: the gate and the installer have to
+    agree on what "the repo" means, or an unscanned file installs onto someone else's machine
+    behind a green run. The generated `rules/` files and the `settings.json` merge are outside
+    what it compares.
 13. Every count asserted in the client-facing docs matches the repo. A number in prose that nothing
     checks drifts the moment anything is added, and a tutorial that miscounts the thing it is
     teaching you to run is worse than no tutorial.
 
-Read the output top to bottom. Each line is `PASS`, `FAIL`, or, for check 9 specifically, `WARN` if
-no denylist is configured. A `FAIL` line is followed by up to ten example matches so you can find
-and fix the problem without re-running with more verbosity.
+Read the output top to bottom. Each line is `PASS` or `FAIL`. A `FAIL` line is followed by up to ten
+example matches so you can find and fix the problem without re-running with more verbosity.
+
+The leak checks read two sets of bytes for every file: what is on disk, which is what `harness
+install` copies onto this machine, and what is in the git index, which is what a colleague gets when
+they clone. Those differ whenever you stage something and then edit it, so a gate that read only one
+of them could pass on a working copy you had already cleaned while the commit still carried the leak.
+A match is reported against the path either way; if you go looking on disk and find nothing, look at
+what you have staged.
 
 The denylist for check 9 deliberately does not live in this repository: a committed list of the
 personal terms you want to keep private would itself be the leak. Point it at a file outside the
 repo with `--denylist PATH`, or set `HARNESS_DENYLIST`; the default is
 `~/.agent-harness-denylist`. One term or regex per line, case-insensitive, blank lines and `#`
-comments ignored. If that file does not exist, `verify` still runs the other checks and warns
-that the personal-marker check did not run, rather than silently skipping it.
+comments ignored. The file is required: if it is missing, unreadable, or has no terms in it, check 9
+fails and so does the run. There is no flag to turn it off, because a green gate that never looked
+for a personal marker reads exactly like a green gate that looked and found none.
 
 ## A first real task
 
@@ -223,7 +235,8 @@ Here is a full pass through the framework on a small, real change.
 | A subagent spawn gets denied by a hook | A `PreToolUse` hook is a script Claude Code runs before it executes a tool call, and it can veto that call. This one vetoes any subagent dispatch that does not name a model, because the alternative is inheriting the parent's model silently and burning a frontier model on mechanical work. It will interrupt you, and that is the cost of the guarantee | Re-issue the dispatch with an explicit `model` parameter, or point it at an agent definition that pins one in its frontmatter. If it fires often, pin the model in the agent definition once instead of passing it per call |
 | A file you expected to be written says `(exists, differs - use --force to replace)` | The installer found a file already at that path with different content and chose not to overwrite it | Diff the two versions by hand; re-run the same command with `--force` only once you are sure the existing file should be replaced |
 | `harness verify` fails on a denylist term | Check 9 matched a term from your personal denylist against tracked content | Remove or rephrase the flagged line; if the match is a false positive, tighten the term in your denylist file |
-| `harness verify` reports `WARN no denylist at ...` | No denylist file exists at the default or `--denylist` path | Create one outside the repository, one term per line, if you want that check to actually run |
+| `harness verify` fails with `no denylist at ...` | No denylist file exists at the default or `--denylist` path, so the personal-marker check did not run | Create one outside the repository, one term per line; `HARNESS_DENYLIST` or `--denylist PATH` points somewhere else |
+| `GATE ERROR binary files in the shipped set` | A file bound for `~/.claude` contains a NUL byte, and the content checks would skip it silently | Remove it or add it to `.gitignore`; everything this framework installs is text that an agent reads |
 
 ## Where to go next
 

@@ -141,11 +141,13 @@ Advisor path that is fileless. `adapters/README.md` has the details per tool.
 It fails on absolute home paths, vendor model names that escaped into prose, agent definitions
 missing a tier pin, malformed skill frontmatter, permission-bypass defaults, shell scripts with a
 fragile shebang, banned typographic glyphs in client-facing docs, and any term in a personal-marker
-denylist.
+denylist. The leak checks read both what is on disk and what is in the git index, because those are
+two different sets of bytes: one reaches your machine and the other reaches whoever clones.
 
 That denylist deliberately lives outside the repository, at `~/.agent-harness-denylist` or wherever
 `--denylist` points, because a committed list of the things you want to keep private is itself the
-leak.
+leak. It is required. Without one the personal-marker check has not run, and a run where it did not
+run is a failed run.
 
 A scrub that has never been run against a known-bad input is unverified, so the gate is tested by
 planting each defect class into a scratch copy and confirming a non-zero exit.

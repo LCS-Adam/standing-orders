@@ -7,9 +7,11 @@ set -uo pipefail
 # A fail-open scrub looks exactly like a passing one, so every check increments
 # a counter and the run asserts at the end that it actually ran them all.
 #
-# The personal-marker denylist deliberately does NOT live in this repo: a list of
-# personal markers is itself the leak. Point --denylist at a file outside the
-# repo, one case-insensitive term or regex per line, blank lines and # ignored.
+# The personal-marker denylist is REQUIRED and deliberately does NOT live in this
+# repo: a list of personal markers is itself the leak. Point --denylist at a file
+# outside the repo, one case-insensitive term or regex per line, blank lines and
+# # ignored. No denylist means check 9 did not run, and a check that did not run
+# is a failure here, not a warning.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF="$ROOT/${BASH_SOURCE[0]##*/}"
@@ -84,6 +86,57 @@ shipped_l() { git ls-files    --cached --others --exclude-standard -- "$@"; }
 NSHIPPED=$(shipped_l 2>/dev/null | wc -l | tr -d ' ')
 [ "${NSHIPPED:-0}" -ge 2 ] || gate_error "git ls-files returned ${NSHIPPED:-0} files - scanning nothing, not clean"
 
+# ------------------------------------------------------------ THE TWO BYTE SOURCES
+#
+# The set above is PATHNAMES. Which BYTES live at those paths is a separate
+# question with TWO answers, because there are two consumers:
+#   - `harness install` copies the WORKING TREE. Those bytes reach ~/.claude.
+#   - a colleague who clones gets the INDEX. Those bytes reach everyone else.
+# They diverge routinely, and a gate that takes paths from git but bytes from
+# only one source is blind to the other: stage a leak, restore the working copy
+# without staging the cleanup, and a disk-reading gate passes while the commit
+# carries the leak to every clone. Reproduced before this line existed.
+#
+# So every LEAK check - 1 (paths), 2 (model names), 7 (shebangs), 9 (denylist) -
+# reads BOTH. Same pathnames, two blobs, one merged hit list.
+#
+# Rejecting index-vs-worktree divergence outright would be the other fix. It is
+# not this one: any unstaged edit to any tracked file is a divergence, so that
+# gate would fail on the ordinary pre-commit state.
+#
+# CEILING, stated because it is real and chosen: checks 3, 4, 5, 6, 8 and 13
+# read the working tree only. A staged-but-not-checked-out divergence can hand a
+# colleague a stale count or a SKILL.md missing its frontmatter. It cannot hand
+# them a leak, because every check that looks for one reads both sources.
+cached() { git ls-files -z --cached -- "$@"; }
+
+# scan <exempt-ere> <extra-grep-flags> <pattern> - grep both byte sources.
+# Both emit path:line:text, so one exemption filter covers both and sort -u
+# collapses the usual case where the two blobs are identical. An EMPTY exempt
+# means no exemption (check 9 has none on purpose); it must not become
+# `grep -vE ""`, which would discard every line and pass everything.
+scan() {
+  local exempt="$1" flags="$2" pat="$3"
+  { shipped | xargs -0r grep -HnE $flags -e "$pat" 2>/dev/null
+    git -c grep.column=false grep --cached --no-color -nE $flags -e "$pat" 2>/dev/null
+  } | sort -u | if [ -n "$exempt" ]; then grep -vE "$exempt"; else cat; fi
+}
+
+# ------------------------------------------------------------ the shipped set is text
+# grep -I means "treat a binary file as having no matches". One NUL byte
+# anywhere therefore removed a file from every content check below while the
+# installer copied it into ~/.claude regardless - a silent exclusion, which is
+# the exact failure this gate exists to refuse. So a binary in the shipped set
+# is a gate error and no grep below carries -I. Both byte sources, for the same
+# reason as scan(): a NUL staged and cleaned on disk is the same bypass.
+binary=$( { shipped | xargs -0r perl -0777 -ne 'print "$ARGV (working tree)\n" if /\x00/' 2>/dev/null
+            while IFS= read -r -d '' f; do
+              git cat-file blob ":$f" 2>/dev/null | perl -0777 -ne 'exit 1 if /\x00/' \
+                || printf '%s (index)\n' "$f"
+            done < <(cached)
+          } | sort -u)
+[ -z "$binary" ] || gate_error "binary files in the shipped set - every content check would skip them: $(printf '%s ' $binary)"
+
 # Client-facing surfaces: what a reader outside this repo ends up reading.
 # DENY BY DEFAULT. A new top-level doc, or a renamed docs/, is client-facing
 # until someone lists its directory here; the previous allowlist
@@ -123,11 +176,23 @@ echo
 
 # 1 -------------------------------------------------- absolute home paths
 # No extension filter: bin/harness is the largest script in the repo and had no
-# extension, so it was invisible to every grep-based check. grep -I skips
-# binaries, which is the only thing the extension list was really buying.
+# extension, so it was invisible to every grep-based check. Binaries are not
+# skipped here either; they are refused above.
 EXEMPT_PATHS='^verify\.sh:'
-hits=$(shipped | xargs -0r grep -IHnE '(/Users/|/home/[a-z]|C:\\Users\\)' 2>/dev/null \
-       | grep -vE "$EXEMPT_PATHS" || true)
+# /root is a home directory too, a Linux username can start with a digit, and a
+# Windows path is case-insensitive and not always on C:. The old expression
+# covered /Users/, /home/[a-z] and C:\Users\ only, while the PASS line below
+# claimed every absolute home path.
+HOME_PATHS='(/Users/|/home/[^/[:space:]]|/root/|[A-Za-z]:[\\/]+[Uu][Ss][Ee][Rr][Ss][\\/])'
+# LIVENESS. Two engines now - BSD grep on disk, git's own on the index - and a
+# pattern one accepts can be dead in the other: \b matches nothing in git grep
+# -E on git 2.54, which would have made every index-side scan a permanent pass.
+# verify.sh's own source contains a literal home path, so this pattern MUST hit
+# it here. Top level, not inside $(): gate_error's exit has to kill the gate,
+# not a subshell.
+git -c grep.column=false grep --cached --no-color -qE "$HOME_PATHS" -- verify.sh \
+  || gate_error "home-path pattern matches nothing in verify.sh's own index blob - the index-side scan is dead"
+hits=$(scan "$EXEMPT_PATHS" '' "$HOME_PATHS")
 # A symlink's blob content IS the path it points at. grep reads THROUGH the link
 # (or errors past a missing target), so the stored string is the one leak shape
 # the scan above cannot see, and the one where the path itself is the payload.
@@ -135,13 +200,13 @@ linkhits=$(shipped_l | while IFS= read -r f; do
              [ -L "$f" ] || continue
              t=$(readlink "$f" 2>/dev/null || true)
              case "$t" in
-               (/Users/*|/home/*) printf '%s: symlink -> %s\n' "$f" "$t" ;;
+               (/Users/*|/home/*|/root/*) printf '%s: symlink -> %s\n' "$f" "$t" ;;
              esac
            done)
 hits="${hits}${hits:+$'\n'}${linkhits}"
 hits="${hits#$'\n'}"
 if [ -n "$hits" ]; then
-  fail "absolute home paths"; printf '%s\n' "$hits" | head -10 | while IFS= read -r l; do show "$l"; done
+  fail "absolute home paths (working tree or index)"; printf '%s\n' "$hits" | head -10 | while IFS= read -r l; do show "$l"; done
 else pass "no absolute home paths"; fi
 
 # 2 -------------------------------------------------- vendor model names
@@ -152,10 +217,15 @@ else pass "no absolute home paths"; fi
 # exemption is written out in full here rather than reusing check 1's, because
 # sharing one is how both of the last two leaks happened.
 EXEMPT_VENDOR='^verify\.sh:|^adapters/README\.md|^docs/|^config/models\.conf'
-hits=$(shipped | xargs -0r grep -IHniE '\b(fable|opus|sonnet|haiku)\b' 2>/dev/null \
-       | grep -vE "$EXEMPT_VENDOR" || true)
+# -w, not \b: git grep -E does not implement \b, so the index side of this scan
+# would have matched nothing and passed forever. Both engines implement -w and
+# both return the same hits on this repo.
+VENDOR_NAMES='(fable|opus|sonnet|haiku)'
+git -c grep.column=false grep --cached --no-color -qiwE -e "$VENDOR_NAMES" -- verify.sh \
+  || gate_error "vendor pattern matches nothing in verify.sh's own index blob - the index-side scan is dead"
+hits=$(scan "$EXEMPT_VENDOR" '-iw' "$VENDOR_NAMES")
 if [ -n "$hits" ]; then
-  fail "vendor model names outside config/models.conf"; printf '%s\n' "$hits" | head -10 | while IFS= read -r l; do show "$l"; done
+  fail "vendor model names outside config/models.conf (working tree or index)"; printf '%s\n' "$hits" | head -10 | while IFS= read -r l; do show "$l"; done
 else pass "no vendor model names outside config/models.conf"; fi
 
 # Checks 3 and 4 both need "scan a glob, then prove the scan set still matches
@@ -231,16 +301,40 @@ else pass "no permission-bypass defaults in shipped settings"; fi
 fi
 
 # 7 -------------------------------------------------- shell script portability
-# Selected by CONTENT, not by extension. '*.sh' missed bin/harness entirely and
-# left a two-file scan set that goes green on one file the moment the other
-# leaves it. A file is a script if its first line is a shebang; there is no
-# pathspec here to shrink or mistype.
+# The candidate set is a UNION of four sources, not one heuristic. Selecting by
+# first-line-shebang alone was self-fulfilling: a hooks/new-hook.sh with NO
+# shebang was invisible here, did not reduce the count of scripts found, and was
+# still installed and chmod +x'd by cmd_install. A check that only inspects the
+# files that already pass it is not a check.
+#   - hooks/*.sh and bin/*: install chmod +x's the first and the second is where
+#     bin/harness lives, extensionless.
+#   - anything executable on disk, tracked or not, and anything the INDEX marks
+#     100755 - the executable bit is the whole reason this matters, and the two
+#     disagree for a staged-then-cleaned file.
+#   - anything whose first line is already a shebang, wherever it lives.
+# This repo is bash-only by rule (rules/shell-portability.md), so a non-bash
+# executable failing here is the correct answer, not a false positive.
+candidates=$( { shipped_l 'hooks/*.sh' 'bin/*'
+                shipped_l | while IFS= read -r f; do
+                  [ -f "$f" ] && [ -x "$f" ] && printf '%s\n' "$f"
+                done
+                git ls-files -s | awk -F'\t' '$1 ~ /^100755 /{print $2}'
+                shipped | xargs -0r awk 'FNR==1 && /^#!/{print FILENAME}' 2>/dev/null
+              } | grep -v '^$' | sort -u)
+# Both byte sources: a staged script with a fragile shebang reaches a colleague
+# even when the working copy has been fixed.
+SHEBANG='^#!/bin/bash([[:space:]].*)?$'
 bad=""; n=0
 while IFS= read -r f; do
   [ -n "$f" ] || continue
   n=$((n+1))
-  head -1 "$f" 2>/dev/null | grep -q '^#!/bin/bash' || bad="$bad $f"
-done < <(shipped | xargs -0r awk 'FNR==1 && /^#!/{print FILENAME}' 2>/dev/null)
+  if [ -f "$f" ]; then
+    head -1 "$f" 2>/dev/null | grep -qE "$SHEBANG" || bad="$bad $f"
+  fi
+  if git ls-files --error-unmatch -- "$f" >/dev/null 2>&1; then
+    git cat-file blob ":$f" 2>/dev/null | head -1 | grep -qE "$SHEBANG" || bad="$bad $f(index)"
+  fi
+done <<< "$candidates"
 if [ "$n" -eq 0 ]; then fail "no shell scripts found - scanned nothing, which is not the same as clean"
 elif [ -n "$bad" ]; then fail "scripts without an absolute-path shebang:$bad"
 else pass "all $n shell scripts use an absolute-path shebang"; fi
@@ -276,39 +370,49 @@ else pass "no banned glyphs in client-facing docs ($(printf '%s\n' "$targets" | 
 # own regex contains the literal /Users/; it does not need, and must not have,
 # one from the personal-marker denylist. Sharing check 1's list meant a personal
 # marker committed to this very file passed the gate.
-if [ -e "$DENYLIST" ] && [ ! -r "$DENYLIST" ]; then
-  # Unreadable is a gate error, not an empty list. grep on an unreadable file
-  # returns nothing, which read as "no terms configured" and passed.
-  fail "denylist $DENYLIST exists but is not readable - the check did not run"
-elif [ -f "$DENYLIST" ]; then
+# A denylist that is missing, unreadable, not a regular file, or empty means
+# this check did not run. "Did not run" is a FAIL, not a WARN and not a pass:
+# under a green gate it reads identically to "no personal markers found", which
+# is the whole failure mode this file exists to refuse. There is deliberately no
+# opt-out flag - one that still passed would restore the hole, and one that
+# failed anyway would be the same red line with more ceremony.
+if [ ! -e "$DENYLIST" ]; then
+  fail "no denylist at $DENYLIST - the personal-marker check did not run, which is not the same as clean"
+  show "create one OUTSIDE this repo (a committed list of personal markers is itself the leak),"
+  show "one term or regex per line; or pass --denylist PATH, or set HARNESS_DENYLIST"
+elif [ ! -f "$DENYLIST" ] || [ ! -r "$DENYLIST" ]; then
+  # grep on an unreadable file returns nothing, which read as "no terms
+  # configured" and passed.
+  fail "denylist $DENYLIST is not a readable regular file - the check did not run"
+else
   terms=$(grep -vE '^[[:space:]]*(#|$)' "$DENYLIST" || true)
   if [ -z "$terms" ]; then
-    pass "denylist $DENYLIST is empty (no terms to check)"
+    fail "denylist $DENYLIST has no terms - the check ran against nothing, which is not the same as clean"
   else
     # A term that is not a valid ERE makes grep exit 2 and check nothing, while
     # the count below still counted it. Silently checking zero markers is the
     # failure this gate exists to refuse.
+    # Validated against BOTH engines: a term BSD grep accepts can be rejected by
+    # git's, which exits 128 and checks the index side against nothing.
     badterms=""
     while IFS= read -r t; do
       [ -n "$t" ] || continue
       printf '' | grep -qE "$t" 2>/dev/null
       [ $? -ge 2 ] && badterms="$badterms $t"
+      git -c grep.column=false grep --cached --no-color -qiE -e "$t" -- verify.sh >/dev/null 2>&1
+      [ $? -ge 2 ] && badterms="$badterms $t(git)"
     done <<< "$terms"
+    # No exemption argument, deliberately - see above.
     hits=$(printf '%s\n' "$terms" | while IFS= read -r t; do
              [ -n "$t" ] || continue
-             shipped | xargs -0r grep -IHniE "$t" 2>/dev/null || true
+             scan '' '-i' "$t"
            done)
     if [ -n "$badterms" ]; then
       fail "denylist terms that are not valid regexes and were never checked:$badterms"
     elif [ -n "$hits" ]; then
-      fail "denylist matches"; printf '%s\n' "$hits" | head -10 | while IFS= read -r l; do show "$l"; done
+      fail "denylist matches (working tree or index)"; printf '%s\n' "$hits" | head -10 | while IFS= read -r l; do show "$l"; done
     else pass "no denylist matches ($(printf '%s\n' "$terms" | wc -l | tr -d ' ') terms checked)"; fi
   fi
-else
-  # Not a pass and not a silent skip: an unconfigured denylist is a real gap.
-  RAN=$((RAN+1))
-  printf '  \033[33mWARN\033[0m no denylist at %s - personal-marker check did not run\n' "$DENYLIST"
-  show "create one (outside this repo), one term per line, or pass --denylist PATH"
 fi
 
 # 10 ------------------------------------------------- dangling file references
@@ -361,16 +465,22 @@ tokens=$(shipped | xargs -0r grep -Ihao '`/[A-Za-z][A-Za-z0-9_-]*[^`]*`' 2>/dev/
          | sed -e 's|^`/||' -e 's|[^A-Za-z0-9_-].*$||' -e 's|`$||' | sort -u)
 defined=$(git ls-files -- 'commands/*.md' 'skills/*/SKILL.md' \
           | sed -e 's|^commands/||' -e 's|\.md$||' -e 's|^skills/||' -e 's|/SKILL$||' | sort -u)
-dangling=""
+dangling=""; seen=0
 while IFS= read -r tok; do
   [ -n "$tok" ] || continue
+  seen=$((seen+1))
   printf '%s\n' "$defined" | grep -qxF "$tok" && continue
   case " $BUILTIN_SLASH $NOT_A_COMMAND " in *" $tok "*) continue ;; esac
   dangling="$dangling $tok"
 done <<< "$tokens"
+ntokens=$(printf '%s\n' "$tokens" | grep -c . || true)
 if [ -z "$tokens" ]; then
   # Zero tokens means the scan reached nothing, not that the repo is clean.
   fail "slash-command scan matched nothing - the scan set is broken, not clean"
+elif [ "$seen" -ne "${ntokens:-0}" ]; then
+  # An empty $dangling because the loop never ran reads exactly like an empty
+  # $dangling because every token resolved. Count what went through it.
+  fail "slash-command loop processed $seen of ${ntokens:-0} tokens - the check did not run to completion"
 elif [ -n "$dangling" ]; then
   # -o drops the filename, so re-grep each offender with -n: a gate that cannot
   # say WHERE sends you searching the whole repo for a token.
@@ -388,14 +498,23 @@ fi
 # write, and every agents/, skills/, commands/ or hooks/ file in that answer must
 # be in the shipped set above. Subset, not equality: a file that is scanned but
 # deliberately not installed is not a leak.
-instout=$(CLAUDE_CONFIG_DIR="$(mktemp -d)" "$ROOT/bin/harness" install --dry-run 2>&1)
+instout=$(CLAUDE_CONFIG_DIR="$(mktemp -d)" "$ROOT/bin/harness" install --dry-run 2>&1); instrc=$?
+# A dry run that died after printing some recognizable labels used to pass on
+# whatever it managed to print. Its exit status is part of the answer.
+# Filenames run to the end of the line, minus put()'s trailing "(dry run)" and
+# friends: cutting at the first space turned "agents/good leak.md" into
+# "agents/good" and let a prefix collision hide the real path.
 labels=$(printf '%s\n' "$instout" | sed $'s/\033\\[[0-9;]*m//g' \
-         | grep -oE '^  [+=] (agents|skills|commands|hooks)/[^ ]+' | sed 's|^  [+=] ||' | sort -u)
+         | sed -n -E 's#^  [+=] ((agents|skills|commands|hooks)/.+)$#\1#p' \
+         | sed -E 's# \([^)]*\)$##' | sort -u)
 shipset=$(shipped_l 'agents' 'skills' 'commands' 'hooks')
 unscanned=$(printf '%s\n' "$labels" | grep -v '^$' | while IFS= read -r l; do
               printf '%s\n' "$shipset" | grep -qxF "$l" || printf '%s\n' "$l"
             done)
-if [ -z "$labels" ]; then
+if [ "$instrc" -ne 0 ]; then
+  fail "harness install --dry-run exited $instrc - the check could not run"
+  printf '%s\n' "$instout" | tail -3 | while IFS= read -r l; do show "$l"; done
+elif [ -z "$labels" ]; then
   fail "harness install --dry-run named no files to install - the check could not run"
   printf '%s\n' "$instout" | head -3 | while IFS= read -r l; do show "$l"; done
 elif [ -n "$unscanned" ]; then
@@ -417,8 +536,13 @@ fi
 n_agents=$(shipped_l 'agents/*.md' | wc -l | tr -d ' ')
 n_skills=$(shipped_l 'skills/*/SKILL.md' | wc -l | tr -d ' ')
 n_cmds=$(shipped_l 'commands/*.md' | wc -l | tr -d ' ')
-countbad=$(printf '%s\n' "$CLIENT_DOCS" | grep -v '^$' | xargs perl -CSD -e '
+# tr to NUL + xargs -0: plain xargs splits on whitespace, so a client doc named
+# "setup guide.md" became two nonexistent arguments, perl warned to stderr, and
+# the stale count inside it was never read.
+countbad=$(printf '%s\n' "$CLIENT_DOCS" | grep -v '^$' | tr '\n' '\0' | xargs -0r perl -CSD -e '
   my %want = (agents => shift, skills => shift, commands => shift, checks => shift);
+  # An unopenable doc is a doc that was not checked. Report it, do not warn.
+  print "cannot read $_ - the count check did not run over it\n" for grep { !-r $_ } @ARGV;
   my %num = (one=>1,two=>2,three=>3,four=>4,five=>5,six=>6,seven=>7,eight=>8,nine=>9,
              ten=>10,eleven=>11,twelve=>12,thirteen=>13,fourteen=>14,fifteen=>15,
              sixteen=>16,seventeen=>17,eighteen=>18,nineteen=>19,twenty=>20);
