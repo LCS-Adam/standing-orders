@@ -57,6 +57,26 @@ cd "$ROOT"
 shipped()   { git ls-files -z --cached --others --exclude-standard -- "$@"; }
 shipped_l() { git ls-files    --cached --others --exclude-standard -- "$@"; }
 
+# EVERY check reads this set. It used to be two systems: checks 3, 4, 5 and 6
+# globbed the FILESYSTEM while 1, 2, 7, 8, 9, 10 and 11 read the INDEX, so
+# shrinking one while leaving the other alone turned the whole gate green on
+# three committed violations - checks 3 and 4 cheerfully reporting "all 11
+# agents" over files the other half could no longer see. Three patches would
+# have left three mechanisms free to drift apart again, which is how the shared
+# exemption came back after d271923 fixed it.
+#
+# Exactly three things are NOT this set, each for a stated reason:
+#   - check 11's RESOLVER (not its scan) is `git ls-files`, a strict subset. It
+#     answers "would a clone have this command file", and a clone gets tracked
+#     files only. Scanning more can only find more references; resolving against
+#     less can only be stricter.
+#   - checks 3 and 4 glob the same directories on disk. That is not a second
+#     scan set - it is the assertion that this one set still matches reality,
+#     and it is the only way a check can notice its own scan set silently
+#     shrinking. It reports, it never scans.
+#   - the denylist is operator-supplied and lives OUTSIDE the repo on purpose
+#     (a committed list of personal markers is itself the leak).
+
 # An empty file list means "scanned nothing", not "clean". Without this, running
 # the gate outside a checkout would turn most of these checks into permanent
 # passes. The per-check guards below cover the partial case, which is the one
@@ -179,15 +199,19 @@ elif [ -n "$bad" ]; then fail "SKILL.md missing required frontmatter:$bad"
 else pass "all $n skills have name and description"; fi
 
 # 5 -------------------------------------------------- CLAUDE.md imports AGENTS.md
-if [ -f CLAUDE.md ] && head -1 CLAUDE.md | grep -q '^@AGENTS\.md$'; then
+if [ -z "$(shipped_l 'CLAUDE.md')" ]; then
+  fail "CLAUDE.md is not in the shipped set - a clone would not get one at all"
+elif head -1 CLAUDE.md 2>/dev/null | grep -q '^@AGENTS\.md$'; then
   pass "CLAUDE.md imports AGENTS.md on line 1"
 else
   fail "CLAUDE.md must start with '@AGENTS.md' (symlinks break on Windows)"
 fi
 
 # 6 -------------------------------------------------- unsafe settings keys
-if [ ! -f config/settings.portable.json ]; then
-  fail "config/settings.portable.json is missing - nothing to check, which is not the same as safe"
+if [ -z "$(shipped_l 'config/settings.portable.json')" ]; then
+  fail "config/settings.portable.json is not in the shipped set - nothing to check, which is not the same as safe"
+elif [ ! -r config/settings.portable.json ]; then
+  fail "config/settings.portable.json is not readable - the check did not run, which is not the same as safe"
 else
 unsafe=$(grep -oE '"(skipDangerousModePermissionPrompt|skipAutoPermissionPrompt|dangerouslySkipPermissions)"' \
          config/settings.portable.json 2>/dev/null || true)
