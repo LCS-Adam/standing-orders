@@ -27,6 +27,16 @@ to critique the plan afterward, which is the pattern to imitate for any workflow
 plan or a decision worth a second look.
 In depth: `docs/writing-your-own.md`, `docs/orientation.md`
 
+## `adversary`
+
+The read-only correctness reviewer dispatched against a merged wave diff: FRONTIER-DO tier, xhigh
+effort, and it tries specifically to break the change rather than confirm it works. It sweeps a
+fixed taxonomy first (fail-open paths, bypasses, tamper vectors, vacuous assertions) and then hunts
+freely, returning severity-ranked findings; it never edits. It is step 2 of the AUTORUN per-wave
+review gate stack, and it runs before `/simplify` because there is no point simplifying code a
+correctness review is about to rewrite.
+In depth: `agents/adversary.md`, `docs/autorun-hitl-heartbeat.md:39`
+
 ## AUTORUN
 
 The full unattended-execution mechanism, run by the `autorun-plan` skill via the
@@ -120,6 +130,14 @@ spots that a same-family reviewer, however strong, cannot structurally see; this
 AUTORUN gate stack states outright that a Claude reviewer is never a substitute for this step.
 In depth: `docs/autorun-hitl-heartbeat.md:59`, `skills/external-llm-review/SKILL.md`
 
+## fold-back
+
+The external-LLM review loop's stopping rule: a round of external review applies fixes, and the
+fixed diff goes back for another round rather than being taken on faith. The loop has no numeric
+round cap; it stops only when a round returns no new CRITICAL or HIGH finding, and a new instance of
+an already-known defect class resets the loop instead of being waved through as already reported.
+In depth: `docs/autorun-hitl-heartbeat.md:70`
+
 ## `fork`
 
 An `Agent`/`Task` subagent type that always inherits the parent session's model by design, and is
@@ -172,7 +190,7 @@ substitute for one: live judgment, reaching a real person, an untested irreversi
 required physical action.
 In depth: `docs/autorun-hitl-heartbeat.md:103`, `skills/autorun-plan/SKILL.md:3`
 
-## the host's built-in subagent types (`Plan`, `Explore`, `general-purpose`)
+## the host built-in subagent types (`Plan`, `Explore`, `general-purpose`)
 
 Three subagent types the Agent tool exposes that are not defined by this repo's own agent
 definitions in `agents/*.md`. `Plan` is dispatched by `/deep-plan` and `deep-plan-swarm` for
@@ -243,7 +261,7 @@ In depth: `CLAUDE.md:64`, `docs/context-window-management.md:92`
 
 Not a term this repo defines or names as a discrete artifact; confirm what "plan mode" means in
 your specific tool's own documentation before relying on a definition. What this repo does define
-and use heavily is a dispatched `Plan` subagent (see the host's built-in subagent types, above) and
+and use heavily is a dispatched `Plan` subagent (see the host built-in subagent types, above) and
 the `/deep-plan` and `deep-plan-swarm` flows built on top of it.
 In depth: `docs/planning-large-builds.md`, `commands/deep-plan.md`
 
@@ -296,6 +314,14 @@ or the process exiting. A session has no memory of a prior session's conversatio
 written to a durable file survives the boundary.
 In depth: `docs/context-window-management.md:5`
 
+## `/simplify`
+
+The `simplify` skill, run as step 3 of the AUTORUN per-wave review gate stack, after `adversary` has
+cleared the wave diff for correctness. It is a quality-only pass: reuse what already exists, remove
+over-engineering, fix wrong altitude. It applies its own fixes but never hunts bugs and is never a
+substitute for the `adversary` step that runs before it.
+In depth: `skills/simplify/SKILL.md`, `docs/autorun-hitl-heartbeat.md:39`
+
 ## subagent
 
 A separate agent dispatch, started fresh with no memory of the calling session's conversation,
@@ -303,7 +329,15 @@ given a written prompt and (per this repo's own hard rule) an explicit model rat
 inheritance from whatever dispatched it. This repo defines its own subagent roles as files under
 `agents/*.md`, each carrying a `model:` tier pin in its frontmatter that `harness install` resolves
 from `config/models.conf`.
-In depth: `AGENTS.md:54`, `hooks/require-agent-model.sh:1`
+In depth: `AGENTS.md:54`, `hooks/require-agent-model.sh:2-6`
+
+## `SWARM CONFIG`
+
+A line an operator or dispatcher writes before fanning out more than one workstream, naming which
+agent runs which workstream and on which branch, so a multi-agent dispatch is auditable after the
+fact. It is not a file format or a schema this repo enforces, just a documented convention for
+making a fan-out reviewable.
+In depth: `docs/operating-process.md:85`
 
 ## tier
 
@@ -319,18 +353,27 @@ and will it hold?" `config/models.conf` is the single place that binds each tier
 name.
 In depth: `AGENTS.md:36`, `config/models.conf`
 
+## wave
+
+One code-producing unit of work inside a multi-phase build, ending in a diff that merges. Every
+wave passes through the same review gate stack before it lands: the plan's test command, `adversary`,
+`/simplify`, an optional external-LLM fold-back, a regression re-run, then merge. "Wave diff" means
+the merged diff for one wave, the unit the review stack and the adversarial review operate on.
+In depth: `docs/autorun-hitl-heartbeat.md:39`
+
 ## worktree
 
 An isolated working copy of a git repository, checked out on its own branch, letting concurrent
 workstreams edit without colliding on the same files. This repo dispatches a subagent into its own
-worktree whenever a piece of work needs isolation from other concurrent edits, and cautions that the
-git stash stack is shared across all worktrees of the same repository, so a bare `git stash` inside
-one worktree can pop another session's changes.
-Two paragraphs because the shared-stash trap above is a real, repeated failure mode worth
-restating: prefer a temporary WIP commit over stashing when setting work aside inside a worktree,
-and if a stash is unavoidable, tag it uniquely, capture its SHA immediately, and restore with
-`git stash apply <sha>` rather than a bare `pop`.
-In depth: `docs/writing-your-own.md`, `docs/choosing-your-tools.md:230`
+worktree whenever a piece of work needs isolation from other concurrent edits.
+Two paragraphs for a git behavior worth knowing before you use one, even though this repo does not
+document it itself: the stash stack is a property of the repository, not of any one worktree, so it
+is shared across every worktree checked out from the same repository, and a bare `git stash` or
+`git stash pop` run inside one worktree can pop another session's changes. Prefer a temporary WIP
+commit over stashing when setting work aside inside a worktree, and if a stash is unavoidable, tag
+it uniquely, capture its SHA immediately, and restore with `git stash apply <sha>` rather than a
+bare `pop`.
+In depth: `docs/writing-your-own.md`
 
 ## the Workflow tool
 
