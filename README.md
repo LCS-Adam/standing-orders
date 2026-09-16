@@ -95,7 +95,7 @@ not want those appearing inside every repo you touch.
 | `rules/` | Path-scoped rules that load only when relevant. |
 | `templates/` | Project scaffolding, the workspace brain, and the nested-phase pattern. |
 | `config/models.conf` | The single place tiers bind to real models. |
-| `verify.sh` | The scrub gate. Twelve checks, fails the build rather than leaking. |
+| `verify.sh` | The scrub gate. Thirteen checks, fails the build rather than leaking. |
 
 ## Two ideas worth knowing before you use it
 

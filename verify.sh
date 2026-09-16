@@ -11,7 +11,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF="$ROOT/${BASH_SOURCE[0]##*/}"
 FAIL=0
 RAN=0
-EXPECTED_CHECKS=12
+EXPECTED_CHECKS=13
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -93,7 +93,7 @@ NSHIPPED=$(shipped_l 2>/dev/null | wc -l | tr -d ' ')
 # not this one: any unstaged edit to any tracked file is a divergence, so that
 # gate would fail on the ordinary pre-commit state.
 #
-# CEILING, stated because it is real and chosen: checks 3, 4, 5, 6, 8 and 12
+# CEILING, stated because it is real and chosen: checks 3, 4, 5, 6, 8, 12 and 13
 # read the working tree only. A staged-but-not-checked-out divergence can hand a
 # colleague a stale count or a SKILL.md missing its frontmatter. It cannot hand
 # them a leak, because every check that looks for one reads both sources.
@@ -536,6 +536,40 @@ if [ -n "$countbad" ]; then
 else
   pass "documented counts match ($n_agents agents, $n_skills skills, $n_cmds commands, $EXPECTED_CHECKS checks)"
 fi
+
+# 13 ------------------------------------------------- generated files are current
+# docs/reference.md is derived from the repo by scripts/gen-reference.sh. A
+# derived file that nobody re-derives is worse than a hand-written one: it reads
+# as authoritative while it rots. So the generator is re-run and its output
+# compared, byte for byte, with what is committed.
+#
+# Every branch below that is not a byte-identical match FAILS, including the ones
+# where the check could not run at all. A missing or broken generator producing
+# nothing must not read as "nothing differs" - that is the fail-open shape this
+# whole gate was hardened against, and an empty diff is its most convincing
+# costume. Run through `bash` rather than the path, so the answer does not turn
+# on an executable bit.
+GEN_SCRIPT="scripts/gen-reference.sh"
+GEN_DOC="docs/reference.md"
+gentmp=$(mktemp) || gate_error "mktemp failed - check 13 cannot run"
+generr=$(mktemp) || gate_error "mktemp failed - check 13 cannot run"
+if [ -z "$(shipped_l "$GEN_SCRIPT")" ] || [ -z "$(shipped_l "$GEN_DOC")" ]; then
+  fail "$GEN_SCRIPT or $GEN_DOC is not in the shipped set - nothing was regenerated, which is not the same as current"
+else
+  bash "$GEN_SCRIPT" >"$gentmp" 2>"$generr"; genrc=$?
+  if [ "$genrc" -ne 0 ]; then
+    fail "$GEN_SCRIPT exited $genrc - the check could not run"
+    tail -3 "$generr" | while IFS= read -r l; do show "$l"; done
+  elif [ ! -s "$gentmp" ]; then
+    fail "$GEN_SCRIPT produced no output - an empty regeneration is not the same as an up-to-date file"
+  elif ! diff -q "$gentmp" "$GEN_DOC" >/dev/null 2>&1; then
+    fail "$GEN_DOC is stale - regenerate it with: $GEN_SCRIPT > $GEN_DOC"
+    diff "$gentmp" "$GEN_DOC" 2>&1 | head -10 | while IFS= read -r l; do show "$l"; done
+  else
+    pass "$GEN_DOC matches what $GEN_SCRIPT generates"
+  fi
+fi
+rm -f "$gentmp" "$generr"
 
 # ---------------------------------------------------- docs must not go stale
 # Not a numbered check (it would have to count itself). The enumerated list in
