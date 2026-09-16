@@ -2,6 +2,16 @@
 PATH="/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin:${PATH:-}"; export PATH
 set -uo pipefail
 
+# The PATH line above re-runs in EVERY child of this script, re-prepending the
+# system directories ahead of whatever a caller put in front of them. That is
+# fine in production and fatal under test: the selftest's stub CLI lives in a
+# temp dir, so on a machine where the real one IS installed in a system dir the
+# stub LOSES and the selftest silently runs against the live vendor instead of
+# the fixture. This hook is the one thing that gets in front of that line.
+# Nothing but the selftests ever set it, and the selftests assert the stub
+# actually ran rather than trusting that it did.
+[ -z "${HARNESS_PATH_PREPEND:-}" ] || PATH="$HARNESS_PATH_PREPEND:$PATH"
+
 # resolve-tier.sh - bind a harness TIER (or the external REVIEWER) to a literal
 # model id by ASKING THE VENDOR, instead of typing one by hand.
 #
@@ -406,10 +416,13 @@ selftest() {
   mkdir -p "$tmp/bin"
   cat > "$tmp/bin/auggie" <<'STUB'
 #!/bin/bash
+: > "$STUB_MARK"
 [ "$*" = "models list --full-info" ] || { printf 'stub auggie: unexpected args: %s\n' "$*" >&2; exit 64; }
 cat "$AUGGIE_FIXTURE"
 STUB
   chmod +x "$tmp/bin/auggie"
+  export STUB_MARK="$tmp/stub-ran"
+  export HARNESS_PATH_PREPEND="$tmp/bin"
   PATH="$tmp/bin:$PATH"; export PATH
   : > "$tmp/reviewer.conf"
   export HARNESS_REVIEWER_CONF="$tmp/reviewer.conf"
@@ -503,7 +516,14 @@ JSON
   echo "scripts/resolve-tier.sh --selftest"
   echo
 
+  # FIRST, and before believing any verdict below: prove the STUB answered.
+  # A green selftest that reached the real vendor is worse than a red one - the
+  # fixture and a live allowlist can agree by accident, and then none of this
+  # tested anything.
+  rm -f "$tmp/stub-ran"
   run full REVIEWER
+  [ -f "$tmp/stub-ran" ] && ok "discovery reached the stub, not an installed auggie" \
+    || no "discovery did NOT reach the stub - an installed auggie won the PATH race and every assertion below is meaningless"
   is "REVIEWER resolves to the preferred non-anthropic model" "gpt-6-astra" "$OUT"
   is "  ...with exit 0" "0" "$RC"
   has "  ...and says so on stderr" "source=discovered" "$ERR"

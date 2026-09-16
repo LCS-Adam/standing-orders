@@ -2,6 +2,16 @@
 PATH="/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin:${PATH:-}"; export PATH
 set -uo pipefail
 
+# The PATH line above re-runs in EVERY child of this script, re-prepending the
+# system directories ahead of whatever a caller put in front of them. That is
+# fine in production and fatal under test: the selftest's stub CLI lives in a
+# temp dir, so on a machine where the real one IS installed in a system dir the
+# stub LOSES and the selftest silently runs against the live vendor instead of
+# the fixture. This hook is the one thing that gets in front of that line.
+# Nothing but the selftests ever set it, and the selftests assert the stub
+# actually ran rather than trusting that it did.
+[ -z "${HARNESS_PATH_PREPEND:-}" ] || PATH="$HARNESS_PATH_PREPEND:$PATH"
+
 # external-review.sh - run one external review round and judge it.
 #
 # usage:
@@ -123,8 +133,13 @@ resolve_model() { # resolve_model <cli>
   if [ "$cli" != "auggie" ]; then
     die "no REVIEWER_MODEL pinned and discovery is auggie-only, so there is no model for $cli. UNAVAILABLE. Pin one in ${REVIEWER_CONF##*/} or export REVIEWER_MODEL; this never falls back to the CLI default, which is same-family on several of these tools." 3
   fi
-  rerr="$("$ROOT/scripts/resolve-tier.sh" REVIEWER 2>&1 >/dev/null)"; rrc=$?
-  RV_MODEL="$("$ROOT/scripts/resolve-tier.sh" REVIEWER 2>/dev/null)"
+  # ONE call. Two would be two vendor round trips per round, and worse: the
+  # .meta audit line would describe a different invocation than the one whose
+  # model actually ran the review, which is exactly the disagreement this
+  # function exists to avoid.
+  local errf; errf="$(mktemp)" || die "mktemp failed"
+  RV_MODEL="$("$ROOT/scripts/resolve-tier.sh" REVIEWER 2>"$errf")"; rrc=$?
+  rerr="$(cat "$errf")"; rm -f "$errf"
   if [ $rrc -ne 0 ] || [ -z "$RV_MODEL" ]; then
     printf '%s\n' "$rerr" >&2
     die "scripts/resolve-tier.sh REVIEWER exited $rrc - no eligible reviewer model. UNAVAILABLE." 3
@@ -273,6 +288,11 @@ selftest() { # selftest <live:0|1>
   local live="$1" tmp T=0 F=0
   tmp="$(mktemp -d)" || die "mktemp -d failed"
   SELFTEST_TMP="$tmp"; trap selftest_cleanup EXIT
+  # SAVED BEFORE the hygiene block below wipes them. --live needs the operator's
+  # real binding back; without this it read the SHIPPED conf, got a CLI that is
+  # not installed here, and returned UNAVAILABLE every time while looking like
+  # a reviewer problem.
+  local SAVED_CLI="${REVIEWER_CLI:-}" SAVED_MODEL="${REVIEWER_MODEL:-}" SAVED_PATH="$PATH"
   # This machine exports a real reviewer binding. Left set, the stub matrix
   # below would quietly drive the real CLI and every .meta assertion would read
   # source=pinned while the discovery wiring went untested.
@@ -300,10 +320,19 @@ if [ "$*" = "models list --full-info" ]; then
 JSON
   exit 0
 fi
+: > "$STUB_MARK"
 cat "$STUB_BODY"
 exit "${STUB_RC:-0}"
 STUB
   chmod +x "$tmp/bin/auggie"
+  # A stub codex too, so the "non-auggie CLI with no pin" row stops depending on
+  # which CLIs the host happens to have installed. It exits 64 if it is ever
+  # actually invoked: the guard under test fires BEFORE invocation, so reaching
+  # this body at all is the failure.
+  printf '#!/bin/bash\nprintf "stub codex: the unpinned guard did not fire\\n" >&2\nexit 64\n' > "$tmp/bin/codex"
+  chmod +x "$tmp/bin/codex"
+  export STUB_MARK="$tmp/stub-ran"
+  export HARNESS_PATH_PREPEND="$tmp/bin"
   PATH="$tmp/bin:$PATH"; export PATH
   printf 'artifact under review\n' > "$tmp/artifact.md"
 
@@ -337,6 +366,15 @@ which is the last check and never the only one.'
   echo
   echo "  the stub matrix: one reviewer output per row, judged by round_verdict"
   echo
+
+  # FIRST, and before believing any row below: prove the STUB answered. The
+  # brief-mandated PATH line re-runs in every child and re-prepends the system
+  # directories, so on a machine with a real auggie installed the eleven rows
+  # below would be eleven REAL review rounds reported as a green selftest.
+  rm -f "$tmp/stub-ran"
+  STUB_BODY="$tmp/c1" STUB_RC=0 "$SELF" "$tmp/artifact.md" "$tmp/probe-out" >/dev/null 2>&1
+  [ -f "$tmp/stub-ran" ] && ok "the round reached the stub, not an installed CLI" \
+    || no "the round did NOT reach the stub - an installed auggie won the PATH race and every row below is meaningless"
 
   # TABLE DRIVEN, and every row gets an expected verdict. The first six rows are
   # the six the plan names, in its order; the rest close the same class by the
@@ -403,8 +441,11 @@ ROWS
   if [ "$live" = "1" ]; then
     echo
     echo "  --live: one real round against the configured reviewer"
-    unset REVIEWER_CLI HARNESS_REVIEWER_CONF
-    PATH="${PATH#"$tmp/bin:"}"; export PATH
+    unset HARNESS_REVIEWER_CONF HARNESS_PATH_PREPEND STUB_MARK
+    PATH="$SAVED_PATH"; export PATH
+    if [ -n "$SAVED_CLI" ]; then export REVIEWER_CLI="$SAVED_CLI"; else unset REVIEWER_CLI; fi
+    if [ -n "$SAVED_MODEL" ]; then export REVIEWER_MODEL="$SAVED_MODEL"; else unset REVIEWER_MODEL; fi
+    printf '  live binding: REVIEWER_CLI=%s REVIEWER_MODEL=%s\n' "${REVIEWER_CLI:-<from conf>}" "${REVIEWER_MODEL:-<discovered>}"
     local lrc
     "$SELF" "$ROOT/README.md" "$tmp/live" "Find one claim in this README that the repo does not support." >/dev/null 2>"$tmp/liveerr"
     lrc=$?
