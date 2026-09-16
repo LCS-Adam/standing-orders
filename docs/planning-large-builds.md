@@ -267,7 +267,8 @@ what it remembers doing.
 `/next-step` answers a narrower question: what should happen right now. It scans phase directories
 in order, finds the first task marked `IN PROGRESS` (preferred) or `PENDING`, and presents its
 phase and purpose, the task's file path and title, its current status, what prerequisites it
-depends on, the exact commands to run from the task file, and any relevant open issues. If a task
+depends on, the exact commands to run from the task file, and any open rows from
+`.project-state/ERRORS.md`. If a task
 is already `IN PROGRESS`, it also shows what has been done on it so far and what remains, so a
 session resuming mid-task does not have to reconstruct that from git history.
 

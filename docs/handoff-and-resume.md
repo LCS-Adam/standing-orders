@@ -80,35 +80,21 @@ Before treating a handoff as finished, run through three checks:
    completed work as still accurate, even after the state has moved on. Update it right before the
    clear or compaction happens, not before.
 
-## SESSION_HANDOFF.md, and the /handoff and /checkpoint commands
+## SESSION_HANDOFF.md and the /handoff command
 
-This harness ships a template at `templates/project/.project-state/SESSION_HANDOFF.md`. It is a
-short, fixed-shape file: a date and tool line, a one-paragraph summary, a list of files changed, key
-commands worth keeping, a single-sentence next step, and a blockers section that defaults to
-"None." Its comment says it is meant to be overwritten at the end of each session, with prior
-handoffs preserved under a `handoffs/` directory.
+This harness ships one handoff mechanism, and one file for it: `.project-state/SESSION_HANDOFF.md`,
+scaffolded from `templates/project/.project-state/SESSION_HANDOFF.md`.
 
-The repository also ships two slash commands that write a related but differently-shaped
-checkpoint file, `docs/checkpoint.md`:
+**`/handoff`** archives the existing `SESSION_HANDOFF.md` (if any) to
+`.project-state/handoffs/<YYYY-MM-DD-HHMM>.md`, then writes a new one. The first thing in the new
+file is a fenced, copy-pasteable resume block carrying the five things named above, with the file
+itself named first in its own read list. Below the block, the file carries a date and tool line, a
+one-paragraph summary, the files changed, key commands worth keeping, a single-sentence next step,
+and a blockers section that defaults to "None."
 
-- **`/checkpoint`** reads the current state from `phases/CLAUDE.md` (the phase status index),
-  `docs/deployment-log.md` (completed work), and `docs/open-issues.md` (active issues), then writes
-  `docs/checkpoint.md` with a timestamp, the active phase and step, the last completed step, what
-  was done this session versus prior sessions, branch decisions, open issues, confirmed system
-  paths, and a next-step and resumption instruction.
-- **`/handoff`** does the same reads as `/checkpoint`, plus `docs/open-issues.md`, and overwrites
-  `docs/checkpoint.md` with a fuller version: a full session summary, updated phase status, any new
-  decisions or deviations, updated open issues, an exact next step with file path and command, and
-  a resumption instruction. It also appends a dated entry to `docs/deployment-log.md` summarizing
-  the session, and confirms the handoff is written before the operator clears context.
-
-In short: `/checkpoint` is the lighter, structured status snapshot: `/handoff` is the fuller version
-meant to run right before a `/clear`, and it also logs the session to the deployment log so the
-history is not lost even after `docs/checkpoint.md` gets overwritten again next time.
-
-Whichever mechanism a project uses, the self-sufficiency rule above still applies. A checkpoint or
-handoff file is only useful if the block someone pastes out of it can find its own way back to the
-rest of the file, and to whatever else it needs to read.
+The self-sufficiency rule above applies directly to that block: it is only useful if the text
+someone pastes out of it can find its own way back to the rest of the file, and to whatever else it
+needs to read.
 
 ## A worked example
 

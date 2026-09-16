@@ -38,7 +38,7 @@ can see the shape of the change before it happens.
 |---|---|---|
 | `agents/*.md` | `~/.claude/agents/` | 10 subagent definitions, each with a `model:` tier pin resolved to a real model name |
 | `skills/*` | `~/.claude/skills/` | Invocable skills: planning, autonomous execution, review, debugging, TDD, scoping |
-| `commands/*` | `~/.claude/commands/` | Slash commands for planning, checkpointing, handoff, phase status |
+| `commands/*` | `~/.claude/commands/` | Slash commands for planning, handoff, and phase status |
 | `hooks/*.sh` | `~/.claude/hooks/` | The `PreToolUse` gate that denies a subagent spawn with no explicit model |
 | `AGENTS.md` | `~/.claude/rules/00-harness-core.md` | The full instruction core |
 | `CLAUDE.md` (minus its import line) | `~/.claude/rules/10-claude-specifics.md` | Claude Code mechanics: the hook, context discipline, the advisor gate |
@@ -182,7 +182,7 @@ The denylist for check 9 deliberately does not live in this repository: a commit
 personal terms you want to keep private would itself be the leak. Point it at a file outside the
 repo with `--denylist PATH`, or set `HARNESS_DENYLIST`; the default is
 `~/.agent-harness-denylist`. One term or regex per line, case-insensitive, blank lines and `#`
-comments ignored. If that file does not exist, `verify` still runs the other eight checks and warns
+comments ignored. If that file does not exist, `verify` still runs the other nine checks and warns
 that the personal-marker check did not run, rather than silently skipping it.
 
 ## A first real task
@@ -218,5 +218,6 @@ Here is a full pass through the framework on a small, real change.
 
 ## Where to go next
 
-`docs/project-management.md` covers `.project-state/`, the `pm-*` command set, and how session state
-survives a context clear.
+`docs/choosing-your-tools.md` covers when to reach for a rule, a skill, a subagent, or a slash
+command. `docs/project-management.md` covers `.project-state/` and how session state survives a
+context clear.

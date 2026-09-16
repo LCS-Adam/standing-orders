@@ -2,10 +2,6 @@
 
 ## Immediate (Next Session)
 
-<!-- pm-derive:start name=PLAN_AUTO -->
-- _(populated by pm-derive from .active-plan)_
-<!-- pm-derive:end -->
-
 - Replace this placeholder with the very next thing to do
 
 ## Short-Term (This Week)
@@ -22,4 +18,4 @@
 
 ---
 
-`/pm-next-step` prepends operator bullets to **Immediate**, just below the auto-derived PLAN_AUTO block. `pm-resume` reads the first non-empty bullet of **Immediate** as the session-open "Next:" line — when PLAN_AUTO is populated, that bullet wins.
+Add new bullets to the top of **Immediate**, so the most recent next step is read first.

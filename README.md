@@ -60,8 +60,7 @@ Twelve skills, invocable as `/<name>`: `autorun-plan`, `brainstorming`, `deep-pl
 `external-llm-review`, `heartbeat`, `readme-coauthoring`, `repo-recon`, `requesting-code-review`,
 `scope-audit`, `systematic-debugging`, `test-driven-development`, `verify-unexecuted`.
 
-Six slash commands: `/deep-plan`, `/verify`, `/checkpoint`, `/handoff`, `/next-step`,
-`/phase-status`.
+Four slash commands: `/deep-plan`, `/handoff`, `/next-step`, `/phase-status`.
 
 ## How the two scopes fit together
 
@@ -89,7 +88,7 @@ not want those appearing inside every repo you touch.
 | `CLAUDE.md` | A one-line import of `AGENTS.md` plus Claude Code specifics. |
 | `agents/` | 10 subagent definitions, named for the job they do rather than the model they run. |
 | `skills/` | 12 invocable skills: planning, autonomous execution, review, debugging, TDD, scoping. |
-| `commands/` | Slash commands for planning, checkpointing, handoff, and phase status. |
+| `commands/` | Slash commands for planning, handoff, and phase status. |
 | `hooks/` | A `PreToolUse` gate that refuses any subagent spawn with no explicit model. |
 | `rules/` | Path-scoped rules that load only when relevant. |
 | `templates/` | Project scaffolding, the workspace brain, and the nested-phase pattern. |

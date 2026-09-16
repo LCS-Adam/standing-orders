@@ -146,16 +146,14 @@ to be judged relevant and loaded before it does anything, and that judgment can 
 **What it is.** A Markdown file in `commands/`, invoked by typing `/<filename-without-extension>`.
 Where a skill is often a standing procedure the model can also decide to load on its
 own, a slash command is something the user types deliberately, once, to kick off a
-specific flow right now. Six exist in this repo:
+specific flow right now. Four exist in this repo:
 
 | Command | What it runs |
 |---|---|
-| `/checkpoint` | Records a checkpoint of current progress |
 | `/deep-plan` | Local deep-planning flow: advisor pre-flight, a Plan subagent at max effort, advisor critique |
-| `/handoff` | Produces a copy-pasteable resume prompt for the next session |
+| `/handoff` | Writes a self-sufficient resume prompt to `.project-state/SESSION_HANDOFF.md` |
 | `/next-step` | Notes the next action to take |
 | `/phase-status` | Reports where a multi-phase build currently stands |
-| `/verify` | Re-runs the verification steps for the task just completed. NOT the scrub gate: that is `harness verify` on the command line |
 
 **When to reach for it.** The user wants to trigger a specific, named flow right now,
 and that flow has enough steps (calling a subagent, running a script, following a
