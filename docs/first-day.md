@@ -197,10 +197,11 @@ agent definition file when the call itself is silent about it.
 
 ## Beat 5: the handoff round trip
 
-`commands/handoff.md` describes a five-step procedure: archive the previous
+`commands/handoff.md` describes a six-step procedure: archive the previous
 `SESSION_HANDOFF.md` under `handoffs/<timestamp>.md`, gather `git status --short` and
-`git log --oneline -5`, write the resume block first, fill in the sections below it, then re-read
-the block alone before calling it done. Followed it by hand in the scratch repo used for beat 3.
+`git log --oneline -5`, write the resume block first, fill in the sections below it, re-read
+the block alone, then refresh its state claims at the moment of the handoff rather than when it
+was drafted. Followed it by hand in the scratch repo used for beat 3.
 
 Archived the template `harness init` had scaffolded, gathered state, then wrote the resume block
 into the real `.project-state/SESSION_HANDOFF.md` (the file also has Date, Summary, Files Changed,
