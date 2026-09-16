@@ -39,6 +39,10 @@ for its job (business logic in a config file, a one-line check wrapped in a clas
 - **Applied simplifications**: each as a one-line diff summary (file, what shrank, why).
 - **Left alone and why**: anything that looked simplifiable but has a reason it is not (a
   documented ceiling, an exemption, a caller this pass did not check).
+- **Nothing to change** is a complete result, not a failed pass. Say so plainly and stop.
+  Churn invented to look thorough is the thing this skill exists to remove.
+- **A correctness concern**, if one surfaces: report it, do not fix it, and do not restructure
+  code to avoid it. It belongs to the correctness step, which has already run.
 
 ## Re-entry rule
 
