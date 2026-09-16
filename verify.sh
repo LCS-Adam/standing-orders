@@ -158,45 +158,54 @@ if [ -n "$hits" ]; then
   fail "vendor model names outside config/models.conf"; printf '%s\n' "$hits" | head -10 | while IFS= read -r l; do show "$l"; done
 else pass "no vendor model names outside config/models.conf"; fi
 
+# Checks 3 and 4 both need "scan a glob, then prove the scan set still matches
+# disk" before they can trust a content predicate over it - that comparison is
+# the part that drifted between them before (see the shipped-set comment
+# above), so it is written once here and each check supplies only its own
+# predicate and messages. Sets $n/$scanned/$ondisk/$unscanned for the caller.
+scan_vs_disk() {
+  n=0; scanned=""
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    n=$((n+1)); scanned="$scanned $f"
+  done < <(shipped_l "$1")
+  ondisk=0; unscanned=""
+  for f in $1; do
+    [ -e "$f" ] || continue
+    ondisk=$((ondisk+1))
+    case " $scanned " in *" $f "*) ;; *) unscanned="$unscanned $f" ;; esac
+  done
+}
+
 # 3 -------------------------------------------------- every agent pins a tier
 # Guard is a COMPARISON against what is on disk, not a test for zero. A scan set
 # of 1 agent out of 11 reported PASS on almost nothing and printed a reassuring
 # "all 1 agent definitions pin a tier" while it did it.
-missing=""; n=0; scanned=""
-while IFS= read -r f; do
-  [ -n "$f" ] || continue
-  n=$((n+1)); scanned="$scanned $f"
-  grep -qE '^model:[[:space:]]*\{\{TIER_(FRONTIER_THINK|FRONTIER_DO|MID|SMALL)\}\}' "$f" 2>/dev/null || missing="$missing $f"
-done < <(shipped_l 'agents/*.md')
-ondisk=0; unscanned=""
-for f in agents/*.md; do
-  [ -e "$f" ] || continue
-  ondisk=$((ondisk+1))
-  case " $scanned " in *" $f "*) ;; *) unscanned="$unscanned $f" ;; esac
-done
+scan_vs_disk 'agents/*.md'
 if [ "$ondisk" -eq 0 ]; then fail "no agent definitions found - scanned nothing, which is not the same as clean"
 elif [ -n "$unscanned" ]; then fail "agent definitions on disk that the scan set does not cover ($n of $ondisk):$unscanned"
-elif [ -n "$missing" ]; then fail "agent definitions missing a {{TIER_*}} model pin:$missing"
-else pass "all $n agent definitions pin a tier"; fi
+else
+  missing=""
+  for f in $scanned; do
+    grep -qE '^model:[[:space:]]*\{\{TIER_(FRONTIER_THINK|FRONTIER_DO|MID|SMALL)\}\}' "$f" 2>/dev/null || missing="$missing $f"
+  done
+  if [ -n "$missing" ]; then fail "agent definitions missing a {{TIER_*}} model pin:$missing"
+  else pass "all $n agent definitions pin a tier"; fi
+fi
 
 # 4 -------------------------------------------------- skill frontmatter
-bad=""; n=0; scanned=""
-while IFS= read -r f; do
-  [ -n "$f" ] || continue
-  n=$((n+1)); scanned="$scanned $f"
-  head -20 "$f" 2>/dev/null | grep -q '^name:' || bad="$bad $f(name)"
-  head -20 "$f" 2>/dev/null | grep -q '^description:' || bad="$bad $f(description)"
-done < <(shipped_l 'skills/*/SKILL.md')
-ondisk=0; unscanned=""
-for f in skills/*/SKILL.md; do
-  [ -e "$f" ] || continue
-  ondisk=$((ondisk+1))
-  case " $scanned " in *" $f "*) ;; *) unscanned="$unscanned $f" ;; esac
-done
+scan_vs_disk 'skills/*/SKILL.md'
 if [ "$ondisk" -eq 0 ]; then fail "no SKILL.md files found - scanned nothing, which is not the same as clean"
 elif [ -n "$unscanned" ]; then fail "SKILL.md files on disk that the scan set does not cover ($n of $ondisk):$unscanned"
-elif [ -n "$bad" ]; then fail "SKILL.md missing required frontmatter:$bad"
-else pass "all $n skills have name and description"; fi
+else
+  bad=""
+  for f in $scanned; do
+    head -20 "$f" 2>/dev/null | grep -q '^name:' || bad="$bad $f(name)"
+    head -20 "$f" 2>/dev/null | grep -q '^description:' || bad="$bad $f(description)"
+  done
+  if [ -n "$bad" ]; then fail "SKILL.md missing required frontmatter:$bad"
+  else pass "all $n skills have name and description"; fi
+fi
 
 # 5 -------------------------------------------------- CLAUDE.md imports AGENTS.md
 if [ -z "$(shipped_l 'CLAUDE.md')" ]; then
