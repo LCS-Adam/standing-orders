@@ -15,7 +15,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DENYLIST="${HARNESS_DENYLIST:-$HOME/.agent-harness-denylist}"
 FAIL=0
 RAN=0
-EXPECTED_CHECKS=10
+EXPECTED_CHECKS=11
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -154,6 +154,56 @@ if [ -n "$dangling" ]; then
   fail "references to ~/.claude/rules files that install never creates:$dangling"
 else
   pass "no dangling ~/.claude/rules references"
+fi
+
+# 11 ------------------------------------------------- dangling slash commands
+# The harness shipped docs naming slash commands that do not exist. A reader
+# types one, nothing happens, and every other instruction in that doc loses its
+# credibility. So every backticked /token has to resolve to something real.
+#
+# Two allowlists on purpose: they make different claims and merging them would
+# make the first claim false. BUILTIN_SLASH is commands the HOST tool provides,
+# which is why no file in this repo backs them. NOT_A_COMMAND is tokens that are
+# not commands at all and only look like one to a matcher that works on shape.
+# A reason per term, because the lists are the checkable part of this check:
+#   clear compact loop agents help  host built-ins
+#   plan status                     host built-ins, and the two names the phase
+#                                   commands were deliberately NOT given
+#   tmp                             the /tmp directory, not a command
+#   something notes-repo-recon      docs/choosing-your-tools.md:245,251 names
+#                                   both as commands that do NOT exist; that is
+#                                   the point the passage is making
+# Ceiling: backticked tokens only. A bare slash command in prose or a heading is
+# invisible here (docs/handoff-and-resume.md:83 has one). Backticks are the
+# repo's convention, so this catches what is written, not what could be.
+SLASH_SCAN="README.md docs adapters agents skills commands AGENTS.md CLAUDE.md templates"
+BUILTIN_SLASH="clear compact loop agents help plan status"
+NOT_A_COMMAND="tmp something notes-repo-recon"
+tokens=$(grep -rhoE '`/[a-z][a-z0-9-]*`' $SLASH_SCAN 2>/dev/null \
+         | sed -e 's|^`/||' -e 's|`$||' | sort -u)
+dangling=""
+while IFS= read -r tok; do
+  [ -n "$tok" ] || continue
+  [ -f "commands/$tok.md" ] && continue
+  [ -f "skills/$tok/SKILL.md" ] && continue
+  case " $BUILTIN_SLASH $NOT_A_COMMAND " in *" $tok "*) continue ;; esac
+  dangling="$dangling $tok"
+done <<< "$tokens"
+if [ -z "$tokens" ]; then
+  # Zero tokens means the scan reached nothing, not that the repo is clean. A
+  # renamed directory would otherwise turn this check into a permanent PASS,
+  # which is the exact failure this whole file exists to refuse.
+  fail "slash-command scan matched nothing - the scan set is broken, not clean"
+  show "expected at least one backticked slash command across: $SLASH_SCAN"
+elif [ -n "$dangling" ]; then
+  # -o drops the filename, so re-grep each offender with -n: a gate that cannot
+  # say WHERE sends you searching the whole repo for a token.
+  fail "slash commands referenced but not defined:$dangling"
+  for tok in $dangling; do
+    grep -rnF "\`/$tok\`" $SLASH_SCAN 2>/dev/null || true
+  done | head -10 | while IFS= read -r l; do show "$l"; done
+else
+  pass "every backticked slash command resolves to commands/, skills/, or an allowlist"
 fi
 
 # ---------------------------------------------------- docs must not go stale

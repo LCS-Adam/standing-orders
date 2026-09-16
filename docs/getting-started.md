@@ -158,8 +158,8 @@ harness verify
 
 This runs `verify.sh`, the scrub gate. It exists because this framework is meant to be carried onto
 machines that are not yours, and a fail-open scrub looks exactly like a passing one. The gate runs
-ten checks and asserts, at the end, that it ran all ten, so a broken check fails loudly instead of
-silently passing nothing:
+eleven checks and asserts, at the end, that it ran all eleven, so a broken check fails loudly
+instead of silently passing nothing:
 
 1. No absolute home paths in tracked files.
 2. No vendor model names in prose outside `config/models.conf`.
@@ -173,6 +173,9 @@ silently passing nothing:
 10. No instruction points at a `~/.claude/rules/` file that the installer never creates. An
     instruction naming a file that is not there is worse than no instruction: the agent is told to
     go read something and finds nothing.
+11. Every backticked slash command in the docs resolves to a file in `commands/`, a
+    `skills/<name>/SKILL.md`, or one of two short, reasoned allowlists in `verify.sh`. A doc that
+    tells you to type a command that does not exist costs you more than saying nothing would.
 
 Read the output top to bottom. Each line is `PASS`, `FAIL`, or, for check 9 specifically, `WARN` if
 no denylist is configured. A `FAIL` line is followed by up to ten example matches so you can find
@@ -182,7 +185,7 @@ The denylist for check 9 deliberately does not live in this repository: a commit
 personal terms you want to keep private would itself be the leak. Point it at a file outside the
 repo with `--denylist PATH`, or set `HARNESS_DENYLIST`; the default is
 `~/.agent-harness-denylist`. One term or regex per line, case-insensitive, blank lines and `#`
-comments ignored. If that file does not exist, `verify` still runs the other nine checks and warns
+comments ignored. If that file does not exist, `verify` still runs the other ten checks and warns
 that the personal-marker check did not run, rather than silently skipping it.
 
 ## A first real task
