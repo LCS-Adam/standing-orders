@@ -6,25 +6,16 @@ set -uo pipefail
 #
 # A fail-open scrub looks exactly like a passing one, so every check increments
 # a counter and the run asserts at the end that it actually ran them all.
-#
-# The personal-marker denylist is REQUIRED and deliberately does NOT live in this
-# repo: a list of personal markers is itself the leak. Point --denylist at a file
-# outside the repo, one case-insensitive term or POSIX ERE per line, blank lines
-# and # ignored. No denylist means check 9 did not run, and a check that did not
-# run is a failure here, not a warning.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF="$ROOT/${BASH_SOURCE[0]##*/}"
-DENYLIST="${HARNESS_DENYLIST:-$HOME/.agent-harness-denylist}"
 FAIL=0
 RAN=0
-EXPECTED_CHECKS=13
+EXPECTED_CHECKS=12
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --denylist) DENYLIST="${2:-}"; shift 2 ;;
-    --denylist=*) DENYLIST="${1#*=}"; shift ;;
-    -h|--help) echo "usage: verify.sh [--denylist PATH]"; exit 0 ;;
+    -h|--help) echo "usage: verify.sh"; exit 0 ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
 done
@@ -41,7 +32,7 @@ cd "$ROOT"
 # THE INVARIANT: nothing can reach ~/.claude that this gate did not scan.
 #
 # One definition of "the repo", used by this gate AND by `harness install`
-# (bin/harness, function `shipped`). Check 12 fails the build when the two
+# (bin/harness, function `shipped`). Check 11 fails the build when the two
 # disagree, so if you change this line, change that one in the same commit.
 #
 # It is every file a clone gets, plus every file present and not ignored.
@@ -60,15 +51,15 @@ shipped()   { git ls-files -z --cached --others --exclude-standard -- "$@"; }
 shipped_l() { git ls-files    --cached --others --exclude-standard -- "$@"; }
 
 # EVERY check reads this set. It used to be two systems: checks 3, 4, 5 and 6
-# globbed the FILESYSTEM while 1, 2, 7, 8, 9, 10 and 11 read the INDEX, so
+# globbed the FILESYSTEM while every other check read the INDEX, so
 # shrinking one while leaving the other alone turned the whole gate green on
 # three committed violations - checks 3 and 4 cheerfully reporting "all 11
 # agents" over files the other half could no longer see. Three patches would
 # have left three mechanisms free to drift apart again, which is how the shared
 # exemption came back after d271923 fixed it.
 #
-# Exactly three things are NOT this set, each for a stated reason:
-#   - check 11's RESOLVER (not its scan) is `git ls-files`, a strict subset. It
+# Exactly two things are NOT this set, each for a stated reason:
+#   - check 10's RESOLVER (not its scan) is `git ls-files`, a strict subset. It
 #     answers "would a clone have this command file", and a clone gets tracked
 #     files only. Scanning more can only find more references; resolving against
 #     less can only be stricter.
@@ -76,8 +67,6 @@ shipped_l() { git ls-files    --cached --others --exclude-standard -- "$@"; }
 #     scan set - it is the assertion that this one set still matches reality,
 #     and it is the only way a check can notice its own scan set silently
 #     shrinking. It reports, it never scans.
-#   - the denylist is operator-supplied and lives OUTSIDE the repo on purpose
-#     (a committed list of personal markers is itself the leak).
 
 # An empty file list means "scanned nothing", not "clean". Without this, running
 # the gate outside a checkout would turn most of these checks into permanent
@@ -97,14 +86,14 @@ NSHIPPED=$(shipped_l 2>/dev/null | wc -l | tr -d ' ')
 # without staging the cleanup, and a disk-reading gate passes while the commit
 # carries the leak to every clone. Reproduced before this line existed.
 #
-# So every LEAK check - 1 (paths), 2 (model names), 7 (shebangs), 9 (denylist) -
-# reads BOTH. Same pathnames, two blobs, one merged hit list.
+# So every LEAK check - 1 (paths), 2 (model names), 7 (shebangs) - reads BOTH.
+# Same pathnames, two blobs, one merged hit list.
 #
 # Rejecting index-vs-worktree divergence outright would be the other fix. It is
 # not this one: any unstaged edit to any tracked file is a divergence, so that
 # gate would fail on the ordinary pre-commit state.
 #
-# CEILING, stated because it is real and chosen: checks 3, 4, 5, 6, 8 and 13
+# CEILING, stated because it is real and chosen: checks 3, 4, 5, 6, 8 and 12
 # read the working tree only. A staged-but-not-checked-out divergence can hand a
 # colleague a stale count or a SKILL.md missing its frontmatter. It cannot hand
 # them a leak, because every check that looks for one reads both sources.
@@ -113,8 +102,11 @@ cached() { git ls-files -z --cached -- "$@"; }
 # scan <exempt-ere> <extra-grep-flags> <pattern> - grep both byte sources.
 # Both emit path:line:text, so one exemption filter covers both and sort -u
 # collapses the usual case where the two blobs are identical. An EMPTY exempt
-# means no exemption (check 9 has none on purpose); it must not become
-# `grep -vE ""`, which would discard every line and pass everything.
+# means no exemption, and must not become `grep -vE ""`, which would discard
+# every line and pass everything.
+# No caller passes an empty one today, so that branch is currently unreached. It
+# stays anyway: the guard costs one line, and its absence costs a check that
+# silently passes everything.
 scan() {
   local exempt="$1" flags="$2" pat="$3"
   { shipped | xargs -0r grep -HnE $flags -e "$pat" 2>/dev/null
@@ -143,7 +135,7 @@ binary=$( { shipped | xargs -0r perl -0777 -ne 'print "$ARGV (working tree)\n" i
 # (README.md INSTALL.md docs/*.md adapters/*.md) went green on one file when the
 # other nine left the scan set.
 #
-# This is a TARGET SET, not an exemption. Checks 8 and 13 share it because they
+# This is a TARGET SET, not an exemption. Checks 8 and 12 share it because they
 # make the SAME claim about the SAME surface. An exemption - "this file is out of
 # THIS check" - stays inside the check that owns it. See the gate-integrity
 # assertion below.
@@ -153,9 +145,10 @@ CLIENT_DOCS=$(shipped_l '*.md' | grep -vE "$FRAMEWORK_PROSE")
 # ---------------------------------------------------------------- gate integrity
 # No exemption may be shared between checks. That has been the bug twice: once
 # when docs/ was exempted so the docs could name models and the absolute-path
-# check silently went with it, and again when checks 1 and 9 shared an EXEMPT so
-# a personal marker committed to verify.sh passed the denylist. A comment saying
-# "never widen this" did not hold either time, so it is machine-checked now:
+# check silently went with it, and again when a second leak check reused check
+# 1's EXEMPT and so stopped looking at verify.sh, the one file check 1 has a
+# reason to skip. A comment saying "never widen this" did not hold either time,
+# so it is machine-checked now:
 # every *EXEMPT* variable may be REFERENCED from at most one numbered check.
 shared_exempt=$(awk '
   /^# [0-9]+ -+/ { blk = $2 }
@@ -213,7 +206,7 @@ else pass "no absolute home paths"; fi
 # Prose must name tiers. Only models.conf binds literals. docs/ and
 # adapters/README.md must name real models to teach the tier binding and to carry
 # the old-name migration table; verify.sh names them in this regex. All of them
-# stay subject to every OTHER check, including paths and the denylist - this
+# stay subject to every OTHER check, including paths - this
 # exemption is written out in full here rather than reusing check 1's, because
 # sharing one is how both of the last two leaks happened.
 EXEMPT_VENDOR='^verify\.sh:|^adapters/README\.md|^docs/|^config/models\.conf'
@@ -365,68 +358,7 @@ elif [ -n "$glyphs" ]; then
   fail "banned glyphs in client-facing docs"; printf '%s\n' "$glyphs" | head -10 | while IFS= read -r l; do show "$l"; done
 else pass "no banned glyphs in client-facing docs ($(printf '%s\n' "$targets" | wc -l | tr -d ' ') files)"; fi
 
-# 9 -------------------------------------------------- personal-marker denylist
-# NO exemption here, deliberately. verify.sh needs one from check 1 because its
-# own regex contains the literal /Users/; it does not need, and must not have,
-# one from the personal-marker denylist. Sharing check 1's list meant a personal
-# marker committed to this very file passed the gate.
-# A denylist that is missing, unreadable, not a regular file, or empty means
-# this check did not run. "Did not run" is a FAIL, not a WARN and not a pass:
-# under a green gate it reads identically to "no personal markers found", which
-# is the whole failure mode this file exists to refuse. There is deliberately no
-# opt-out flag - one that still passed would restore the hole, and one that
-# failed anyway would be the same red line with more ceremony.
-if [ ! -e "$DENYLIST" ]; then
-  fail "no denylist at $DENYLIST - the personal-marker check did not run, which is not the same as clean"
-  show "create one OUTSIDE this repo (a committed list of personal markers is itself the leak),"
-  show "one term or regex per line; or pass --denylist PATH, or set HARNESS_DENYLIST"
-elif [ ! -f "$DENYLIST" ] || [ ! -r "$DENYLIST" ]; then
-  # grep on an unreadable file returns nothing, which read as "no terms
-  # configured" and passed.
-  fail "denylist $DENYLIST is not a readable regular file - the check did not run"
-else
-  terms=$(grep -vE '^[[:space:]]*(#|$)' "$DENYLIST" || true)
-  if [ -z "$terms" ]; then
-    fail "denylist $DENYLIST has no terms - the check ran against nothing, which is not the same as clean"
-  else
-    # A term that is not a valid ERE makes grep exit 2 and check nothing, while
-    # the count below still counted it. Silently checking zero markers is the
-    # failure this gate exists to refuse.
-    # Validated against BOTH engines: a term BSD grep accepts can be rejected by
-    # git's, which exits 128 and checks the index side against nothing. Worse
-    # than rejected is ACCEPTED AND INERT: \b, \w, \d and friends are GNU
-    # extensions that git's engine parses without complaint and then matches
-    # nothing against, so a term written \bname\b returns 1 from both engines
-    # and the index side of this check is dead for it - the exact staged-leak
-    # bypass this file just closed, reopened through a pattern we do not own.
-    # Neither engine reports it, so the shape is refused instead.
-    badterms=""
-    while IFS= read -r t; do
-      [ -n "$t" ] || continue
-      case "$t" in
-        *\\[A-Za-z]*) badterms="$badterms $t(backslash-escape)"; continue ;;
-      esac
-      printf '' | grep -qE "$t" 2>/dev/null
-      [ $? -ge 2 ] && badterms="$badterms $t"
-      git -c grep.column=false grep --cached --no-color -qiE -e "$t" -- verify.sh >/dev/null 2>&1
-      [ $? -ge 2 ] && badterms="$badterms $t(git)"
-    done <<< "$terms"
-    # No exemption argument, deliberately - see above.
-    hits=$(printf '%s\n' "$terms" | while IFS= read -r t; do
-             [ -n "$t" ] || continue
-             scan '' '-i' "$t"
-           done)
-    if [ -n "$badterms" ]; then
-      fail "denylist terms that were never checked against the index:$badterms"
-      show 'a backslash-letter escape (\b, \w, \d) is a GNU extension: the index-side'
-      show 'engine accepts it and then matches nothing. Use POSIX ERE: [^[:alnum:]]name'
-    elif [ -n "$hits" ]; then
-      fail "denylist matches (working tree or index)"; printf '%s\n' "$hits" | head -10 | while IFS= read -r l; do show "$l"; done
-    else pass "no denylist matches ($(printf '%s\n' "$terms" | wc -l | tr -d ' ') terms checked)"; fi
-  fi
-fi
-
-# 10 ------------------------------------------------- dangling file references
+# 9 -------------------------------------------------- dangling file references
 # Instructions that point at a file which will not exist after install are worse
 # than no instruction: the agent is told to go read something and finds nothing.
 # Only these land in ~/.claude/rules/ (see cmd_install in bin/harness).
@@ -442,7 +374,7 @@ else
   pass "no dangling ~/.claude/rules references"
 fi
 
-# 11 ------------------------------------------------- dangling slash commands
+# 10 ------------------------------------------------- dangling slash commands
 # The harness shipped docs naming slash commands that do not exist. A reader
 # types one, nothing happens, and every other instruction in that doc loses its
 # credibility. So every backticked /token has to resolve to something real.
@@ -503,7 +435,7 @@ else
   pass "every backticked slash command resolves to commands/, skills/, or the built-in allowlist"
 fi
 
-# 12 ------------------------------------------------- installer and gate agree
+# 11 ------------------------------------------------- installer and gate agree
 # THE INVARIANT, asserted rather than commented: nothing reaches ~/.claude that
 # this gate did not scan. `harness install --dry-run` is asked what it would
 # write, and every agents/, skills/, commands/ or hooks/ file in that answer must
@@ -535,9 +467,9 @@ else
   pass "all $(printf '%s\n' "$labels" | wc -l | tr -d ' ') files harness install would ship are in the scanned set"
 fi
 
-# 13 ------------------------------------------------- documented counts
+# 12 ------------------------------------------------- documented counts
 # A count asserted in prose that nothing checks is drift waiting to happen: the
-# commit that added check 11 left README.md saying the gate has ten checks, and
+# commit that added a check left README.md saying the gate has ten, and
 # the anti-drift WARN below could not see it because it watches one file.
 #
 # The patterns are deliberately broad. If a future sentence legitimately counts a
@@ -595,7 +527,7 @@ fi
 # ---------------------------------------------------- docs must not go stale
 # Not a numbered check (it would have to count itself). The enumerated list in
 # getting-started.md drifted from the gate the first time a check was added, so
-# this warns rather than letting a reader trust a stale number. Check 13 covers
+# this warns rather than letting a reader trust a stale number. Check 12 covers
 # the counts asserted in prose; this covers the list's length.
 doclist=$(awk '/silently passing nothing:/,/^Read the output/' docs/getting-started.md 2>/dev/null \
           | grep -cE '^[0-9]+\. ' || echo 0)

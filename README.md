@@ -95,7 +95,7 @@ not want those appearing inside every repo you touch.
 | `rules/` | Path-scoped rules that load only when relevant. |
 | `templates/` | Project scaffolding, the workspace brain, and the nested-phase pattern. |
 | `config/models.conf` | The single place tiers bind to real models. |
-| `verify.sh` | The scrub gate. Thirteen checks, fails the build rather than leaking. |
+| `verify.sh` | The scrub gate. Twelve checks, fails the build rather than leaking. |
 
 ## Two ideas worth knowing before you use it
 
@@ -140,14 +140,9 @@ Advisor path that is fileless. `adapters/README.md` has the details per tool.
 `verify.sh` exists because this framework is meant to be carried onto machines that are not yours.
 It fails on absolute home paths, vendor model names that escaped into prose, agent definitions
 missing a tier pin, malformed skill frontmatter, permission-bypass defaults, shell scripts with a
-fragile shebang, banned typographic glyphs in client-facing docs, and any term in a personal-marker
-denylist. The leak checks read both what is on disk and what is in the git index, because those are
-two different sets of bytes: one reaches your machine and the other reaches whoever clones.
-
-That denylist deliberately lives outside the repository, at `~/.agent-harness-denylist` or wherever
-`--denylist` points, because a committed list of the things you want to keep private is itself the
-leak. One term or POSIX extended regular expression per line, and it is required. Without one the personal-marker check has not run, and a run where it did not
-run is a failed run.
+fragile shebang, and banned typographic glyphs in client-facing docs. The leak checks read both what
+is on disk and what is in the git index, because those are two different sets of bytes: one reaches
+your machine and the other reaches whoever clones.
 
 A scrub that has never been run against a known-bad input is unverified, so the gate is tested by
 planting each defect class into a scratch copy and confirming a non-zero exit.
