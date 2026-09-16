@@ -313,6 +313,19 @@ candidates=$( { shipped_l 'hooks/*.sh' 'bin/*'
                 done
                 git ls-files -s | awk -F'\t' '$1 ~ /^100755 /{print $2}'
                 shipped | xargs -0r awk 'FNR==1 && /^#!/{print FILENAME}' 2>/dev/null
+                # ...and the same first-line test against the INDEX blob. The awk
+                # above reads disk, so a file staged with a shebang whose working
+                # copy is no longer a script was selected by nothing: not the two
+                # path globs, not either exec bit (mode 100644), not the disk
+                # first-line test. Its staged shebang reached a colleague while
+                # the gate said "all N shell scripts". Same shape as the leak
+                # checks: moving the byte-read to two sources is not enough while
+                # candidate SELECTION still only looks at one.
+                shipped_l | while IFS= read -r f; do
+                  git ls-files --error-unmatch -- "$f" >/dev/null 2>&1 || continue
+                  git cat-file blob ":$f" 2>/dev/null | head -1 | grep -q '^#!' \
+                    && printf '%s\n' "$f"
+                done
               } | grep -v '^$' | sort -u)
 # Both byte sources: a staged script with a fragile shebang reaches a colleague
 # even when the working copy has been fixed.
