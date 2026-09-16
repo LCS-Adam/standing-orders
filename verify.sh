@@ -209,7 +209,14 @@ else pass "no absolute home paths"; fi
 # stay subject to every OTHER check, including paths - this
 # exemption is written out in full here rather than reusing check 1's, because
 # sharing one is how both of the last two leaks happened.
-EXEMPT_VENDOR='^verify\.sh:|^adapters/README\.md|^docs/|^config/models\.conf'
+# scripts/resolve-tier.sh is the fifth and last. It is the one file whose JOB is
+# to classify a model by FAMILY, so the family patterns are its source code, and
+# its selftest fixture is a stub vendor allowlist whose entries carry the vendor
+# DISPLAY NAMES as test data. Weakening the family regex to dodge this check is
+# the one thing that must never happen here: a dropped family pattern is exactly
+# how a same-family reviewer gets through the gate Wave R exists to build.
+# One exact path, never a directory prefix.
+EXEMPT_VENDOR='^verify\.sh:|^adapters/README\.md|^docs/|^config/models\.conf|^scripts/resolve-tier\.sh:'
 # -w, not \b: git grep -E does not implement \b, so the index side of this scan
 # would have matched nothing and passed forever. Both engines implement -w and
 # both return the same hits on this repo.
