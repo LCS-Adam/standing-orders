@@ -201,24 +201,9 @@ what you have staged.
 
 ## A first real task
 
-Here is a full pass through the framework on a small, real change.
-
-1. `cd` into a repo you have run `harness init` in.
-2. Ask your agent to fix a specific bug, naming the file and the symptom.
-3. The agent reads `AGENTS.md` (loaded automatically as project instructions) and applies "read
-   before you write": it traces the actual code path the bug touches before proposing anything.
-4. If the fix requires the agent to dispatch a subagent, for example to run an isolated verification
-   pass, the `PreToolUse` hook checks that call. If it has no `model` parameter and no agent
-   definition with a pinned model, the hook denies it with a message telling the agent to re-issue
-   the call with a model. This is not a bug: it is the sizing rule from `AGENTS.md` being enforced
-   in the harness that everything else assumes.
-5. The agent fixes the bug, writes or updates a test, and reports what changed plainly: what was
-   fixed, what was tested, and whether the fix touched anything unexpected.
-6. Before committing, run `harness verify` if the repo carries harness scaffolding you want to keep
-   clean, particularly if any file you touched could plausibly contain an absolute path or a stray
-   personal term.
-7. Commit with a conventional-commit message. The agent never appends an AI co-authorship trailer;
-   `AGENTS.md` says so explicitly, and it overrides any tool default that would add one.
+`docs/first-day.md` now does this job properly: five beats, done for real, with the actual command
+output pasted below each one, ending with a fix, a test, a verify run, and a commit. Read that
+document for the full walkthrough rather than a summary here.
 
 ## Troubleshooting
 

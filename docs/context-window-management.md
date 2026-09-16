@@ -134,3 +134,30 @@ The common thread across all four: the fix is almost never "try harder in the sa
 either reducing what loads by default, or writing the thing that must persist to a file that will
 still be there next time, instead of trusting it to survive inside a conversation that is already
 competing for room.
+
+## How context loads, in order
+
+```mermaid
+timeline
+    title What loads when, in one session
+    Session start : CLAUDE.md and its @path imports : rules/*.md with no paths frontmatter
+    Claude reads a matching file : the path-scoped rule for that file type
+    Claude enters a phase directory : that phase's short CLAUDE.md
+    You invoke it or it is judged relevant : a skill's SKILL.md
+```
+
+`CLAUDE.md:33` states the rule this timeline follows: "`.claude/rules/*.md` load every session
+unless they carry `paths:` frontmatter, in which case they load only when Claude reads a matching
+file." Everything without `paths:` frontmatter is in the always-on cost column; everything with it
+sits idle until a file of the matching type gets read. `docs/writing-your-own.md`'s exercise 1
+(the path-scoped rule exercise) is the way to prove this to yourself rather than take it on faith:
+write a `paths: ["**/*.sql"]` rule, ask what rules are in force before opening a `.sql` file, then
+open one and ask again.
+
+Separately, `config/settings.portable.json` sets `"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85"`. This
+does not change what loads at session start; it changes when the session is forced to compact.
+Left at the tool's default, autocompaction triggers later, closer to the window's hard limit, which
+means whatever compaction throws away is competing with more accumulated material and is more
+likely to be lossy. Setting the override to 85 makes the harness compact earlier, at 85 percent of
+the window instead of waiting for the default threshold, trading a slightly more frequent
+compaction for one that runs with more headroom left to preserve detail.

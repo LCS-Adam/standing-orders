@@ -1,5 +1,20 @@
 # Autonomous execution: AUTORUN, HITL reduction, and HEARTBEAT
 
+## Before you read this
+
+This document assumes you already know three things `docs/glossary.md` defines:
+[`advisor`](glossary.md#advisor), the host's built-in
+[`Plan` subagent](glossary.md#the-host-s-built-in-subagent-types-plan-explore-general-purpose), and
+[the Workflow tool](glossary.md#the-workflow-tool). If your tool has no Workflow equivalent, the
+answer to "Workflow or subagents" below is always subagents.
+
+This article also describes an optional external second-opinion review step. That step requires
+one of several third-party CLIs (`skills/external-llm-review/SKILL.md:15` names codex,
+cursor-agent, and gemini) installed and authenticated on your machine. If you do not have one of
+those set up, that step does not apply to you, and the gate is the rest of the stack: the test
+command, the `adversary` agent, `/simplify`, re-running the tests, and merging. Do not treat the
+external review step as required; it is a strengthening step, not a floor.
+
 A six-hour build cannot have a human watching every step, and an agent that goes wrong early in an
 unsupervised run can waste the entire six hours before anyone notices. Those two facts are in
 tension, and this article is about the mechanisms the harness uses to resolve it: which one to use,

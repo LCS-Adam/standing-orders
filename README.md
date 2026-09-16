@@ -1,5 +1,10 @@
 # agent-harness
 
+An AI coding agent (Claude Code, Codex, Cursor, and similar tools) reads instruction files out of
+your project and its own config directory before it does anything. This repository is a shared,
+version-controlled set of those instruction files, so the rules an agent follows do not live only
+in one person's head or one machine's settings.
+
 A portable operating framework for AI coding agents: instructions, subagent definitions, skills,
 slash commands, and safety hooks. One command installs the always-on core onto a new machine, and
 one more sets up a repository.
@@ -149,18 +154,26 @@ planting each defect class into a scratch copy and confirming a non-zero exit.
 
 ## Documentation
 
-New to agentic coding? Read them in this order.
+New to agentic coding? Read them in this order, newcomer to specialist.
 
-| Document | What it covers |
+| Document | Who it is for |
 |---|---|
-| [Getting started](docs/getting-started.md) | A guided first hour: install, scopes, your first real task. |
-| [Choosing the right mechanism](docs/choosing-your-tools.md) | Instructions, rules, skills, commands, hooks, subagents, and which to reach for. |
-| [Managing the context window](docs/context-window-management.md) | Why long sessions degrade, and the levers that actually help. |
-| [Sizing the model to the task](docs/model-tiering.md) | The four tiers, and why reviewers sit at or above the builder. |
-| [Handing off between sessions](docs/handoff-and-resume.md) | Writing a resume prompt that survives a context clear. |
-| [Planning and executing a large build](docs/planning-large-builds.md) | Scoping, phases, and machine-checkable acceptance. |
-| [Autonomous execution](docs/autorun-hitl-heartbeat.md) | AUTORUN, HEARTBEAT, and reducing interruptions without losing safety. |
-| [Tracking work across sessions](docs/project-management.md) | Project state on disk, and what the fork adds. |
+| [Orientation](docs/orientation.md) | Anyone who has never used an AI coding agent before; defines the vocabulary everything else assumes. |
+| [Getting started](docs/getting-started.md) | A new user installing the harness for the first time. |
+| [Choosing the right mechanism](docs/choosing-your-tools.md) | Anyone unsure whether they need an instruction, a rule, a skill, a command, a hook, or a subagent. |
+| [Your first day](docs/first-day.md) | A new user who wants the first real session done for real, with actual output. |
+| [Operating process](docs/operating-process.md) | A user running their first real task after the first-day tour. |
+| [Glossary](docs/glossary.md) | Anyone who hits an unfamiliar term and wants the one place it is defined. |
+| [Managing the context window](docs/context-window-management.md) | Anyone whose sessions degrade over time and wants to know why. |
+| [Sizing the model to the task](docs/model-tiering.md) | Anyone dispatching subagents or writing plans that name a tier. |
+| [Writing your own extensions](docs/writing-your-own.md) | Someone authoring a new agent, skill, rule, command, or hook. |
+| [Handing off between sessions](docs/handoff-and-resume.md) | Anyone closing a session that another session must resume. |
+| [Anti-patterns](docs/anti-patterns.md) | Anyone who wants to learn from failures this repo already recorded. |
+| [Operating boundaries](docs/operating-boundaries.md) | A security reviewer or an engineer's employer asking what this harness actually does. |
+| [Planning and executing a large build](docs/planning-large-builds.md) | Someone scoping a multi-day or multi-phase change. |
+| [Autonomous execution](docs/autorun-hitl-heartbeat.md) | Someone running an unattended, multi-hour build. |
+| [Tracking work across sessions](docs/project-management.md) | A team keeping project state on disk across sessions and tools. |
+| [Reference](docs/reference.md) | Anyone who wants the generated, authoritative list of every agent, skill, command, and config key. |
 
 ## Third-party content
 

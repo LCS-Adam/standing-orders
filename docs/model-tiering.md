@@ -64,6 +64,25 @@ Confusing the two dispositions is a common mistake: dispatching your design ques
 the doing-and-breaking occupant, or your implementation to the thinking one, wastes the
 tier's actual strength.
 
+### The two sizing questions as a flowchart
+
+```mermaid
+flowchart TD
+    A[New task] --> B{What does a silent<br/>wrong answer cost?}
+    B -->|Irreversible, outward-facing,<br/>security, money, identity,<br/>or no test would catch it| C[Push the tier up]
+    B -->|A test or diff would<br/>catch a mistake immediately| D{Is the work mechanical<br/>and checkable?}
+    D -->|Fully specified,<br/>a test proves the result| E[Push the tier down]
+    D -->|Judgment is still required| F[Stay at the tier the task<br/>otherwise implies]
+    C --> G[FRONTIER-DO or FRONTIER-THINK]
+    E --> H[SMALL]
+    F --> I[MID or higher]
+```
+
+An organization with access to only one frontier-class model does not get to skip this
+split: it binds both `FRONTIER-DO` and `FRONTIER-THINK` to that same model in
+`config/models.conf`, so plans and prose still name the disposition the task needs, and
+the day a second frontier model becomes available, only that one file changes.
+
 ## Naming a tier in prose, naming a model in config
 
 `AGENTS.md` states this directly: prose names the tier, executable config needs the
