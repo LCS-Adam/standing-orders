@@ -4,3 +4,9 @@
 
 # agent worktrees are transient and local
 .worktrees/
+
+# agent run reports. agents/exec-*.md default every report to runtime/verify/,
+# and an unignored report lands in the shipped set: check 1 then scans the
+# absolute worktree paths an agent naturally writes there and fails the gate on
+# output that was never meant to ship.
+runtime/
