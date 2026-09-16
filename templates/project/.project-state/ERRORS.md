@@ -1,6 +1,6 @@
 # Errors
 
-Append-only log of errors, blockers, broken tests, deployment issues. Written by `/pm-log-error`.
+Append-only log of errors, blockers, broken tests, deployment issues.
 
 | Date | Severity | Summary | Status |
 |------|----------|---------|--------|

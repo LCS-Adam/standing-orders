@@ -36,60 +36,10 @@ simpler of two designs because the second one needed a dependency you were not r
 blockers, and decisions. Git and `.project-state/` are complementary records of the same work, not
 competing ones.
 
-## The `pm-*` command set
+## Automating the files above
 
-> [!IMPORTANT]
-> This tooling lives in the personal fork (`harness-fork`, `pm/claude-pm/bin/`), not in
-> the upstream template. A `harness init` in the template repo gives you `.project-state/`, the
-> files above, and nothing that automates writing to them.
-
-`FORK.md` explains why: the `pm-*` set is bound to macOS BSD tooling and to a fixed
-`~/.claude-pm` install root. It is useful, but it is not yet portable, so it stays out of the
-template rather than shipping something that breaks the first time someone runs it on Linux or with
-a different install layout. `FORK.md` lists it as the largest single promotion candidate not yet
-upstream, with the concrete blockers named: hardcode the install root as a variable, and make the
-BSD-specific tool calls optional or portable.
-
-What is actually in `pm/claude-pm/bin/`, by category:
-
-**Registration and repo setup**
-- `pm-register` registers a repo and seeds `.project-state/` if it is missing.
-- `pm-ignore` / `pm-unignore` opt a repo out of the PM framework, or reverse that.
-- `pm-block-ultraplan` / `pm-allow-ultraplan` toggle whether cloud planning commands are allowed in
-  a given repo, for repos that hold sensitive material.
-- `pm-gemini-install` wires the same PM hooks into Gemini CLI's settings, so state stays shared
-  across tools.
-
-**Session lifecycle hooks**
-- `pm-session-hook`, `pm-stop-tick`, `pm-posttool-git`, and `pm-clear-warn` fire on Claude Code
-  session events (start, stop, a git-touching tool call, a context clear) to keep state current
-  without the operator remembering to run anything by hand.
-- `pm-gemini-session-hook` and `pm-gemini-handoff-hook` are the Gemini CLI equivalents.
-
-**State writers**
-- `pm-next-step` prepends a bullet to `NEXT_STEPS.md`'s "Immediate" section.
-- `pm-log-error` appends a row to `ERRORS.md`.
-- `pm-set-phase` updates the phase field in `PROJECT_STATE.md`.
-- `pm-set-plan` and `pm-append` write or extend other tracked state.
-
-**Handoff and recovery**
-- `pm-handoff-finalize` and `pm-mini-handoff` write `SESSION_HANDOFF.md` at the end of a session.
-- `pm-recover-handoff` and `where-left-off` reconstruct orientation when a handoff was missed or a
-  session ended abnormally.
-
-**Status and derivation**
-- `pm-resume` prints the resume banner a session reads on start: phase, next step, blockers.
-- `global-status` summarizes every registered repo at once.
-- `pm-derive` refreshes the auto-detected sections of `NEXT_STEPS.md` and `DEPENDENCIES.md` from
-  manifests and the active plan.
-
-**Skill promotion**
-- `pm-propose-skill` drafts a promotion contract from the highest-frequency row noted in
-  `SKILL_CANDIDATES.md`.
-
-A template-only user gets the files and the discipline of writing to them by hand. A fork user gets
-the same files kept current automatically by hooks and commands. Both are legitimate ways to use
-`.project-state/`; the fork just removes the manual step.
+A fork of this template can add automation that writes these files for you. This template gives
+you the files and the discipline of writing to them by hand.
 
 ## Practical habits
 
@@ -106,23 +56,3 @@ the same files kept current automatically by hooks and commands. Both are legiti
   files or made a decision. Read `docs/handoff-and-resume.md` for what makes a handoff actually
   sufficient: the short version is that it must be self-contained, including a pointer to itself,
   because the next session pastes only the handoff, never the whole repository.
-
-## Why there are two repos
-
-If you are wondering why this framework lives in a template and a fork instead of one repository:
-the template (`agent-harness`) is the clean, shareable version, meant to be cloned by anyone,
-including onto a machine or into a repo that is not yours. The fork
-(`harness-fork`) is the working instance, carrying everything from the template plus
-material that must never ship in something a stranger clones: full learned-rule history including
-macOS and vendor-specific quirks, the `pm/` system described above, tool-specific skills tied to one
-person's local installs, and deployment-specific skills named after real infrastructure.
-
-GitHub does not let you fork your own repository into the same account, so the fork is a separate
-repository with the template wired in as a git remote named `upstream`. Pulling improvements is a
-plain `git fetch upstream && git merge upstream/main`. Sending something back up is deliberately
-more ceremonious: cut a branch from `upstream/main`, cherry-pick only the commits that generalize,
-and run `./verify.sh` on that branch before it goes anywhere. `verify.sh` passing on the fork's own
-`main` branch is not expected and would not mean anything good. The fork's `main` is full of exactly
-what the scrub gate exists to catch: host-specific skills, deployment names, machine-bound install
-paths. A green gate there would mean the gate had stopped working. Backports only get scrubbed on
-the branch that started clean, cut from the template itself.
