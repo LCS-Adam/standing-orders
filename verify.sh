@@ -9,9 +9,9 @@ set -uo pipefail
 #
 # The personal-marker denylist is REQUIRED and deliberately does NOT live in this
 # repo: a list of personal markers is itself the leak. Point --denylist at a file
-# outside the repo, one case-insensitive term or regex per line, blank lines and
-# # ignored. No denylist means check 9 did not run, and a check that did not run
-# is a failure here, not a warning.
+# outside the repo, one case-insensitive term or POSIX ERE per line, blank lines
+# and # ignored. No denylist means check 9 did not run, and a check that did not
+# run is a failure here, not a warning.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF="$ROOT/${BASH_SOURCE[0]##*/}"
@@ -393,10 +393,19 @@ else
     # the count below still counted it. Silently checking zero markers is the
     # failure this gate exists to refuse.
     # Validated against BOTH engines: a term BSD grep accepts can be rejected by
-    # git's, which exits 128 and checks the index side against nothing.
+    # git's, which exits 128 and checks the index side against nothing. Worse
+    # than rejected is ACCEPTED AND INERT: \b, \w, \d and friends are GNU
+    # extensions that git's engine parses without complaint and then matches
+    # nothing against, so a term written \bname\b returns 1 from both engines
+    # and the index side of this check is dead for it - the exact staged-leak
+    # bypass this file just closed, reopened through a pattern we do not own.
+    # Neither engine reports it, so the shape is refused instead.
     badterms=""
     while IFS= read -r t; do
       [ -n "$t" ] || continue
+      case "$t" in
+        *\\[A-Za-z]*) badterms="$badterms $t(backslash-escape)"; continue ;;
+      esac
       printf '' | grep -qE "$t" 2>/dev/null
       [ $? -ge 2 ] && badterms="$badterms $t"
       git -c grep.column=false grep --cached --no-color -qiE -e "$t" -- verify.sh >/dev/null 2>&1
@@ -408,7 +417,9 @@ else
              scan '' '-i' "$t"
            done)
     if [ -n "$badterms" ]; then
-      fail "denylist terms that are not valid regexes and were never checked:$badterms"
+      fail "denylist terms that were never checked against the index:$badterms"
+      show 'a backslash-letter escape (\b, \w, \d) is a GNU extension: the index-side'
+      show 'engine accepts it and then matches nothing. Use POSIX ERE: [^[:alnum:]]name'
     elif [ -n "$hits" ]; then
       fail "denylist matches (working tree or index)"; printf '%s\n' "$hits" | head -10 | while IFS= read -r l; do show "$l"; done
     else pass "no denylist matches ($(printf '%s\n' "$terms" | wc -l | tr -d ' ') terms checked)"; fi

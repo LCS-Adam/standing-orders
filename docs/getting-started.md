@@ -201,8 +201,10 @@ what you have staged.
 The denylist for check 9 deliberately does not live in this repository: a committed list of the
 personal terms you want to keep private would itself be the leak. Point it at a file outside the
 repo with `--denylist PATH`, or set `HARNESS_DENYLIST`; the default is
-`~/.agent-harness-denylist`. One term or regex per line, case-insensitive, blank lines and `#`
-comments ignored. The file is required: if it is missing, unreadable, or has no terms in it, check 9
+`~/.agent-harness-denylist`. One term or POSIX extended regular expression per line,
+case-insensitive, blank lines and `#` comments ignored. Backslash-letter escapes such as `\b` and
+`\w` are rejected: they are a GNU extension, and git's own regex engine, which is what reads your
+staged content, accepts them and then matches nothing. Write `[^[:alnum:]]name` instead. The file is required: if it is missing, unreadable, or has no terms in it, check 9
 fails and so does the run. There is no flag to turn it off, because a green gate that never looked
 for a personal marker reads exactly like a green gate that looked and found none.
 

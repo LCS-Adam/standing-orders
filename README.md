@@ -146,7 +146,7 @@ two different sets of bytes: one reaches your machine and the other reaches whoe
 
 That denylist deliberately lives outside the repository, at `~/.agent-harness-denylist` or wherever
 `--denylist` points, because a committed list of the things you want to keep private is itself the
-leak. It is required. Without one the personal-marker check has not run, and a run where it did not
+leak. One term or POSIX extended regular expression per line, and it is required. Without one the personal-marker check has not run, and a run where it did not
 run is a failed run.
 
 A scrub that has never been run against a known-bad input is unverified, so the gate is tested by
