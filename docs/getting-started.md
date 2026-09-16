@@ -138,11 +138,15 @@ for Auggie's user scope, `~/.codex/AGENTS.md` for Codex, a `.mdc` rule for Curso
 Intent already reads `AGENTS.md` and a `skills/` directory straight from the repo with no adapter
 needed.
 
-`cosmos` is the honest exception. COSMOS is Augment's cloud Experts platform, configured
-conversationally with no committed configuration file at all, so `harness add --tool cosmos` cannot
-generate anything for it. It prints a reminder to paste `AGENTS.md` into the Expert's behavior
-prompt by hand. There is no repo-committed surface for this tool, and pretending otherwise would be
-worse than saying so plainly.
+`cosmos` is the one that needs explaining. COSMOS has two paths: a conversational Advisor that
+edits no files, and `auggie cloud`, which manages Experts as committable YAML bundles. This harness
+does not yet generate those bundles, so `harness add --tool cosmos` prints guidance rather than
+writing a file: either describe the Expert you want to Cosmos Advisor in plain language, or run
+`auggie cloud expert init` to scaffold a bundle yourself and paste the relevant parts of
+`AGENTS.md` into it.
+
+Generating Cosmos bundles from the harness's own agent definitions is planned work, not a shipped
+feature. Do not assume it exists because this section describes the shape it would take.
 
 See `adapters/README.md` for the full table of what each tool reads at project and user scope.
 

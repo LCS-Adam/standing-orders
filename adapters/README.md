@@ -25,10 +25,22 @@ file per tool there.
 
 ## Tools with no repo surface
 
-**COSMOS** is Augment's cloud Experts platform. Experts are created conversationally and land in a
-registry; the documentation states plainly that you never see or edit a configuration file. There
-is no committed file for this repo to produce, so there is no adapter. To use these instructions
-with a COSMOS Expert, paste `AGENTS.md` into the Expert's behavior prompt by hand.
+**COSMOS** is Augment's cloud platform, where reusable agent templates called Experts run inside
+Environments. It has two configuration paths, and the difference matters:
+
+- **Cosmos Advisor** is the conversational one. You describe the workflow you want in plain language
+  and it deploys or designs the Expert end to end. Its documentation says you never see or edit a
+  configuration file, which is true of that path.
+- **`auggie cloud`** is the file-based one, and it is the one this repo can target. Experts,
+  environments, MCP servers and residents are represented as YAML **bundles**:
+  "A bundle is a complete, portable description of the resource, so it can live in a repository and
+  be reviewed like any other change." The workflow is `init`, edit, `validate`, `diff`, `apply`,
+  every `apply` creates an immutable version, and the docs state plainly that
+  "the repository becomes the source of truth for your Cosmos configuration"
+  ([docs](https://docs.augmentcode.com/cli/cloud)).
+
+So COSMOS is a real integration target, not an exception. Reading only the Advisor page and
+concluding there is no committable surface is a mistake this project made once already.
 
 **Intent** reads `AGENTS.md` and a `skills/` directory straight out of the repo, so the instruction
 and skill layers work with no adapter. Its Specialists and MCP servers are configured inside

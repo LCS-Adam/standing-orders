@@ -270,9 +270,13 @@ cmd_add_tool() {
       echo "  Run 'harness init' for AGENTS.md. Specialists and MCP servers are configured"
       echo "  in Intent's own settings, not from this repo." ;;
     cosmos)
-      c_info "COSMOS has no documented repo-committed configuration surface."
-      echo "  It is Augment's cloud Experts platform, configured conversationally."
-      echo "  Paste AGENTS.md into an Expert's behavior prompt by hand." ;;
+      c_info "COSMOS has two configuration paths. This harness generates neither yet."
+      echo "  1. Cosmos Advisor: describe the Expert you want in plain language, no files."
+      echo "  2. auggie cloud: Experts are YAML bundles you CAN commit."
+      echo "       auggie cloud expert init --name <n> -o <n>.yaml"
+      echo "       auggie cloud expert validate -f <n>.yaml && auggie cloud expert apply -f <n>.yaml"
+      echo "     See https://docs.augmentcode.com/cli/cloud"
+      echo "  For now, hand-carry the relevant parts of AGENTS.md into whichever you use." ;;
     *) die "unknown tool: $tool" ;;
   esac
 }

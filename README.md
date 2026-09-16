@@ -7,8 +7,9 @@ one more sets up a repository.
 One instruction set is read by Claude Code, Auggie, Intent, Codex, Cursor, Gemini CLI, Copilot and
 Windsurf, because they converged on `AGENTS.md` and `CLAUDE.md`. Be clear on what that does and
 does not mean: the instruction layer is genuinely shared, while agents, skills and hooks are
-Claude Code mechanisms that other tools support partially or not at all. COSMOS reads nothing from
-a repository. `adapters/README.md` states exactly what each tool consumes, including the gaps.
+Claude Code mechanisms that other tools support partially or not at all. Augment's COSMOS takes a
+different shape again: its Experts are committable YAML bundles applied with `auggie cloud`.
+`adapters/README.md` states exactly what each tool consumes, including the gaps.
 
 Most agent setups accumulate as a pile of machine-specific config that cannot leave the laptop it
 grew on. This one is built to be moved, shared, and forked.
@@ -129,9 +130,9 @@ depth.
 Windows and check out as plain text when `core.symlinks` is false.
 
 Auggie reads `CLAUDE.md` natively and at higher precedence than `AGENTS.md`. Intent reads both plus
-a `skills/` directory. Codex, Cursor, Gemini CLI, Copilot, and Windsurf read `AGENTS.md`. COSMOS is
-configured conversationally in Augment's cloud and has no repo-committed surface at all, so there is
-nothing to generate for it. `adapters/README.md` has the details per tool.
+a `skills/` directory. Codex, Cursor, Gemini CLI, Copilot, and Windsurf read `AGENTS.md`. COSMOS
+Experts are YAML bundles you can commit and apply with `auggie cloud`, alongside a conversational
+Advisor path that is fileless. `adapters/README.md` has the details per tool.
 
 ## The scrub gate
 
