@@ -31,7 +31,7 @@ and the difference matters (lines 41-49):
   configuration file on that path (line 42).
 - **`auggie cloud`** is file-based and is the path this repo can target: Experts, environments, MCP
   servers, and residents are represented as YAML bundles that "can live in a repository and be
-  reviewed like any other change" (line 45), with an explicit `init`, edit, `validate`, `diff`,
+  reviewed like any other change" (lines 46-47), with an explicit `init`, edit, `validate`, `diff`,
   `apply` workflow (lines 47-49). Augment's own docs state "the repository becomes the source of
   truth for your Cosmos configuration" (line 49, citing docs.augmentcode.com/cli/cloud).
 
@@ -98,16 +98,16 @@ files are ignored before committing.
 This harness ships with few human gates on purpose, and says so explicitly at the point where an
 autonomous run is assembled. `agents/plan-synthesizer.md:31-32` states: "Review gates - MINIMAL BY
 DEFAULT. This is a dial; an organization sets it deliberately." The rule that follows
-(`agents/plan-synthesizer.md:33-36`) is a four-part test for when a human gate exists at all: the
+(`agents/plan-synthesizer.md:34-38`) is a four-part test for when a human gate exists at all: the
 pass/fail rule cannot be stated in advance and needs live judgment, or the action reaches a person
 outside the system, or the action is irreversible and lacks a tested rollback, or it requires
-physical human action. Everything else is auto-proceed-on-rule (`agents/plan-synthesizer.md:38-41`).
+physical human action. Everything else is auto-proceed-on-rule (`agents/plan-synthesizer.md:40-43`).
 
 The same section states the dial is adjustable, not fixed: "this is a dial, and an organization sets
-it deliberately" (`agents/plan-synthesizer.md:58-59`). An organization that wants more gates than
+it deliberately" (`agents/plan-synthesizer.md:61`). An organization that wants more gates than
 this default sets its position by editing `agents/plan-synthesizer.md` directly, changing the
 four-part test or adding categories that must gate regardless of how cleanly their rule can be
-stated. `agents/plan-synthesizer.md:53-55` shows the harness already carves out a few categories
+stated. `agents/plan-synthesizer.md:55-57` shows the harness already carves out a few categories
 that never weaken under this rule regardless of how statable they are: sends that reach a person
 outside the system, deletion of tracked content, and writes to a source of truth the plan marks
 read-only.
