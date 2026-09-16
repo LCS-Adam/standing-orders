@@ -36,7 +36,7 @@ can see the shape of the change before it happens.
 
 | What | Goes to | Notes |
 |---|---|---|
-| `agents/*.md` | `~/.claude/agents/` | 10 subagent definitions, each with a `model:` tier pin resolved to a real model name |
+| `agents/*.md` | `~/.claude/agents/` | 11 subagent definitions, each with a `model:` tier pin resolved to a real model name |
 | `skills/*` | `~/.claude/skills/` | Invocable skills: planning, autonomous execution, review, debugging, TDD, scoping |
 | `commands/*` | `~/.claude/commands/` | Slash commands for planning, handoff, and phase status |
 | `hooks/*.sh` | `~/.claude/hooks/` | The `PreToolUse` gate that denies a subagent spawn with no explicit model |

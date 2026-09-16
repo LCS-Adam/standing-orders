@@ -36,13 +36,34 @@ cd "$ROOT"
 # original bug: docs/ was exempted so the docs could discuss model names, which
 # silently also disabled the absolute-path and denylist checks for every file
 # under docs/, and a real home path shipped there. Never widen this.
-EXEMPT='^\./(verify\.sh|\.git/)'
+EXEMPT='^verify\.sh:'
+
+# Every scan below runs over TRACKED files, never the working tree. grep -r walks
+# .worktrees/, which holds checkouts of this same repo (ignored at .gitignore:6,
+# but grep does not read .gitignore), so the gate was scanning copies of itself:
+# its own regex source reported as an absolute-path leak, its own docs/ as vendor
+# model names. Excluding .worktrees/ by name would fix exactly today's directory
+# and go red again on the next untracked node_modules/, .venv/ or build/. Tracked
+# files are also the right SCOPE: this gate scrubs what gets carried to another
+# machine, and an untracked file is not carried.
+# Ceiling: a real source file is exempt until it is git-added. Accepted, because
+# an un-added file cannot reach anyone else.
+tracked() { git ls-files -z -- "$@"; }
+CODEISH=('*.md' '*.sh' '*.json')
+
+# An empty file list means "scanned nothing", not "clean". Without this, running
+# the gate outside a checkout would turn seven checks into permanent passes.
+NTRACKED=$(git ls-files 2>/dev/null | wc -l | tr -d ' ')
+if [ "${NTRACKED:-0}" -lt 2 ]; then
+  printf '\033[31mGATE ERROR\033[0m git ls-files returned %s files - scanning nothing, not clean\n' "${NTRACKED:-0}"
+  exit 2
+fi
 
 echo "Scrubbing $ROOT"
 echo
 
 # 1 -------------------------------------------------- absolute home paths
-hits=$(grep -rnE '(/Users/|/home/[a-z]|C:\\Users\\)' --include='*.md' --include='*.sh' --include='*.json' . 2>/dev/null \
+hits=$(tracked "${CODEISH[@]}" | xargs -0r grep -HnE '(/Users/|/home/[a-z]|C:\\Users\\)' 2>/dev/null \
        | grep -vE "$EXEMPT" || true)
 if [ -n "$hits" ]; then
   fail "absolute home paths"; printf '%s\n' "$hits" | head -10 | while IFS= read -r l; do show "$l"; done
@@ -56,31 +77,35 @@ else pass "no absolute home paths"; fi
 # docs/ and adapters/README.md must name real models to teach the tier binding
 # and to carry the old-name migration table. They stay subject to every OTHER
 # check, including absolute paths and the denylist.
-VENDOR_EXEMPT="$EXEMPT|^\./adapters/README\.md|^\./docs/|^\./config/models\.conf"
-hits=$(grep -rniE '\b(fable|opus|sonnet|haiku)\b' --include='*.md' --include='*.sh' --include='*.json' . 2>/dev/null \
+VENDOR_EXEMPT="$EXEMPT|^adapters/README\.md|^docs/|^config/models\.conf"
+hits=$(tracked "${CODEISH[@]}" | xargs -0r grep -HniE '\b(fable|opus|sonnet|haiku)\b' 2>/dev/null \
        | grep -vE "$VENDOR_EXEMPT" || true)
 if [ -n "$hits" ]; then
   fail "vendor model names outside config/models.conf"; printf '%s\n' "$hits" | head -10 | while IFS= read -r l; do show "$l"; done
 else pass "no vendor model names outside config/models.conf"; fi
 
 # 3 -------------------------------------------------- every agent pins a tier
-missing=""
+missing=""; n=0
 for f in agents/*.md; do
   [ -e "$f" ] || continue
+  n=$((n+1))
   grep -qE '^model:[[:space:]]*\{\{TIER_(FRONTIER_THINK|FRONTIER_DO|MID|SMALL)\}\}' "$f" || missing="$missing $f"
 done
-if [ -n "$missing" ]; then fail "agent definitions missing a {{TIER_*}} model pin:$missing"
-else pass "all $(ls -1 agents/*.md 2>/dev/null | wc -l | tr -d ' ') agent definitions pin a tier"; fi
+if [ "$n" -eq 0 ]; then fail "no agent definitions found - scanned nothing, which is not the same as clean"
+elif [ -n "$missing" ]; then fail "agent definitions missing a {{TIER_*}} model pin:$missing"
+else pass "all $n agent definitions pin a tier"; fi
 
 # 4 -------------------------------------------------- skill frontmatter
-bad=""
+bad=""; n=0
 for f in skills/*/SKILL.md; do
   [ -e "$f" ] || continue
+  n=$((n+1))
   head -20 "$f" | grep -q '^name:' || bad="$bad $f(name)"
   head -20 "$f" | grep -q '^description:' || bad="$bad $f(description)"
 done
-if [ -n "$bad" ]; then fail "SKILL.md missing required frontmatter:$bad"
-else pass "all $(ls -1 skills/*/SKILL.md 2>/dev/null | wc -l | tr -d ' ') skills have name and description"; fi
+if [ "$n" -eq 0 ]; then fail "no SKILL.md files found - scanned nothing, which is not the same as clean"
+elif [ -n "$bad" ]; then fail "SKILL.md missing required frontmatter:$bad"
+else pass "all $n skills have name and description"; fi
 
 # 5 -------------------------------------------------- CLAUDE.md imports AGENTS.md
 if [ -f CLAUDE.md ] && head -1 CLAUDE.md | grep -q '^@AGENTS\.md$'; then
@@ -90,32 +115,40 @@ else
 fi
 
 # 6 -------------------------------------------------- unsafe settings keys
+if [ ! -f config/settings.portable.json ]; then
+  fail "config/settings.portable.json is missing - nothing to check, which is not the same as safe"
+else
 unsafe=$(grep -oE '"(skipDangerousModePermissionPrompt|skipAutoPermissionPrompt|dangerouslySkipPermissions)"' \
          config/settings.portable.json 2>/dev/null || true)
 acceptmode=$(jq -r '.permissions.defaultMode // empty' config/settings.portable.json 2>/dev/null || true)
 if [ -n "$unsafe" ] || [ "$acceptmode" = "acceptEdits" ] || [ "$acceptmode" = "bypassPermissions" ]; then
   fail "unsafe permission defaults in settings.portable.json: ${unsafe:-} ${acceptmode:-}"
 else pass "no permission-bypass defaults in shipped settings"; fi
+fi
 
 # 7 -------------------------------------------------- shell script portability
-bad=""
+bad=""; n=0
 while IFS= read -r f; do
+  n=$((n+1))
   head -1 "$f" | grep -q '^#!/bin/bash' || bad="$bad $f"
-done < <(find . -name '*.sh' -not -path './.git/*')
-if [ -n "$bad" ]; then fail "scripts without an absolute-path shebang:$bad"
-else pass "all shell scripts use an absolute-path shebang"; fi
+done < <(git ls-files -- '*.sh')
+if [ "$n" -eq 0 ]; then fail "no shell scripts found - scanned nothing, which is not the same as clean"
+elif [ -n "$bad" ]; then fail "scripts without an absolute-path shebang:$bad"
+else pass "all $n shell scripts use an absolute-path shebang"; fi
 
 # 8 -------------------------------------------------- banned glyphs, client-facing
 # Client-facing surfaces only. Agent, skill and template definitions are framework
 # config and are exempt from the prose-glyph rule.
-targets=$(find . -maxdepth 2 \( -name 'README.md' -o -name 'INSTALL.md' -o -path './docs/*.md' -o -path './adapters/*.md' \) -not -path './.git/*' 2>/dev/null)
+targets=$(git ls-files -- 'README.md' 'INSTALL.md' 'docs/*.md' 'adapters/*.md')
 glyphs=""
 if [ -n "$targets" ]; then
   glyphs=$(printf '%s\n' "$targets" | while IFS= read -r f; do
     perl -CSD -ne 'print "$ARGV:$.\n" if /[\x{2014}\x{2013}\x{2012}\x{2015}\x{2018}\x{2019}\x{201C}\x{201D}\x{2026}\x{00A0}\x{200B}\x{00D7}\x{00B7}]/' "$f"
   done)
 fi
-if [ -n "$glyphs" ]; then
+if [ -z "$targets" ]; then
+  fail "no client-facing docs found - scanned nothing, which is not the same as clean"
+elif [ -n "$glyphs" ]; then
   fail "banned glyphs in client-facing docs"; printf '%s\n' "$glyphs" | head -10 | while IFS= read -r l; do show "$l"; done
 else pass "no banned glyphs in client-facing docs"; fi
 
@@ -127,7 +160,7 @@ if [ -f "$DENYLIST" ]; then
   else
     hits=$(printf '%s\n' "$terms" | while IFS= read -r t; do
              [ -n "$t" ] || continue
-             grep -rniE "$t" --include='*.md' --include='*.sh' --include='*.json' . 2>/dev/null | grep -vE "$EXEMPT" || true
+             tracked "${CODEISH[@]}" | xargs -0r grep -HniE "$t" 2>/dev/null | grep -vE "$EXEMPT" || true
            done)
     if [ -n "$hits" ]; then
       fail "denylist matches"; printf '%s\n' "$hits" | head -10 | while IFS= read -r l; do show "$l"; done
@@ -149,7 +182,7 @@ dangling=""
 while IFS= read -r ref; do
   base="${ref##*/}"
   case " $INSTALLED_RULES " in *" $base "*) ;; *) dangling="$dangling $ref" ;; esac
-done < <(grep -rhoE '~/\.claude/rules/[A-Za-z0-9._-]+\.md' --include='*.md' --include='*.sh' . 2>/dev/null | sort -u)
+done < <(tracked '*.md' '*.sh' | xargs -0r grep -hoE '~/\.claude/rules/[A-Za-z0-9._-]+\.md' 2>/dev/null | sort -u)
 if [ -n "$dangling" ]; then
   fail "references to ~/.claude/rules files that install never creates:$dangling"
 else
@@ -179,7 +212,7 @@ fi
 SLASH_SCAN="README.md docs adapters agents skills commands AGENTS.md CLAUDE.md templates"
 BUILTIN_SLASH="clear compact loop agents help plan status"
 NOT_A_COMMAND="tmp something notes-repo-recon"
-tokens=$(grep -rhoE '`/[a-z][a-z0-9-]*`' $SLASH_SCAN 2>/dev/null \
+tokens=$(tracked $SLASH_SCAN | xargs -0r grep -hoE '`/[a-z][a-z0-9-]*`' 2>/dev/null \
          | sed -e 's|^`/||' -e 's|`$||' | sort -u)
 dangling=""
 while IFS= read -r tok; do
@@ -200,7 +233,7 @@ elif [ -n "$dangling" ]; then
   # say WHERE sends you searching the whole repo for a token.
   fail "slash commands referenced but not defined:$dangling"
   for tok in $dangling; do
-    grep -rnF "\`/$tok\`" $SLASH_SCAN 2>/dev/null || true
+    tracked $SLASH_SCAN | xargs -0r grep -HnF "\`/$tok\`" 2>/dev/null || true
   done | head -10 | while IFS= read -r l; do show "$l"; done
 else
   pass "every backticked slash command resolves to commands/, skills/, or an allowlist"
