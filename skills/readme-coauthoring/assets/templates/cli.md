@@ -9,7 +9,7 @@
 
 ## Why this exists
 
-[2–3 sentences: what manual task this automates, what alternatives exist, what makes this different.]
+[2 to 3 sentences: what manual task this automates, what alternatives exist, what makes this different.]
 
 ## Install
 
@@ -63,11 +63,11 @@ tool-name init <name> [--template=<template>]
 
 ### `build`
 
-[…]
+[...]
 
 ### `deploy`
 
-[…]
+[...]
 
 </details>
 

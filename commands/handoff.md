@@ -22,3 +22,7 @@ Before clearing context, write a resume prompt that stands on its own per `AGENT
    key commands, next step, blockers).
 5. Re-read the block alone, as if you were the next session with nothing else pasted in.
    Confirm it reaches every fact above before calling the handoff done.
+6. Refresh the block's state claims at the moment of the handoff, not as of when it was
+   drafted. Re-run `git status` and `git log --oneline -5`, and correct anything the block
+   asserts as done or pending that has moved since step 2. A block written an hour before
+   the clear will confidently hand the next session a next-action that is already finished.

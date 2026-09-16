@@ -66,7 +66,7 @@ carry its own location, the location is lost.
 
 ## The three-step check before declaring a handoff done
 
-Before treating a handoff as finished, run through three checks:
+Before treating a handoff as finished, run through three steps:
 
 1. **Name the handoff file in the block's own read list.** If the block lives inside
    `SESSION_HANDOFF.md`, or any other file with more detail below it, the block's read-first list

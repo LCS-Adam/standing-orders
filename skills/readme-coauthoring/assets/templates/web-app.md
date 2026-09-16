@@ -12,7 +12,7 @@
 
 ## Why this exists
 
-[2–3 sentences: problem solved, what differentiates it.]
+[2 to 3 sentences: problem solved, what differentiates it.]
 
 ## Tech stack
 

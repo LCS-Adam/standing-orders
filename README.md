@@ -35,8 +35,9 @@ Everything is additive. Nothing is overwritten without `--force`, and every skip
 anything with `--dry-run` first to see what it would touch.
 
 Requires `bash`, `git`, `jq`, and `perl`. A missing one stops the install with a message naming it,
-rather than leaving a half-installed tree. On a locked-down machine where you cannot install `jq`,
-everything except the `settings.json` merge still works; do that step by hand.
+rather than leaving a half-installed tree. `jq` is one of those prerequisites: the installer needs
+it to merge `settings.json` without clobbering what is already there, so `harness install` stops if
+it is missing rather than installing most of the tree and failing at the last step.
 
 ## What you get
 
@@ -87,14 +88,14 @@ not want those appearing inside every repo you touch.
 |---|---|
 | `AGENTS.md` | The canonical instruction set. Self-contained, vendor-neutral, read by every tool. |
 | `CLAUDE.md` | A one-line import of `AGENTS.md` plus Claude Code specifics. |
-| `agents/` | 10 subagent definitions, named for the job they do rather than the model they run. |
-| `skills/` | 12 invocable skills: planning, autonomous execution, review, debugging, TDD, scoping. |
+| `agents/` | 11 subagent definitions, named for the job they do rather than the model they run. |
+| `skills/` | 13 invocable skills: planning, autonomous execution, review, debugging, TDD, scoping. |
 | `commands/` | Slash commands for planning, handoff, and phase status. |
 | `hooks/` | A `PreToolUse` gate that refuses any subagent spawn with no explicit model. |
 | `rules/` | Path-scoped rules that load only when relevant. |
 | `templates/` | Project scaffolding, the workspace brain, and the nested-phase pattern. |
 | `config/models.conf` | The single place tiers bind to real models. |
-| `verify.sh` | The scrub gate. Twelve checks, fails the build rather than leaking. |
+| `verify.sh` | The scrub gate. Thirteen checks, fails the build rather than leaking. |
 
 ## Two ideas worth knowing before you use it
 
@@ -166,7 +167,9 @@ New to agentic coding? Read them in this order.
 
 ## Third-party content
 
-Four skills are vendored from the Superpowers collection. See `skills/THIRD_PARTY.md` for
+The `brainstorming`, `requesting-code-review`, `systematic-debugging` and
+`test-driven-development` skills are vendored from the Superpowers collection. See
+`skills/THIRD_PARTY.md` for
 provenance and for the license check to complete before distributing this repository publicly.
 
 ## License

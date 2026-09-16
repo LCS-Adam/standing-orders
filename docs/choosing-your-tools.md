@@ -115,7 +115,7 @@ adds no benefit).
 frontmatter declares `name:` and `description:`. That shape is what makes it a real
 skill: something the Skill tool can list, something invocable by typing `/<name>`, and
 something the harness's skill-matching can surface unprompted when a task looks like a
-match. Twelve skills currently ship in `skills/`:
+match. Thirteen skills currently ship in `skills/`:
 
 | Skill | For |
 |---|---|
@@ -128,6 +128,7 @@ match. Twelve skills currently ship in `skills/`:
 | `repo-recon` | Read-only inventory of a repo or binary with file:line citations |
 | `requesting-code-review` | Dispatching a review subagent before proceeding |
 | `scope-audit` | Establishing what a system actually uses before planning changes to it |
+| `simplify` | Cutting a diff back to the smallest thing that holds, before it merges |
 | `systematic-debugging` | Four-phase root-cause debugging before attempting a fix |
 | `test-driven-development` | Writing the failing test before the implementation |
 | `verify-unexecuted` | Syntax and body-flow smoke checks for scripts that cannot run in the build environment |
@@ -208,7 +209,7 @@ This is the mechanism to reach for when a piece of work would otherwise burn a l
 amount of context on work you do not need to keep: a broad read-only investigation, a
 mechanical edit you want isolated in its own worktree and branch, an adversarial review
 that should not see (and be biased by) the reasoning that produced the thing it is
-reviewing. Ten subagent definitions exist here, named for the job rather than the model:
+reviewing. Eleven subagent definitions exist here, named for the job rather than the model:
 
 | Agent | Tier | Job |
 |---|---|---|
@@ -222,6 +223,7 @@ reviewing. Ten subagent definitions exist here, named for the job rather than th
 | `autorun-plan-orchestrator` | FRONTIER-DO | Executes an approved multi-wave plan unattended |
 | `data-eng-sa-orchestrator` | MID | Implements data-engineering / analytics-engineering deliverables |
 | `data-eng-sa-reviewer` | FRONTIER-DO | Reviews data-engineering deliverables for grain, correctness, honesty |
+| `code-reviewer` | FRONTIER-DO | Reviews a diff against its plan for production readiness, read-only |
 
 **When to reach for it.** The work is separable, would pollute your context if done
 inline, and benefits from a fresh, unbiased, or narrowly-scoped view. Also whenever a

@@ -4,11 +4,11 @@
 
 ## Summary
 
-[2–4 sentences: what you built, what problem the prompt asked you to solve, and your approach in brief.]
+[2 to 4 sentences: what you built, what problem the prompt asked you to solve, and your approach in brief.]
 
 ## How to run
 
-**Prerequisites:** [Docker / Node 20+ / Python 3.11+ — whatever's required].
+**Prerequisites:** [Docker / Node 20+ / Python 3.11+, whatever's required].
 
 ```bash
 git clone <repo>
@@ -36,7 +36,7 @@ npm test
 
 I made these assumptions in the absence of further clarification:
 
-- [Assumption 1 — what + why.]
+- [Assumption 1: what + why.]
 - [Assumption 2.]
 - [Assumption 3.]
 
@@ -45,8 +45,8 @@ I made these assumptions in the absence of further clarification:
 ## Tradeoffs
 
 - **[Tradeoff topic A]:** considered [option X] and [option Y]. Chose [Y] because [reason]. The tradeoff is [downside].
-- **[Tradeoff topic B]:** […]
-- **[Tradeoff topic C]:** […]
+- **[Tradeoff topic B]:** [...]
+- **[Tradeoff topic C]:** [...]
 
 ## Architecture
 
@@ -57,7 +57,7 @@ flowchart LR
   B --> D[Worker]
 ```
 
-[Brief explanation: 2–3 sentences.]
+[Brief explanation: 2 to 3 sentences.]
 
 ## Key decisions
 
@@ -75,7 +75,7 @@ flowchart LR
 
 Given more time, I would:
 
-- [Improvement A — why it would matter.]
+- [Improvement A: why it would matter.]
 - [Improvement B.]
 - [Improvement C.]
 
@@ -83,7 +83,7 @@ Given more time, I would:
 
 The prompt asked for [X, Y, Z]. I deferred:
 
-- **[Item A]:** [reason — usually time-boxed scope].
+- **[Item A]:** [reason, usually time-boxed scope].
 - **[Item B]:** [reason].
 
 ## Author

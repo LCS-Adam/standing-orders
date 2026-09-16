@@ -11,11 +11,11 @@ This repository [forks / is templated from] [original-project](https://github.co
 
 ## What changed
 
-[For forks only — list the divergences from upstream. Skip this section for fresh template usage.]
+[For forks only: list the divergences from upstream. Skip this section for fresh template usage.]
 
-- **[Change A]** — [what + why]
-- **[Change B]** — [what + why]
-- **[Change C]** — [what + why]
+- **[Change A]**: [what + why]
+- **[Change B]**: [what + why]
+- **[Change C]**: [what + why]
 
 ## Use this template
 

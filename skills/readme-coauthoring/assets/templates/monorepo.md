@@ -7,7 +7,7 @@
 
 ## Why this exists
 
-[2–3 sentences explaining what the workspace organizes and why a monorepo (vs. polyrepo).]
+[2 to 3 sentences explaining what the workspace organizes and why a monorepo (vs. polyrepo).]
 
 ## Workspace structure
 
@@ -26,7 +26,7 @@ docs/              ← cross-cutting documentation
 
 ### Why this shape
 
-- `packages/` are versioned and published — anyone outside this org can consume them.
+- `packages/` are versioned and published, so anyone outside this org can consume them.
 - `apps/` are private deployables, never published as packages.
 - `tools/` are internal-only build helpers; not consumed by `packages/` or `apps/`.
 - A utility lives in `packages/utils/` only if shared by ≥2 apps; one-app-only utilities stay in that app.
@@ -66,7 +66,7 @@ This installs dependencies across all packages and apps.
 
 - **Workspace-only deps** (devtools, linters, type-checkers) live in the root `package.json`.
 - **Per-package runtime deps** live in that package's `package.json`.
-- Cross-package deps use `workspace:*` protocol — pnpm resolves to local sources during development and to published versions at build time.
+- Cross-package deps use `workspace:*` protocol, and pnpm resolves to local sources during development and to published versions at build time.
 
 ## Release process
 

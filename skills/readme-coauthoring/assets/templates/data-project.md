@@ -4,30 +4,30 @@
 
 ## Why this exists
 
-[2–3 sentences: the analytical question, the audience, what's novel about the approach.]
+[2 to 3 sentences: the analytical question, the audience, what's novel about the approach.]
 
 ## Dataset
 
 | Property | Value |
 |---|---|
-| Source | [Provider] – [URL] |
+| Source | [Provider], [URL] |
 | Size | [N rows, M columns, X GB on disk] |
 | Format | Parquet / CSV / DuckDB |
 | Time range | YYYY-MM-DD to YYYY-MM-DD |
 | Update cadence | [daily / weekly / static] |
-| License | [Data license — may differ from code license] |
+| License | [Data license, may differ from code license] |
 
 ## Methodology
 
-[2–4 paragraphs explaining the approach: data cleaning, modeling choices, validation strategy. Reference any non-obvious tradeoffs.]
+[2 to 4 paragraphs explaining the approach: data cleaning, modeling choices, validation strategy. Reference any non-obvious tradeoffs.]
 
 ## Results
 
 | Metric | Value | Notes |
 |---|---|---|
-| [Key metric A] | … | … |
-| [Key metric B] | … | … |
-| [Comparison vs baseline] | … | … |
+| [Key metric A] | ... | ... |
+| [Key metric B] | ... | ... |
+| [Comparison vs baseline] | ... | ... |
 
 [Optional: a chart image or link to a notebook.]
 
@@ -64,7 +64,7 @@ flowchart LR
   V --> R[Reports]
 ```
 
-[1–2 sentences interpreting the flow.]
+[1 to 2 sentences interpreting the flow.]
 
 ## Data dictionary
 
@@ -72,7 +72,7 @@ flowchart LR
 |---|---|---|
 | `user_id` | string | Anonymized user identifier. |
 | `event_ts` | timestamp | Event time in UTC. |
-| […] | […] | […] |
+| [...] | [...] | [...] |
 
 ## Assumptions & tradeoffs
 
@@ -90,13 +90,13 @@ make validate
 
 ## Future work
 
-- [Improvement A — what + estimated lift.]
+- [Improvement A: what + estimated lift.]
 - [Improvement B.]
 
 ## License
 
 - Code: [MIT](LICENSE)
-- Data: [provider's license — link]
+- Data: [provider's license, link]
 - Reports / figures: CC-BY 4.0
 
 ## Acknowledgments

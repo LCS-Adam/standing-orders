@@ -10,7 +10,7 @@
 
 ## Why this exists
 
-[2–3 sentences: problem solved, what alternatives exist, what makes this different.]
+[2 to 3 sentences: problem solved, what alternatives exist, what makes this different.]
 
 ## Install
 
@@ -40,8 +40,8 @@ console.log(result)
 
 [1-sentence purpose.]
 
-- `arg` — [description]. Required.
-- `options.x` — [description]. Default: `…`.
+- `arg`: [description]. Required.
+- `options.x`: [description]. Default: `...`.
 
 ```ts
 functionA('example')
@@ -49,7 +49,7 @@ functionA('example')
 
 ### `functionB(input: T[]): U[]`
 
-[…]
+[...]
 
 ## Examples
 

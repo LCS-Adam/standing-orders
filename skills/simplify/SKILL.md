@@ -13,7 +13,8 @@ smallest correct diff.
 
 ## The reuse ladder
 
-Applied top-down; stop at the first rung that holds (`AGENTS.md:10-16`):
+Applied top-down; stop at the first rung that holds. Rungs 2 to 5 restate `AGENTS.md:10-14`;
+rung 1 is this skill's own.
 
 1. Does this need to exist at all? Speculative code with no current caller - cut it.
 2. Is there already a helper, type, or pattern a few files over? Reuse it instead of a parallel one.

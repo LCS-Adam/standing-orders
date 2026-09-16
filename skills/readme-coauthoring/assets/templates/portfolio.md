@@ -8,7 +8,7 @@
 
 ## What this is
 
-[2–4 sentences: the problem, your motivation for building it, what you wanted to learn or demonstrate.]
+[2 to 4 sentences: the problem, your motivation for building it, what you wanted to learn or demonstrate.]
 
 ## Tech stack
 
@@ -21,12 +21,12 @@
 | Feature | Notes |
 |---|---|
 | [Feature A] | [Brief detail about what makes it interesting.] |
-| [Feature B] | […] |
-| [Feature C] | […] |
+| [Feature B] | [...] |
+| [Feature C] | [...] |
 
 ## How it works
 
-[2–3 paragraphs explaining the architecture or key technical choices. Diagrams welcome if helpful.]
+[2 to 3 paragraphs explaining the architecture or key technical choices. Diagrams welcome if helpful.]
 
 ```mermaid
 flowchart LR
@@ -47,11 +47,11 @@ Open http://localhost:3000.
 
 ## What I learned
 
-[3–5 honest reflections. What surprised you, what you'd reconsider, what tradeoffs you made knowingly.]
+[3 to 5 honest reflections. What surprised you, what you'd reconsider, what tradeoffs you made knowingly.]
 
 - [Insight A]
 - [Insight B]
-- [Tradeoff C — what you chose and why]
+- [Tradeoff C: what you chose and why]
 
 ## Future work
 
@@ -59,7 +59,7 @@ Open http://localhost:3000.
 
 ## Author
 
-[Your name] — [portfolio link] • [LinkedIn] • [other notable work]
+[Your name] • [portfolio link] • [LinkedIn] • [other notable work]
 
 ## License
 
