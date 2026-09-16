@@ -1,9 +1,9 @@
-# External review prompt
-
-One text, handed to every reviewer CLI by path, so a round is comparable across
-tools instead of depending on whatever the caller typed that day.
-
----
+<!-- The whole of this file is handed to the reviewer verbatim, by path for the
+     CLIs that take an instruction file and inlined for the ones that do not.
+     Anything written here outside a comment is read by the model as part of
+     its instructions, so notes about the file belong in a comment like this
+     one. One text, so a round is comparable across tools instead of depending
+     on whatever the caller typed that day. -->
 
 You are reviewing our own code for correctness gaps we have missed. We wrote it,
 we want it to hold, and we would rather find the hole ourselves than ship it.

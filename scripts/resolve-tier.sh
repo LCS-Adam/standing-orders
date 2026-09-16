@@ -644,7 +644,9 @@ while [ $# -gt 0 ]; do
     --selftest)   selftest; exit $? ;;
     --write-conf) WRITE=1 ;;
     --force)      FORCE=1 ;;
-    -h|--help)    sed -n '5,30p' "$SELF"; exit 0 ;;
+    # Anchored on content. Line numbers went stale the moment a comment block
+    # was inserted above the usage text, and -h then printed the wrong paragraph.
+    -h|--help)    sed -n '/^# resolve-tier\.sh -/,/^# exit:/p' "$SELF"; exit 0 ;;
     TIER_FRONTIER_THINK|TIER_FRONTIER_DO|TIER_MID|TIER_SMALL|REVIEWER) ROLE="$1" ;;
     *) die "unknown argument: $1" ;;
   esac

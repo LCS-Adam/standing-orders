@@ -86,7 +86,7 @@ conf_get() { # conf_get <file> <key> - the normalisation bin/harness' load_model
 SEVERITY='^(BLOCKER|CRITICAL|HIGH|MAJOR|MEDIUM|MINOR|NIT)([^[:alnum:]_]|$)'
 
 round_verdict() { # round_verdict <file> -> 0 pass, 1 FAILED (reason on stderr)
-  local f="$1" line1 bytes
+  local f="$1" line1 bytes findings
   [ -f "$f" ] || { note "FAILED: no round output at $f"; return 1; }
   bytes=$(wc -c < "$f" | tr -d ' ')
   # A reconnect loop is a failed round, not a slow one, and the file grows the
@@ -98,7 +98,11 @@ round_verdict() { # round_verdict <file> -> 0 pass, 1 FAILED (reason on stderr)
   # head -1 on the FILE, not `cat "$f" | head -1`: under pipefail the producer
   # takes SIGPIPE and a passing round comes back as exit 141.
   line1="$(head -1 "$f" 2>/dev/null)"
-  if ! printf '%s' "$line1" | grep -qE '^VERDICT: (CLEAN|FINDINGS)$'; then
+  # The contract is "line 1 STARTS WITH the verdict", so a reviewer that writes
+  # `VERDICT: FINDINGS (3 issues)` passes. The trailing class is what keeps
+  # `VERDICT: CLEANUP` out: anchoring with $ instead would have failed a
+  # perfectly good round, and this runs against a real call.
+  if ! printf '%s' "$line1" | grep -qE '^VERDICT: (CLEAN|FINDINGS)([^[:alnum:]]|$)'; then
     note "FAILED: line 1 is not a verdict ($bytes bytes). Got: ${line1:0:80}"
     return 1
   fi
@@ -108,7 +112,8 @@ round_verdict() { # round_verdict <file> -> 0 pass, 1 FAILED (reason on stderr)
     note "FAILED: verdict line with no review behind it ($bytes bytes)"
     return 1
   fi
-  if [ "$line1" = "VERDICT: FINDINGS" ] && ! grep -qE "$SEVERITY" "$f"; then
+  case "$line1" in VERDICT:*FINDINGS*) findings=1 ;; *) findings=0 ;; esac
+  if [ "$findings" = "1" ] && ! grep -qE "$SEVERITY" "$f"; then
     note "FAILED: VERDICT: FINDINGS with no severity block"
     return 1
   fi
@@ -235,10 +240,13 @@ probe() { # probe <cli> -> 0 alive, 3 UNAVAILABLE
   local cli="$1" out rc
   command -v "$cli" >/dev/null 2>&1 || { note "UNAVAILABLE: $cli is not on PATH"; return 3; }
   case "$cli" in
-    auggie)       out="$(auggie --print --quiet --max-turns 1 "reply PING" 2>&1)"; rc=$? ;;
-    codex)        out="$(codex login status 2>&1)"; rc=$? ;;
-    cursor-agent) out="$(cursor-agent status 2>&1)"; rc=$? ;;
-    gemini)       out="$(gemini --version 2>&1)"; rc=$? ;;
+    # </dev/null on every one, for the reason run_round documents: these are the
+    # same invocation shape, and a probe that blocks reading stdin hangs the
+    # gate before the round it was meant to make safe.
+    auggie)       out="$(auggie --print --quiet --max-turns 1 "reply PING" 2>&1 </dev/null)"; rc=$? ;;
+    codex)        out="$(codex login status 2>&1 </dev/null)"; rc=$? ;;
+    cursor-agent) out="$(cursor-agent status 2>&1 </dev/null)"; rc=$? ;;
+    gemini)       out="$(gemini --version 2>&1 </dev/null)"; rc=$? ;;
     *) die "unknown REVIEWER_CLI: $cli" ;;
   esac
   if [ $rc -ne 0 ]; then
@@ -356,6 +364,8 @@ which is the last check and never the only one.'
   printf 'VERDICT: CLEAN\n'                                                  > "$tmp/c9"
   printf '{"type":"result","subtype":"success","duration_ms":419000,"num_turns":7,"total_cost_usd":0.41}\n{"session":"abcd"}\n%s\n' "$BODY" > "$tmp/c10"
   printf 'VERDICT: CLEAN\n\n%s\nConnection lost, reconnecting ... (attempt 9)\n' "$BODY" > "$tmp/c11"
+  printf 'VERDICT: FINDINGS (3 issues)\n\nHIGH the scan set and the byte source disagree\n%s\n' "$BODY" > "$tmp/c12"
+  printf 'VERDICT: CLEANUP COMPLETE\n\n%s\n' "$BODY"                            > "$tmp/c13"
 
   ok()  { T=$((T+1)); printf '  ok   %s\n' "$1"; }
   no()  { T=$((T+1)); F=$((F+1)); printf '  FAIL %s\n' "$1"; }
@@ -399,6 +409,8 @@ c8|0|FAILED|a verdict on line 2 instead of line 1
 c9|0|FAILED|a bare verdict line, 15 bytes, nothing behind it
 c10|0|FAILED|metadata JSON and nothing else
 c11|0|FAILED|a CLEAN verdict with a reconnect loop buried in the body
+c12|0|pass|a verdict line carrying a count, "VERDICT: FINDINGS (3 issues)"
+c13|0|FAILED|a near-miss word, "VERDICT: CLEANUP COMPLETE"
 ROWS
 
   echo
@@ -481,7 +493,8 @@ case "$1" in
     [ -n "$CLI" ] || CLI="$(conf_get "$REVIEWER_CONF" REVIEWER_CLI || true)"
     [ -n "$CLI" ] || die "no REVIEWER_CLI in the environment or ${REVIEWER_CONF##*/}"
     probe "$CLI"; exit $? ;;
-  -h|--help) sed -n '5,12p' "$SELF"; exit 0 ;;
+  # Anchored on content, for the reason resolve-tier.sh states at the same spot.
+  -h|--help) sed -n '/^# external-review\.sh -/,/^# exit:/p' "$SELF"; exit 0 ;;
   -*) die "unknown option: $1" ;;
 esac
 [ $# -ge 2 ] || die "usage: external-review.sh <artifact> <round-output> [focus]"
