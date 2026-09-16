@@ -559,6 +559,10 @@ countbad=$(printf '%s\n' "$CLIENT_DOCS" | grep -v '^$' | tr '\n' '\0' | xargs -0
              sixteen=>16,seventeen=>17,eighteen=>18,nineteen=>19,twenty=>20);
   # Anchored on the NUMBER, so a sentence with no count in it can never match,
   # with one optional word between ("12 invocable skills", "eleven other checks").
+  # CEILING: the noun must follow the number. A bare "it ran all thirteen" is not
+  # matched and would ship stale behind a green gate. Docs are written so every
+  # count carries its noun; this comment exists so nobody reads a PASS here as
+  # proof that no unanchored count exists anywhere.
   my $n = join "|", "[0-9]+", keys %num;
   my %pat = (agents   => qr/\b($n)\b(?:\s+[\w-]+)?\s+(?:subagent definitions|agents in this repo)\b/i,
              skills   => qr/\b($n)\b(?:\s+[\w-]+)?\s+skills\b/i,

@@ -158,7 +158,7 @@ harness verify
 
 This runs `verify.sh`, the scrub gate. It exists because this framework is meant to be carried onto
 machines that are not yours, and a fail-open scrub looks exactly like a passing one. The gate runs
-thirteen checks and asserts, at the end, that it ran all thirteen, so a broken check fails loudly
+thirteen checks and asserts, at the end, that it ran all thirteen checks, so a broken check fails loudly
 instead of silently passing nothing:
 
 1. No absolute home paths in tracked files.
