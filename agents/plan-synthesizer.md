@@ -28,13 +28,12 @@ Emit these parts, in this order. This is the deep-plan four-part shape plus two 
      FIRST and ALONE, then fan out. State what each wave waits on and what merges first.
    - Isolation: one git worktree + feature branch per concurrent workstream, with an explicit
      exclusive file-ownership table so parallel work is verifiably conflict-free.
-   - **Review gates — MINIMAL BY DEFAULT (operator decision 2026-08-19).** The operator's words:
-     "I usually just go with your recommendation so these gates aren't necessary in most instances."
+   - **Review gates — MINIMAL BY DEFAULT.** This is a dial; an organization sets it deliberately.
      A gate that rubber-stamps a decision already made parks an overnight run for nothing.
 
      **A HUMAN GATE EXISTS ONLY IF one of these is true:**
      (a) the pass/fail rule CANNOT be stated in advance (it needs live judgment); OR
-     (b) the action is CANDIDATE-FACING (reaches a real person); OR
+     (b) the action reaches a person outside the system; OR
      (c) the action is IRREVERSIBLE and lacks a tested rollback; OR
      (d) it requires physical human action (a UI click, a Desktop paste).
 
@@ -53,13 +52,13 @@ Emit these parts, in this order. This is the deep-plan four-part shape plus two 
      rollback is not permitted. "Re-derive first" validates membership, not correctness — it proves
      you selected the right rows, not that the change to them was right.
 
-     **NEVER weaken these, regardless of how statable their rule is:** candidate-facing sends,
-     deletion of tracked content, and writes to the vault source of truth. These stay gated even
-     when the rule is perfectly expressible.
+     **NEVER weaken these, regardless of how statable their rule is:** sends that reach a
+     person outside the system, deletion of tracked content, and writes to a source of truth the
+     plan marks read-only. These stay gated even when the rule is perfectly expressible.
 
-     Calibration from the 2026-08-18 combined plan: it shipped 7 operator stops; applying this rule
-     reduced it to 3 real ones (an attended spike, a UI click, a Desktop paste) plus the
-     candidate-facing sends. The other 4 were rubber-stamps.
+     Calibration example: a densely-gated plan can usually drop most of its stops once this rule
+     is applied strictly, leaving only genuine attended actions and sends that reach a person
+     outside the system; this is a dial, and an organization sets it deliberately.
    - Any hard precondition that gates every phase (e.g. quiescing live automation) is a top-level
      item, not a footnote.
    - **The per-wave execution review stack (bake this into every code-producing wave's gate).**
@@ -69,7 +68,7 @@ Emit these parts, in this order. This is the deep-plan four-part shape plus two 
      CLI, and do not hardcode Codex as the only execution reviewer.
    - Bake into EVERY code-producing wave's gate, in order: **(1) tests green (the command the
      PLAN names for this repo; read it, never assume one) -> (2) `adversary` correctness
-     review of the merged wave diff -> (3) **`/ponytail-review`** on the wave diff (quality:
+     review of the merged wave diff -> (3) **`/simplify`** on the wave diff (quality:
      reuse/simplification/altitude; it applies fixes; it does NOT hunt bugs and never
      replaces step 2) -> (4) external-LLM fold-back loop on the FINAL simplified diff (review
      -> apply fixes -> re-review; **loop until a round returns no new CRITICAL/HIGH — NO
@@ -106,7 +105,7 @@ Emit these parts, in this order. This is the deep-plan four-part shape plus two 
    degradation continuation via a backgrounded `claude -p --model <explicit>`, never-inherit rule).
 
    **Apply the minimal-gate rule above when deciding what is pre-authorized overnight.** Anything
-   that is not (a) live-judgment, (b) candidate-facing, (c) irreversible-without-tested-rollback, or
+   that is not (a) live-judgment, (b) reaches a person outside the system, (c) irreversible-without-tested-rollback, or
    (d) physically human belongs in the DELEGATED-DECISIONS list with its rule stated, not in the
    gate list. A gate the operator would have waved through is a run that stalls until morning for
    nothing. Every auto-proceeding phase that mutates live data carries its branch, precomputed

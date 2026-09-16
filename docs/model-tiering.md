@@ -208,7 +208,7 @@ that used to warrant FRONTIER-DO now warrants something even bigger. Decide that
 purpose, in `AGENTS.md`, rather than letting it happen as a side effect of a config
 edit.
 
-## The ten agents in this repo
+## The eleven agents in this repo
 
 | Agent | Tier | Effort | What it is for |
 |---|---|---|---|
@@ -222,6 +222,7 @@ edit.
 | `autorun-plan-orchestrator` | FRONTIER-DO | high | Executes an approved multi-wave plan unattended, with review gates and heartbeat |
 | `data-eng-sa-orchestrator` | MID | (unset) | Implements data-engineering / analytics-engineering deliverables: schemas, docs, validation scripts |
 | `data-eng-sa-reviewer` | FRONTIER-DO | (unset) | Reviews data-engineering deliverables for grain discipline, metric correctness, honest framing |
+| `code-reviewer` | FRONTIER-DO | high | Reviews a diff against its plan or requirements for production readiness, used by `requesting-code-review` |
 
 `data-eng-sa-orchestrator` and `data-eng-sa-reviewer` pin only `model:` and no explicit
 `effort:` field; the hook is satisfied by the `model:` pin alone, since effort tuning is

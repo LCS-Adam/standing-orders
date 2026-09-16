@@ -11,7 +11,7 @@ Produce a structured, cited inventory of a target without reinventing the `find`
 ## Hard write-guard
 NEVER mutates the target. Uses only `find`, `ls`, `grep`, `sed -n`, `wc`, `cat`, `git log/show/ls-files`, `jq`/`python3 -c` reads. The ONLY file written is the report, outside the target tree.
 
-## Identity preamble (learned rule #34)
+## Identity preamble
 If the target is a deployed tool whose "live version/config" is the question, run AS the owning identity (a service installed under a dedicated account must be inspected as that account; recon from another admin account resolves a stale copy and reports false drift). State the identity at the top of the report; if you cannot become the owner, mark those findings LOW-CONFIDENCE.
 
 ## Procedure

@@ -12,7 +12,8 @@ These skills are not original to this harness. They are vendored from the
 
 The author's internal test fixtures (`test-pressure-*.md`, `test-academic.md`, `CREATION-LOG.md`)
 were removed; the skill bodies are otherwise unmodified except for the tier-name rewrite applied
-across this repo.
+across this repo, and two lines in `requesting-code-review/SKILL.md` (the dispatch line and the
+template path) updated to point at `agents/code-reviewer.md`, which is original to this harness.
 
 **Before distributing this repo publicly, confirm the upstream license permits redistribution and
 add the required notice here.** Everything else in this repository is the maintainer's own work.

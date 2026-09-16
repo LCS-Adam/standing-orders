@@ -55,7 +55,7 @@ which gemini
 | Phase | Artifact | When | Default CLI if plan silent |
 |---|---|---|---|
 | Planning | PLAN file | After synthesis, before approval | **codex** |
-| Execution | wave's **final simplified DIFF file** | After tests + `adversary` + `simplify` | whatever the plan names |
+| Execution | wave's **final simplified DIFF file** | After tests + `adversary` + `/simplify` | whatever the plan names |
 
 Pass the artifact **by path**. You apply fixes; the reviewer stays read-only.
 

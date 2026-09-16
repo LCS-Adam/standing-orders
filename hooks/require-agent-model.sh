@@ -1,12 +1,11 @@
 #!/bin/bash
-# Right-fit model gate (operator hard rule, 2026-07-22).
+# Right-fit model gate.
 # Denies Agent/Task spawns that would silently inherit the parent session's
 # model: the call must either pass an explicit `model` parameter, or name a
 # subagent_type whose definition file pins `model:` in its frontmatter.
 # `fork` agents are exempt (they always inherit by design).
-# Paired with the "Right-fit models for all sub-execution" section in
-# ~/.claude/CLAUDE.md, which covers surfaces this hook cannot see
-# (Workflow agent() calls, headless `claude -p` spawns).
+# Paired with the Model tiers section of AGENTS.md, which covers surfaces
+# this hook cannot see.
 input=$(cat)
 model=$(jq -r '.tool_input.model // empty' <<<"$input")
 stype=$(jq -r '.tool_input.subagent_type // empty' <<<"$input")
