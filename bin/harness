@@ -95,6 +95,39 @@ put_dir() {
   done < <(find "$src" -type f ! -name '.DS_Store')
 }
 
+# ---------------------------------------------------------------- the shipped set
+#
+# THE INVARIANT: nothing can reach ~/.claude that verify.sh did not scan.
+#
+# One definition of "the repo", shared with the gate (verify.sh, function
+# `shipped`). Check 12 of the gate fails the build when the two disagree, so if
+# you change this line, change that one in the same commit.
+#
+# This used to be `cp -R "$HARNESS_ROOT/agents"` and friends, which copy the
+# WORKING TREE: an untracked hooks/leak-hook.sh, or an ignored one, installed
+# into ~/.claude/hooks/ while the gate - scanning tracked files - never saw it.
+# A work-in-progress file written but not yet git-added is the ordinary case,
+# not a contrived one, and the gate documented that gap as an acceptable ceiling
+# on the reasoning that an un-added file cannot reach anyone else. It can: this
+# installer carried it.
+#
+# Requires a git checkout. That is a decision, not an oversight: the gate already
+# refuses to run outside one (verify.sh exits 2 on an empty file list), and an
+# install nothing can verify is exactly what this pair exists to prevent. If you
+# downloaded a zip, `git clone` the repo instead.
+shipped() { git -C "$HARNESS_ROOT" ls-files -z --cached --others --exclude-standard -- "$@"; }
+
+# stage_shipped <subdir> - copy that subdir's shipped files into $STAGE.
+stage_shipped() {
+  local sub="$1" f n=0
+  while IFS= read -r -d '' f; do
+    mkdir -p "$STAGE/$(dirname "$f")"
+    cp "$HARNESS_ROOT/$f" "$STAGE/$f"
+    n=$((n+1))
+  done < <(shipped "$sub")
+  [ "$n" -gt 0 ] || die "nothing to install from $sub/ - is $HARNESS_ROOT a harness checkout?"
+}
+
 # ---------------------------------------------------------------- settings merge
 
 merge_settings() {
@@ -131,6 +164,8 @@ cmd_install() {
   # checked at all even though resolve_tiers cannot run without it.
   need perl
   need jq
+  git -C "$HARNESS_ROOT" rev-parse --git-dir >/dev/null 2>&1 \
+    || die "$HARNESS_ROOT is not a git checkout; install ships only what the gate can scan (see 'the shipped set' above)"
   load_models
   c_info "Installing user scope into $CLAUDE_HOME"
   echo "  tiers: FRONTIER-THINK=$TIER_FRONTIER_THINK FRONTIER-DO=$TIER_FRONTIER_DO MID=$TIER_MID SMALL=$TIER_SMALL"
@@ -138,11 +173,14 @@ cmd_install() {
   # Staged so tier tokens resolve into a copy, never into the repo itself.
   # agents, skills AND commands all carry pins that must become literals;
   # rules/ deliberately does not, because it documents the token syntax.
+  # Everything bound for ~/.claude goes through stage_shipped, so the set of
+  # files that can reach it is the set the gate scans.
   STAGE="$(mktemp -d)"
   trap 'rm -rf "${STAGE:-}"' EXIT
-  cp -R "$HARNESS_ROOT/agents"   "$STAGE/agents"
-  cp -R "$HARNESS_ROOT/skills"   "$STAGE/skills"
-  cp -R "$HARNESS_ROOT/commands" "$STAGE/commands"
+  stage_shipped agents
+  stage_shipped skills
+  stage_shipped commands
+  stage_shipped hooks
   while IFS= read -r f; do resolve_tiers "$f"; done < <(find "$STAGE" -type f -name '*.md')
 
   if grep -rq '{{TIER_' "$STAGE" 2>/dev/null; then
@@ -154,12 +192,12 @@ cmd_install() {
   put_dir "$STAGE/agents"            "$CLAUDE_HOME/agents"
   put_dir "$STAGE/skills"            "$CLAUDE_HOME/skills"
   put_dir "$STAGE/commands"          "$CLAUDE_HOME/commands"
-  put_dir "$HARNESS_ROOT/hooks"      "$CLAUDE_HOME/hooks"
+  put_dir "$STAGE/hooks"             "$CLAUDE_HOME/hooks"
   [ "$DRY" -eq 0 ] && chmod +x "$CLAUDE_HOME"/hooks/*.sh 2>/dev/null || true
 
   # The core goes into rules/, NOT CLAUDE.md: user-level rules load in every
   # session and this never clobbers a CLAUDE.md the user already wrote.
-  mkdir -p "$CLAUDE_HOME/rules"
+  if [ "$DRY" -eq 0 ]; then mkdir -p "$CLAUDE_HOME/rules"; fi
   local tmpcore="$STAGE/00-harness-core.md"
   { echo "<!-- installed by harness; edit the source repo, not this copy -->"; echo
     cat "$HARNESS_ROOT/AGENTS.md"; } > "$tmpcore"

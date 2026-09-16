@@ -15,7 +15,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DENYLIST="${HARNESS_DENYLIST:-$HOME/.agent-harness-denylist}"
 FAIL=0
 RAN=0
-EXPECTED_CHECKS=11
+EXPECTED_CHECKS=12
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -38,24 +38,35 @@ cd "$ROOT"
 # under docs/, and a real home path shipped there. Never widen this.
 EXEMPT='^verify\.sh:'
 
-# Every scan below runs over TRACKED files, never the working tree. grep -r walks
-# .worktrees/, which holds checkouts of this same repo (ignored at .gitignore:6,
-# but grep does not read .gitignore), so the gate was scanning copies of itself:
-# its own regex source reported as an absolute-path leak, its own docs/ as vendor
-# model names. Excluding .worktrees/ by name would fix exactly today's directory
-# and go red again on the next untracked node_modules/, .venv/ or build/. Tracked
-# files are also the right SCOPE: this gate scrubs what gets carried to another
-# machine, and an untracked file is not carried.
-# Ceiling: a real source file is exempt until it is git-added. Accepted, because
-# an un-added file cannot reach anyone else.
-tracked() { git ls-files -z -- "$@"; }
+# ---------------------------------------------------------------- THE SHIPPED SET
+#
+# THE INVARIANT: nothing can reach ~/.claude that this gate did not scan.
+#
+# One definition of "the repo", used by this gate AND by `harness install`
+# (bin/harness, function `shipped`). Check 12 fails the build when the two
+# disagree, so if you change this line, change that one in the same commit.
+#
+# It is every file a clone gets, plus every file present and not ignored.
+#   - The working tree alone was wrong: it walks .worktrees/, which holds
+#     checkouts of this same repo (ignored at .gitignore:6, but grep -r does not
+#     read .gitignore), so the gate scanned copies of itself and its own regex
+#     source reported as an absolute-path leak.
+#   - The git index alone was wrong, and the comment that called it an acceptable
+#     ceiling ("an un-added file cannot reach anyone else") was false: cmd_install
+#     copied the WORKING TREE, so a file written but not yet git-added installed
+#     straight into ~/.claude/hooks/ with every check blind to it.
+#   - Ignored files are out of BOTH sets: this gate does not scan them and the
+#     installer does not ship them. That is the only divergence permitted, and it
+#     is safe in the one direction that matters.
+shipped()   { git ls-files -z --cached --others --exclude-standard -- "$@"; }
+shipped_l() { git ls-files    --cached --others --exclude-standard -- "$@"; }
 CODEISH=('*.md' '*.sh' '*.json')
 
 # An empty file list means "scanned nothing", not "clean". Without this, running
 # the gate outside a checkout would turn seven checks into permanent passes.
-NTRACKED=$(git ls-files 2>/dev/null | wc -l | tr -d ' ')
-if [ "${NTRACKED:-0}" -lt 2 ]; then
-  printf '\033[31mGATE ERROR\033[0m git ls-files returned %s files - scanning nothing, not clean\n' "${NTRACKED:-0}"
+NSHIPPED=$(shipped_l 2>/dev/null | wc -l | tr -d ' ')
+if [ "${NSHIPPED:-0}" -lt 2 ]; then
+  printf '\033[31mGATE ERROR\033[0m the shipped set is %s files - scanning nothing, not clean\n' "${NSHIPPED:-0}"
   exit 2
 fi
 
@@ -63,7 +74,7 @@ echo "Scrubbing $ROOT"
 echo
 
 # 1 -------------------------------------------------- absolute home paths
-hits=$(tracked "${CODEISH[@]}" | xargs -0r grep -HnE '(/Users/|/home/[a-z]|C:\\Users\\)' 2>/dev/null \
+hits=$(shipped "${CODEISH[@]}" | xargs -0r grep -HnE '(/Users/|/home/[a-z]|C:\\Users\\)' 2>/dev/null \
        | grep -vE "$EXEMPT" || true)
 if [ -n "$hits" ]; then
   fail "absolute home paths"; printf '%s\n' "$hits" | head -10 | while IFS= read -r l; do show "$l"; done
@@ -78,7 +89,7 @@ else pass "no absolute home paths"; fi
 # and to carry the old-name migration table. They stay subject to every OTHER
 # check, including absolute paths and the denylist.
 VENDOR_EXEMPT="$EXEMPT|^adapters/README\.md|^docs/|^config/models\.conf"
-hits=$(tracked "${CODEISH[@]}" | xargs -0r grep -HniE '\b(fable|opus|sonnet|haiku)\b' 2>/dev/null \
+hits=$(shipped "${CODEISH[@]}" | xargs -0r grep -HniE '\b(fable|opus|sonnet|haiku)\b' 2>/dev/null \
        | grep -vE "$VENDOR_EXEMPT" || true)
 if [ -n "$hits" ]; then
   fail "vendor model names outside config/models.conf"; printf '%s\n' "$hits" | head -10 | while IFS= read -r l; do show "$l"; done
@@ -131,7 +142,7 @@ bad=""; n=0
 while IFS= read -r f; do
   n=$((n+1))
   head -1 "$f" | grep -q '^#!/bin/bash' || bad="$bad $f"
-done < <(git ls-files -- '*.sh')
+done < <(shipped_l '*.sh')
 if [ "$n" -eq 0 ]; then fail "no shell scripts found - scanned nothing, which is not the same as clean"
 elif [ -n "$bad" ]; then fail "scripts without an absolute-path shebang:$bad"
 else pass "all $n shell scripts use an absolute-path shebang"; fi
@@ -139,7 +150,7 @@ else pass "all $n shell scripts use an absolute-path shebang"; fi
 # 8 -------------------------------------------------- banned glyphs, client-facing
 # Client-facing surfaces only. Agent, skill and template definitions are framework
 # config and are exempt from the prose-glyph rule.
-targets=$(git ls-files -- 'README.md' 'INSTALL.md' 'docs/*.md' 'adapters/*.md')
+targets=$(shipped_l 'README.md' 'INSTALL.md' 'docs/*.md' 'adapters/*.md')
 glyphs=""
 if [ -n "$targets" ]; then
   glyphs=$(printf '%s\n' "$targets" | while IFS= read -r f; do
@@ -160,7 +171,7 @@ if [ -f "$DENYLIST" ]; then
   else
     hits=$(printf '%s\n' "$terms" | while IFS= read -r t; do
              [ -n "$t" ] || continue
-             tracked "${CODEISH[@]}" | xargs -0r grep -HniE "$t" 2>/dev/null | grep -vE "$EXEMPT" || true
+             shipped "${CODEISH[@]}" | xargs -0r grep -HniE "$t" 2>/dev/null | grep -vE "$EXEMPT" || true
            done)
     if [ -n "$hits" ]; then
       fail "denylist matches"; printf '%s\n' "$hits" | head -10 | while IFS= read -r l; do show "$l"; done
@@ -182,7 +193,7 @@ dangling=""
 while IFS= read -r ref; do
   base="${ref##*/}"
   case " $INSTALLED_RULES " in *" $base "*) ;; *) dangling="$dangling $ref" ;; esac
-done < <(tracked '*.md' '*.sh' | xargs -0r grep -hoE '~/\.claude/rules/[A-Za-z0-9._-]+\.md' 2>/dev/null | sort -u)
+done < <(shipped '*.md' '*.sh' | xargs -0r grep -hoE '~/\.claude/rules/[A-Za-z0-9._-]+\.md' 2>/dev/null | sort -u)
 if [ -n "$dangling" ]; then
   fail "references to ~/.claude/rules files that install never creates:$dangling"
 else
@@ -212,7 +223,7 @@ fi
 SLASH_SCAN="README.md docs adapters agents skills commands AGENTS.md CLAUDE.md templates"
 BUILTIN_SLASH="clear compact loop agents help plan status"
 NOT_A_COMMAND="tmp something notes-repo-recon"
-tokens=$(tracked $SLASH_SCAN | xargs -0r grep -hoE '`/[a-z][a-z0-9-]*`' 2>/dev/null \
+tokens=$(shipped $SLASH_SCAN | xargs -0r grep -hoE '`/[a-z][a-z0-9-]*`' 2>/dev/null \
          | sed -e 's|^`/||' -e 's|`$||' | sort -u)
 dangling=""
 while IFS= read -r tok; do
@@ -233,10 +244,33 @@ elif [ -n "$dangling" ]; then
   # say WHERE sends you searching the whole repo for a token.
   fail "slash commands referenced but not defined:$dangling"
   for tok in $dangling; do
-    tracked $SLASH_SCAN | xargs -0r grep -HnF "\`/$tok\`" 2>/dev/null || true
+    shipped $SLASH_SCAN | xargs -0r grep -HnF "\`/$tok\`" 2>/dev/null || true
   done | head -10 | while IFS= read -r l; do show "$l"; done
 else
   pass "every backticked slash command resolves to commands/, skills/, or an allowlist"
+fi
+
+# 12 ------------------------------------------------- installer and gate agree
+# THE INVARIANT, asserted rather than commented: nothing reaches ~/.claude that
+# this gate did not scan. `harness install --dry-run` is asked what it would
+# write, and every agents/, skills/, commands/ or hooks/ file in that answer must
+# be in the shipped set above. Subset, not equality: a file that is scanned but
+# deliberately not installed is not a leak.
+instout=$(CLAUDE_CONFIG_DIR="$(mktemp -d)" "$ROOT/bin/harness" install --dry-run 2>&1)
+labels=$(printf '%s\n' "$instout" | sed $'s/\033\\[[0-9;]*m//g' \
+         | grep -oE '^  [+=] (agents|skills|commands|hooks)/[^ ]+' | sed 's|^  [+=] ||' | sort -u)
+shipset=$(shipped_l 'agents' 'skills' 'commands' 'hooks')
+unscanned=$(printf '%s\n' "$labels" | grep -v '^$' | while IFS= read -r l; do
+              printf '%s\n' "$shipset" | grep -qxF "$l" || printf '%s\n' "$l"
+            done)
+if [ -z "$labels" ]; then
+  fail "harness install --dry-run named no files to install - the check could not run"
+  printf '%s\n' "$instout" | head -3 | while IFS= read -r l; do show "$l"; done
+elif [ -n "$unscanned" ]; then
+  fail "harness install would ship files this gate never scanned"
+  printf '%s\n' "$unscanned" | head -10 | while IFS= read -r l; do show "$l"; done
+else
+  pass "all $(printf '%s\n' "$labels" | wc -l | tr -d ' ') files harness install would ship are in the scanned set"
 fi
 
 # ---------------------------------------------------- docs must not go stale
