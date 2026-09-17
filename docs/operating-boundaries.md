@@ -23,17 +23,17 @@ cursor-agent with `--sandbox enabled` (line 81), gemini with a real read-only mo
 "model | From the plan. Never `claude-*`." - so this is a deliberate hand-off of one artifact to an
 external vendor's inference endpoint, not a general repo upload.
 
-**Cosmos (Augment's cloud platform).** `adapters/README.md:38` describes COSMOS as "Augment's cloud
-platform, where reusable agent templates called Experts run inside Environments." Two paths exist,
-and the difference matters (lines 41-49):
+**Cosmos (Augment's cloud platform).** `adapters/README.md`, under "Tools with no repo surface",
+describes COSMOS as "Augment's cloud platform, where reusable agent templates called Experts run
+inside Environments." Two paths exist, and the difference matters:
 
 - **Cosmos Advisor** is conversational; per its own documentation you never see or edit a
-  configuration file on that path (line 42).
+  configuration file on that path.
 - **`auggie cloud`** is file-based and is the path this repo can target: Experts, environments, MCP
   servers, and residents are represented as YAML bundles that "can live in a repository and be
-  reviewed like any other change" (lines 46-47), with an explicit `init`, edit, `validate`, `diff`,
-  `apply` workflow (lines 47-49). Augment's own docs state "the repository becomes the source of
-  truth for your Cosmos configuration" (line 49, citing docs.augmentcode.com/cli/cloud).
+  reviewed like any other change", with an explicit `init`, edit, `validate`, `diff`, `apply`
+  workflow. Augment's own docs state "the repository becomes the source of truth for your Cosmos
+  configuration" (citing docs.augmentcode.com/cli/cloud).
 
 In both cases what is sent is a named artifact (a plan file, a diff, or a bundle path) to a specific
 vendor's cloud, not an unscoped repository upload. Which artifacts are safe to send to which vendor
@@ -46,15 +46,15 @@ before running either integration.
 |---|---|---|
 | `runtime/` | Every `exec-*` agent's verification report, defaulted there in each agent's own file (`.gitignore:8-9`). | Ignore, do not commit. `.gitignore:9-11` explains why: an unignored report lands in the shipped set and check 1 then scans the absolute worktree paths an agent naturally writes there, failing the packaging gate on output that was never meant to ship. |
 | `.project-state/` | Planning and handoff state: `PROJECT_STATE.md`, `NEXT_STEPS.md`, `ERRORS.md`, `SESSION_HANDOFF.md` and its `handoffs/` archive, `DEPENDENCIES.md`, `CLEANUP.md`, `SKILL_CANDIDATES.md` (`docs/project-management.md:19-27`). | Commit. This directory is designed to be the durable, cross-session record git history does not give you: "intent, next steps, blockers, and decisions" (`docs/project-management.md:35-37`). Treat it like any other tracked doc: review its content for anything sensitive before it ships, same as code. |
-| `active/` | Artifact directories mandated by the optional workspace-brain module (`README.md:35`: "harness add workspace-brain ... mandates writing `active/` artifact directories"). Not present unless that module was added. | Project-scope by design (`README.md:86-88`) so it does not appear in every repo you touch; if the module is added, decide per-project whether its contents are safe to commit or belong in `.gitignore`, the same review you would give any new tracked directory. |
+| `active/` | Artifact directories mandated by the optional workspace-brain module (`README.md`: the quickstart's `harness add workspace-brain` line, and the scope note that the brain "mandates writing `active/` artifact directories"). Not present unless that module was added. | Project-scope by design (`README.md`: "brain is project scope on purpose") so it does not appear in every repo you touch; if the module is added, decide per-project whether its contents are safe to commit or belong in `.gitignore`, the same review you would give any new tracked directory. |
 
 ## Who approves a permission-bypass flag
 
 This section documents the approval boundary already written into the harness. It does not propose
 using a permission-bypass flag.
 
-`AGENTS.md:78` lists "using any permission-bypass flag" among the actions that require the operator
-to "Stop and get explicit human approval before" acting (`AGENTS.md:72`).
+`AGENTS.md` lists "using any permission-bypass flag" among the actions that require the operator
+to "Stop and get explicit human approval before" acting (the "Security" section).
 
 Where a bypass flag has a concrete, named use, `templates/project/rules/multi-agent-runtime.md:5-9`
 narrows it further: `--dangerously-skip-permissions` is "Reserved for isolated, operator-approved
@@ -73,7 +73,7 @@ before proceeding, including for "using unsafe permission bypass flags."
 
 ## The hard stops, verbatim
 
-`AGENTS.md:72-80`, under "Security," lists what always requires a stop and explicit human approval
+`AGENTS.md`, under "Security," lists what always requires a stop and explicit human approval
 before proceeding, reproduced here verbatim (punctuation normalized to straight ASCII where the
 source used none needing normalization):
 
@@ -87,11 +87,11 @@ source used none needing normalization):
 > - legal, compliance, or financial workflows
 > - any irreversible action with external cost or impact
 
-`AGENTS.md:82-89` adds secret handling that is enforced regardless of task type: never commit
-credentials or write them into instruction files, memory files, or logs; never pass a credential
-inline on a command line, because tools echo the expanded command into scrollback and chat history,
-so source it from a file with `600` permissions at runtime instead; and confirm `.env` and secret
-files are ignored before committing.
+The `Secrets:` list that follows it in `AGENTS.md` adds secret handling enforced regardless of task
+type: never commit credentials or write them into instruction files, memory files, or logs; never
+pass a credential inline on a command line, because tools echo the expanded command into scrollback
+and chat history, so source it from a file with `600` permissions at runtime instead; and confirm
+`.env` and secret files are ignored before committing.
 
 ## Gate minimalism is a dial, not a default
 

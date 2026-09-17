@@ -18,7 +18,9 @@ detail existed just below.
 The user pastes only the block, never the document around it, so anything outside the block is
 invisible unless the block says to go read that file.
 
-**Where the rule lives.** `docs/handoff-and-resume.md:55` and `AGENTS.md:129`.
+**Where the rule lives.** `docs/handoff-and-resume.md`, the before/after where "the block names
+four files but not the file it is sitting in", and `AGENTS.md`: "The pasted block must be
+self-sufficient, including a pointer to its own file."
 
 ## Worktree green, main red
 
@@ -145,7 +147,8 @@ would turn most of its checks into permanent passes.
 expected number of checks actually executed. The set of files a check scans must assert a floor on
 its own size, not just trust whatever the resolver handed back.
 
-**Where the rule lives.** `verify.sh:1-8` and `verify.sh:71-73`.
+**Where the rule lives.** `verify.sh`: the header note that "A fail-open scrub looks exactly like a
+passing one", and the guard that fails with "scanning nothing, not clean".
 
 ## The rebind that did nothing
 
@@ -161,7 +164,8 @@ discoverable only by noticing the old model was still in effect.
 rules) are marked as managed and always replaced on reinstall, with any local difference backed up
 first, specifically so that a one-line edit to the binding file takes effect on the next install.
 
-**Where the rule lives.** `bin/harness:57-63`.
+**Where the rule lives.** `bin/harness`, the comment above `put()` that begins "MANAGED=1 marks
+files this installer OWNS at user scope".
 
 ## The shared exemption list
 
@@ -178,7 +182,8 @@ not hold either time it happened.
 it is machine-checked: the gate scans its own source for every variable name containing `EXEMPT`
 and fails if any of them is referenced from more than one numbered check.
 
-**Where the rule lives.** `verify.sh:145-151`.
+**Where the rule lives.** `verify.sh`, the "gate integrity" block: every `EXEMPT` variable "may be
+REFERENCED from at most one numbered check".
 
 ## The report that joined the set it was supposed to be scanned by
 

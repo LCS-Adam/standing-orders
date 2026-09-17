@@ -8,7 +8,8 @@ parallel at the cheapest tier that can do the reading, and folds the result upwa
 layers before a human sees anything.
 
 Everything below is drawn from a real run against a legacy analytics estate: roughly 3,100 files
-across five source locations, several thousand pages of extracted text, one afternoon of wall clock.
+across five source locations, several thousand pages of extracted text, about ninety minutes of
+wall clock end to end.
 Numbers are quoted where the source run recorded them. Where the source run did not observe
 something (rate limiting, a wrong-tree read), this document says so instead of inventing a figure.
 
@@ -25,18 +26,24 @@ flowchart TB
     Z --> A2
     Z --> A3
     subgraph G1[Group: office docs]
-        A1[SMALL reader] --> B1[MID group orchestrator]
-        A1b[SMALL reader] --> B1
+        A1[SMALL reader] --> J1{"join script<br/>exact set vs accounting"}
+        A1b[SMALL reader] --> J1
+        J1 -->|PASS| B1[MID group investigator]
+        J1 -->|FAIL: re-dispatch| A1
     end
     subgraph G2[Group: spreadsheets]
-        A2[SMALL reader] --> B2[MID group orchestrator]
-        A2b[SMALL reader] --> B2
+        A2[SMALL reader] --> J2{"join script"}
+        A2b[SMALL reader] --> J2
+        J2 -->|PASS| B2[MID group investigator]
+        J2 -->|FAIL: re-dispatch| A2
     end
     subgraph G3[Group: screenshots]
-        A3[SMALL reader] --> B3[MID group orchestrator]
-        A3b[SMALL reader] --> B3
+        A3[SMALL reader] --> J3{"join script"}
+        A3b[SMALL reader] --> J3
+        J3 -->|PASS| B3[MID group investigator]
+        J3 -->|FAIL: re-dispatch| A3
     end
-    B1 --> C[FRONTIER-DO cross-group audit]
+    B1 --> C[FRONTIER-DO cross-cutting audit]
     B2 --> C
     B3 --> C
     C --> D[FRONTIER-THINK synthesis]
@@ -48,24 +55,27 @@ flowchart TB
   partition downstream makes re-reading the same content impossible by construction.
 - **Tier 1, many SMALL readers, one per partition within a group.** Each reads only its own slice,
   writes one row per file to a file only it owns, and returns almost nothing inline.
-- **Tier 2, one MID orchestrator per group.** Turns one group's rows into one in-depth report:
+- **Tier 2, one MID investigator per group.** Turns one group's rows into one in-depth report:
   what the group proves, what is cited, what is dropped and why. No group's report depends on
   another group finishing first.
-- **Above the groups, one FRONTIER-DO audit, once.** Reads every group's report and every claimed
-  number, and checks the group orchestrators' claims against the source, because a MID orchestrator
-  that vouches for a number is not the same as one that re-derived it.
+- **Above the groups, one FRONTIER-DO cross-cutting audit, once.** Reads every group's report and
+  every claimed number, and checks the group investigators' claims against the source, because a
+  MID investigator that vouches for a number is not the same as one that re-derived it.
 - **One FRONTIER-THINK synthesis, once.** Reads the audited reports and decides what merges across
   groups, what stays separate, and what the combined evidence can honestly claim. This is the only
   layer that ever sees the whole corpus's conclusions at once.
 
 The design question the source run's own plan and its transcript disagreed on: should the audit be
-one FRONTIER-DO pass across every group, or a FRONTIER-DO orchestrator per group? The run that
-shipped used one MID orchestrator per group plus a single FRONTIER-DO audit across all of them, and
-the audit's own findings argue for that shape: several of the errors it caught were cross-group,
-where a screenshot in one group's evidence contradicted a spreadsheet in another group's, something
-no per-group agent, at any tier, could have seen on its own. Use one FRONTIER-DO pass across all
-groups as the default. Reach for a FRONTIER-DO orchestrator per group only when a single group's
-report is itself going to be read as an outward-facing claim with no audit layer coming after it.
+one FRONTIER-DO cross-cutting pass across every group, or a FRONTIER-DO investigator per group? The
+run that shipped used the default shape, one MID investigator per group plus a single FRONTIER-DO
+cross-cutting audit over all of them, and the audit's own findings argue for that shape: several of
+the errors it caught were cross-group, where a screenshot in one group's evidence contradicted a
+spreadsheet in another group's, a number one group had vouched for turned out to be off by roughly
+a factor of two, and one group's own conclusion turned out to be exactly backwards. None of that is
+visible to any per-group agent, at any tier, because no per-group agent ever sees another group's
+report. Use one FRONTIER-DO cross-cutting pass across all groups as the default. Treat a FRONTIER-DO
+investigator per group as the named variant, reached for only when a single group's report is itself
+going to be read as an outward-facing claim with no audit layer coming after it.
 
 ## Partitioning: two different keys, one deterministic split
 
@@ -83,12 +93,12 @@ naive large-integer modulus computed through a floating-point path silently retu
 and running the check twice, once at partition time and once at join time, is what caught it.
 
 Size each reader's slice by the WORK it carries, not by file count. Raw file size is a trap: one
-binary report format held gigabytes on disk but only kilobytes of text once extracted, while a
-spreadsheet format was a fraction of the disk footprint but held far more text per file. Size by
-extracted text volume and cap it (the source run used roughly 60 items or 3 MB of text per reader,
-whichever bound first, and around 40 images per reader for a vision-heavy group), and re-check that
-cap once you see the actual distribution: the source run's spreadsheet group needed a lower cap than
-planned once the ninetieth-percentile file size came in larger than expected.
+group in the source run held 15 GB on disk but only 1.9 MB of text once extracted, while another
+held 86 MB on disk but 22.6 MB of text. Disk footprint and reading work were not even in the same
+order. Size by extracted text volume and cap it (the source run used roughly 60 items or 3 MB of text per
+reader, whichever bound first, and around 40 images per reader for a vision-heavy group), and
+re-check that cap once you see the actual distribution: the source run's spreadsheet group needed a
+lower cap than planned once the ninetieth-percentile file size came in larger than expected.
 
 What separates a good partition from a bad one:
 
@@ -111,6 +121,15 @@ including which model tier the reader actually believes it ran as. In the source
 what a pre-dispatch model-pin hook cannot: the hook checks the pin at spawn time, but nothing else
 proves the agent executed as the tier it was pinned to, so the join script fails the run if that
 self-report claims anything above SMALL.
+
+Per-type reading rules keep a SMALL reader from either missing evidence or burning its budget on
+one file: read the extracted text, never the original binary; above a size threshold, read
+structure plus head and tail and mark the row `structure-only` rather than reading the whole file;
+open a structured export only when its filename names a business subject, and then only a header
+plus five rows, never a whole-file read (one export partition alone held hundreds of megabytes); and
+never derive a rate from a five-row sample. Numbers written to a row are counts, sums, rates, and
+ranges, never a raw field value; locations are a path, sheet, and column, never a cell value. A file
+whose name carries a person's name is cited by a hash of that name, never the name itself.
 
 **To the orchestrator, almost nothing.** The reader's final message is a file path. Nothing more.
 The orchestrator never opens the file itself; a join script does, and it checks three things: every
@@ -144,16 +163,25 @@ degrades into a lossy summary of a lossy summary:
 Two mechanisms keep this honest rather than aspirational. First, a checked invariant: a script
 rejects a report that is too long, that leaves a candidate row neither cited nor accounted for, or
 that uses a hedge phrase without the disclosure it requires. Second, a provenance ladder applied
-above the group layer, ranking every number by how it was obtained (re-derived from source text,
-down to a screenshot at one point in time, down to a figure that belongs to a different entity
-entirely). In the source run, an audit built on that ladder found that every error it caught was in
+above the group layer, ranking every number by how it was obtained:
+
+| Rung | What it means | What the audit does with it |
+|---|---|---|
+| A | Re-derived from primary source text | Accept |
+| B | A structural file count | Defensible only as a file count, nothing more |
+| C | A reader's estimate written as "N+" | Re-count before use |
+| D | A value sitting exactly at an extraction tool's cap | The cap, not the true count; reject |
+| E | A value read off a screenshot at one point in time | Reject the value, keep that the metric exists |
+| F | A number belonging to a different entity than the one being described | Reject categorically |
+
+In the source run, an audit built on that ladder found that every error it caught was in
 interpretation, not counting: two group reports vouched for a number neither had re-derived from
 source, and one of those was off by roughly a factor of two. Read a group report's confident line
 about a number as an opinion until an audit has re-derived it, not as a check that already happened.
 
 ## What the FRONTIER-THINK synthesis owns that nothing below it can
 
-The synthesis layer runs once, after the audit, and makes judgment calls no group orchestrator has
+The synthesis layer runs once, after the audit, and makes judgment calls no group investigator has
 the view to make:
 
 - **What merges.** Evidence from different groups can describe one thing. A data model, the SQL
@@ -167,6 +195,55 @@ the view to make:
 
 It treats the audit as binding wherever the audit and a group report disagree, because it is the
 last layer before a human reads the output: there is no reviewer after it.
+
+## A worked example, with the real numbers
+
+Generalize the source run to keep it name-free: an engineering team inherits the file estate of a
+retired analytics platform and has to turn it into sourced, citable facts for a knowledge base, the
+kind of facts a later summary can safely repeat outward. Roughly 3,100 files across five storage
+locations.
+
+- **Tier 0.** A stdlib extractor of about a hundred lines pulled 661 zip-format binary documents
+  down to 26 MB of flat text, one manifest per source tree. Canonicalization then produced 3,111
+  accounting rows: 2,650 canonical, 150 marked duplicate-of, 103 marked family-of, 208 marked noise.
+  Seven groups came out of that pass: office documents 111, BI report binaries 481, spreadsheets
+  152, loose SQL 271, a transformation repository 309, screenshots 398, and structured exports 732.
+  A further 657 rows were accounted for but assigned to no reader at all. Within the exports group,
+  649 files collapsed to 454 filename families, of which roughly 120 to 180 were actually opened.
+  The canonicalization script asserted its own invariants against the real data on every run and
+  aborted twice before dispatch, catching two defects before any reader ever saw a file.
+- **Tier 1.** Forty-three SMALL readers went out across the seven groups, split roughly 1, 8, 8, 5,
+  5, 10, and 6 per group by the size-of-text rule, one dispatch per turn over about four minutes.
+  The fastest finished in under a minute; the slowest took about four minutes, on the heaviest
+  spreadsheet partition. Readers wrote 2,454 rows in total, a mean of 475 bytes per row and 1.2 MB
+  written across the whole tier: 1,873 candidate, 178 possible, 403 noise.
+- **The join.** The join key drifted into six different conventions across the forty-three readers,
+  because neither the plan nor the reader definition said which column to copy verbatim. Ten readers
+  failed the first join pass outright, four of them with the right row count and the wrong file set.
+  All ten were re-dispatched; one needed a third attempt before it passed. The first join ran at
+  about the twelve-minute mark and found the ten failures; by about minute twenty, every group had
+  passed.
+- **Tier 2.** Seven MID group investigators started as soon as their own group's join passed, the
+  first of them at minute fourteen while three re-dispatches from other groups were still running.
+  Reports ranged from 77 to 732 lines, 2,415 lines combined, each one passing its report check.
+- **The cross-cutting audit.** One FRONTIER-DO pass read all seven reports against the source and
+  wrote 338 lines in about fifteen minutes. It rejected a count a group report had given as
+  "500-plus" that was actually about 265, a reported 62 that was really 61, every count sitting
+  exactly at the extractor's cap, a set of numbers that belonged to a different organization
+  entirely, and every value read off a screenshot rather than re-derived from source. It accepted
+  the counts that had been re-derived, and it reversed one group's conclusion outright.
+- **Tier 3.** One FRONTIER-THINK synthesizer ran for about ten minutes and returned roughly 35 KB
+  inline: five new findings, six edits to findings already on record, one correction, and a held
+  list of questions only a human owner could answer.
+- **Whole run.** About ninety minutes of wall clock in one orchestrating session, and a context
+  high-water mark above 800,000 tokens for that orchestrator, because every join, redaction, and
+  report check still ran, and got reasoned about, in its own context even though every reader,
+  investigator, and the synthesizer returned almost nothing inline.
+
+What a single agent reading only the highest-value files would have missed: it would have found the
+twenty or so documents carrying most of the narrative in a few minutes, but it would have missed a
+dated sequence of three documents, the contract that fixed the engagement's true start date, and a
+pre-engagement memo, all surfaced only because the long tail of the corpus was read too.
 
 ## Scale: what broke, and at what count
 
@@ -202,6 +279,13 @@ Failures actually observed, roughly in the order a run this size will hit them:
 - **A stale status marker in an input document nearly caused rework.** One input claimed work was
   never executed when it in fact had been. Verify an input's current state before dispatching
   readers against it, not just its label.
+- **A plan-time count used as a run-time gate went stale.** A plan recorded 71 items where the
+  corpus, at run time, actually held 72; a gate built on the plan's number rejected a correct run.
+  Re-derive counts from the corpus at run time, never carry a plan-time count forward as a gate.
+- **The synthesis layer was dispatched before a barrier input existed.** It was sent before an
+  external worklist it depended on was ready, ran for about four minutes, and had to be stopped and
+  re-dispatched once the worklist existed. Put barrier inputs in the dispatch checklist itself, not
+  only in the prompt's prose.
 - **A cross-group sequencing rule became a deadlock hazard once groups were made to pipeline.** An
   earlier rule said one group must be read only after another finished; once groups started
   overlapping, that rule risked stalling the whole run. Do not let one group's start depend on
@@ -218,7 +302,7 @@ the fact.
 ## When this pattern is wrong
 
 Building the three layers has a real cost: a partition script, a join script, a redaction pass, one
-reader definition, one orchestrator definition, and a working accounting file. Do not pay it when a
+reader definition, one investigator definition, and a working accounting file. Do not pay it when a
 cheaper method answers the same question.
 
 1. **If a grep answers it, grep.** A scan for literal patterns across an entire corpus is a loop,
@@ -240,7 +324,7 @@ cheaper method answers the same question.
 6. **If part of the corpus must not be read at all, gate that before any reader is dispatched.** A
    swarm reads whatever it is pointed at; scoping which files are even allowed to be read comes
    first, as a filtered pass or an exclusion at the extraction step, never as an instruction trusted
-   to a reader after the fact.
+   to a reader after the fact. Run scope-audit first when you need that gate checked.
 7. **If a single silently wrong reading would be expensive and nothing audits the group layer, add
    the audit or raise the group tier before you run readers into an outward-facing result.** A
    pipeline with SMALL readers and no check above them is a pipeline with no guardrail between a
@@ -254,16 +338,26 @@ that session's context. It is the same context-economy argument as ordinary suba
 one step further: only a reader's answer crosses back into the orchestrator, and here "the answer"
 is narrowed to a file path that a script, not the orchestrator, verifies.
 
-A worktree-isolated runtime that caps agents per stage and requires each stage's output to be a
-committed branch is the wrong tool for the Tier 1 fan-out described here: dozens of readers per
-group do not need git isolation, and a worktree cannot see the gitignored intermediate files this
-pattern relies on between tiers. Reach for that runtime only when a stage's output genuinely needs
-to be a reviewable commit on its own branch.
+A worktree-isolated runtime (`templates/project/context/multi-agent-worktree.md`) that caps agents
+per stage and requires each stage's output to be a committed branch is the wrong tool for the Tier 1
+fan-out described here: dozens of readers per group do not need git isolation, and a worktree cannot
+see the gitignored intermediate files this pattern relies on between tiers. Reach for that runtime
+only when a stage's output genuinely needs to be a reviewable commit on its own branch. This pattern
+is instead a deeper application of `templates/project/context/multi-agent-inline.md`, whose worker
+return contract of a path plus almost nothing inline is the starting point this pattern narrows
+further, to a path a script verifies rather than an orchestrator.
+
+The `deep-plan-swarm` skill is the sibling worth knowing: it is a swarm over a codebase to produce a
+plan, where this pattern is a swarm over a corpus to produce sourced findings. Set the reader count,
+tier, and effort per tier before dispatch; `docs/glossary.md` defines that as a SWARM CONFIG.
 
 Every dispatch in every tier still gets an explicit tier, never an inherited one: SMALL for the
-readers, MID for the group orchestrators, FRONTIER-DO for the cross-group audit, FRONTIER-THINK for
-the synthesis. See `docs/model-tiering.md` for how a tier name in a plan resolves to a real model at
-runtime, and `docs/choosing-your-tools.md` for why only a subagent's final answer, never its
-internal work, ever lands in the calling context. `docs/anti-patterns.md` already covers the failure
-mode of a backgrounded agent going idle before its report is written; write every tier's output to
-disk before it finishes, the same rule applies here at every layer.
+readers, MID for the group investigators, FRONTIER-DO for the cross-cutting audit, FRONTIER-THINK
+for the synthesis. See `docs/model-tiering.md` for how a tier name in a plan resolves to a real
+model at runtime, and `docs/choosing-your-tools.md` for why only a subagent's final answer, never
+its internal work, ever lands in the calling context. `docs/context-window-management.md` covers the
+orchestrator-side cost of running every join and check yourself even when children return almost
+nothing. `docs/planning-large-builds.md` covers scoping the corpus before you build any of this.
+`docs/anti-patterns.md` already covers the failure mode of a backgrounded agent going idle before
+its report is written; write every tier's output to disk before it finishes, the same rule applies
+here at every layer.
