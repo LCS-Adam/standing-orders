@@ -28,15 +28,22 @@ grew on. This one is built to be moved, shared, and forked.
 ```bash
 git clone <this-repo> ~/projects/agent-harness
 cd ~/projects/agent-harness
-./bin/harness install --user     # the always-on core, into ~/.claude
 ./bin/harness upstream           # clone the repos in config/upstream.conf into .upstream/
+./bin/harness install --user     # the always-on core, into ~/.claude
 ./bin/harness verify             # confirm nothing personal or machine-specific came along
 ```
 
+Clone before install, in that order. `install` deploys the upstream skills that
+`config/upstream.conf` marks with `install=`, and it can only deploy what is already on disk.
+
 `harness upstream` clones the other projects this harness references rather than copying them in,
-so they stay current and stay the author's. Nothing installs them for you: point your coding tool
-at `.upstream/` and it reads the source and installs what it needs in its own format. See
-`docs/upstream-sources.md`, which has the instruction to paste.
+so they stay current and stay the author's.
+
+An entry marked `install=` in that file is then deployed by `install`, and that is running
+third-party code this repository's gate does not scan. The gate prints the count every run, and
+`docs/operating-boundaries.md` explains the trade and how to switch it off. Entries with no
+`install=` are reference material only: point your coding tool at `.upstream/` and it reads the
+source and installs what it needs in its own format. See `docs/upstream-sources.md`.
 
 Put `bin/` on your `PATH`, then in any repository you want the project layer in:
 
@@ -46,7 +53,12 @@ harness add workspace-brain      # state machine, autonomy gates, artifact persi
 harness add --tool auggie        # another tool's config: see adapters/README.md
 ```
 
-Everything is additive. Nothing is overwritten without `--force`, and every skip is reported. Run
+Almost everything is additive, with one exception worth knowing before the first run. Files the
+installer OWNS at user scope, meaning the agents, skills, commands, hooks and core rules it
+deployed, are replaced when they differ, with the previous copy kept under
+`~/.claude/backups/`. That is what makes a rebind take one line instead of a manual sweep. Your own
+files, and anything at project scope, are never touched without `--force`, and every skip is
+reported. Run
 anything with `--dry-run` first to see what it would touch.
 
 Requires `bash`, `git`, `jq`, and `perl`. A missing one stops the install with a message naming it,

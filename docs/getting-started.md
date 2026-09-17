@@ -51,7 +51,8 @@ hand. If you have personal instructions in `~/.claude/CLAUDE.md` today, they sur
 untouched, and the harness core loads alongside them.
 
 Everything the installer writes is additive. If a destination file already exists and is
-identical, the install reports it as a no-op. If it exists and differs, the install skips it and
+identical, the install reports it as a no-op. If it exists and differs, and the installer does not
+own it, the install skips it and
 tells you so, rather than overwriting silently. Nothing is replaced unless you pass `--force`.
 
 `install --user` also merges `config/settings.portable.json` into `~/.claude/settings.json`.
@@ -180,11 +181,17 @@ harness upstream
 Some of what this harness offers was written by other people and lives in their own repositories.
 Rather than copy that work in, where it would freeze on the day it was taken, the harness lists
 each one in `config/upstream.conf` and clones it to `.upstream/`. Those clones are gitignored: the
-scrub gate does not scan them and `harness install` does not ship them.
+scrub gate does not scan them.
 
-Nothing then installs them automatically, because the right shape depends on which tool you are
-running. Hand your coding tool the instruction in `docs/upstream-sources.md` and it reads the
-author's source and installs what it needs in its own format.
+What happens next depends on one field. An entry marked `install=` in `config/upstream.conf` names
+skills that `harness install --user` deploys from the clone, which means running third-party code
+this gate never inspected. That is a deliberate choice, recorded in a file someone reviewed, and the
+gate prints the count on every run. `docs/operating-boundaries.md` covers what it means and how to
+turn it off.
+
+For an entry with no `install=`, nothing is deployed automatically, because the right shape depends
+on which tool you are running. Hand your coding tool the instruction in `docs/upstream-sources.md`
+and it reads the author's source and installs what it needs in its own format.
 
 Skipping this step is fine to start with. The harness works without it; you just get the pinned
 copies in `skills/` rather than what upstream ships today.

@@ -457,7 +457,34 @@ NOT_A_COMMAND="tmp something notes-repo-recon"
 # where it comes from and install it. These resolve only when that plugin is
 # installed, which is exactly why they are listed separately from the host
 # built-ins rather than quietly added to them.
-PLUGIN_SLASH="ponytail ponytail-review ponytail-audit ponytail-debt ponytail-gain ponytail-help"
+# DERIVED from config/upstream.conf, not typed here. A hardcoded list claimed
+# these resolve "because the plugin is recorded in config/upstream.conf" while
+# never reading that file, so deleting the entry left every reference passing.
+# Now the allowance exists only while the dependency does: the names come from
+# the skills the manifest actually says to install, plus the clone's own skill
+# directories when it is present.
+PLUGIN_SLASH=""
+if [ -f config/upstream.conf ]; then
+  PLUGIN_SLASH=$(
+    while read -r upname upurl upref upspec; do
+      # No `case` here. bash 3.2, which is what /bin/bash is on macOS, cannot
+      # parse a one-line `case ... ;; esac` INSIDE a command substitution:
+      # `bash -n` accepts it and the script dies at runtime. rules/shell-portability.md
+      # is the standing rule this tripped over.
+      [ -n "${upname:-}" ] || continue
+      [ "${upname#\#}" = "$upname" ] || continue
+      spec="${upspec:-}"
+      [ "${spec#install=}" != "$spec" ] || continue
+      spec="${spec#install=}"
+      if [ "$spec" = '*' ]; then
+        [ -d ".upstream/$upname/skills" ] && ls -1 ".upstream/$upname/skills" 2>/dev/null
+        [ -f ".upstream/$upname/SKILL.md" ] && printf '%s\n' "$upname"
+      else
+        printf '%s\n' "$spec" | tr ',' '\n'
+      fi
+    done < config/upstream.conf | grep -v '^$' | sort -u | tr '\n' ' '
+  )
+fi
 # Trailing [^`]* so a command documented WITH ITS ARGUMENT is still seen. The old
 # matcher required the closing backtick right after the token, so `/deep-plan
 # rescope ...` - the normal way to document a command - was invisible.
