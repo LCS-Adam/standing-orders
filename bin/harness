@@ -369,7 +369,8 @@ prune_generated() {
     grep -qxF "$name" "$dest/.harness-generated" && continue
     [ -e "$dest/$name" ] || continue
     if [ "$DRY" -eq 1 ]; then c_skip "$name (would remove, no longer in agents/)"; continue; fi
-    rm -f "$dest/$name" && c_ok "$name (removed, no longer in agents/)"
+    rm -f "$dest/$name" || die "could not remove $dest/$name; it is stale and still active"
+    c_ok "$name (removed, no longer in agents/)"
   done <<< "$prev"
 }
 
@@ -404,17 +405,28 @@ merge_settings() {
     mkdir -p "$CLAUDE_HOME"; cp "$incoming" "$target"; c_ok "settings.json (created)"; return
   fi
 
-  cp "$target" "$target.bak-$(date +%Y%m%d%H%M%S)"
+  local bak="$target.bak-$(date +%Y%m%d%H%M%S)"
+  cp "$target" "$bak"
   # Objects merge. Hook ARRAYS append, deduplicated, so an existing hook on the
   # same event is never clobbered.
-  jq -s '
+  # Checked, not `jq ... && mv`. jq to the left of a && is not covered by
+  # set -e, so a malformed existing settings.json used to leave the file alone,
+  # print "merged", and exit 0, with the model-pin hook never installed. Same
+  # defect as the Augment merge below, found in the same review.
+  jq -e 'type == "object"' "$target" >/dev/null 2>&1 \
+    || die "$target is not a JSON object; fix it before installing (nothing was changed, a copy is at $bak)"
+  if ! jq -s '
     def merge_hooks($a; $b):
       reduce ($b | to_entries[]) as $e
         ($a; .[$e.key] = ((.[$e.key] // []) + $e.value | unique));
     .[0] as $cur | .[1] as $new
     | $cur * ($new | del(.hooks))
     | .hooks = merge_hooks($cur.hooks // {}; $new.hooks // {})
-  ' "$target" "$incoming" > "$target.tmp" && mv "$target.tmp" "$target"
+  ' "$target" "$incoming" > "$target.tmp"; then
+    rm -f "$target.tmp"
+    die "could not merge $target (nothing was changed, a copy is at $bak)"
+  fi
+  mv "$target.tmp" "$target" || die "could not replace $target (a copy is at $bak)"
   c_ok "settings.json (merged, backup written)"
 }
 
@@ -461,7 +473,12 @@ retire_missing() {
     if [ "$DRY" -eq 1 ]; then c_skip "$rel (would retire)"; continue; fi
     dest="$attic/$(printf '%s' "$rel" | tr '/' '_')"
     mkdir -p "$attic"
-    mv "$f" "$dest" && c_ok "$rel (retired to backups/harness-retired-$stamp)"
+    # Fatal, and deliberately so. If this mv fails and the run continues, the
+    # new manifest is written WITHOUT this path, so the harness permanently
+    # forgets it owns a file that is still installed and still active. A hard
+    # stop leaves the old manifest in place and the next run tries again.
+    mv "$f" "$dest" || die "could not retire $rel; manifest left unchanged so the next run retries"
+    c_ok "$rel (retired to backups/harness-retired-$stamp)"
     # A skill is a directory; drop it once its SKILL.md has gone.
     rmdir "$(dirname "$f")" 2>/dev/null || true
     n=$((n+1))

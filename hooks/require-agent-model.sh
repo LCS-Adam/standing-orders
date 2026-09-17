@@ -35,11 +35,25 @@ case "$(jq -r '.tool_name // empty' <<<"$input")" in
   Agent|Task|"") dirs=(".claude/agents" "$HOME/.claude/agents") ;;
   *)             dirs=(".augment/agents" "$HOME/.augment/agents") ;;
 esac
+# FIRST match wins, then stop. Two defects here, both found in review.
+#
+# The loop used to continue past an unpinned project definition and accept a
+# same-named PINNED user definition instead. The tool loads the project one, so
+# the hook was approving a spawn on the strength of a file that would not run.
+#
+# And `grep '^model:'` searched the WHOLE file, so a body example containing a
+# line starting `model:` satisfied it. Only the opening frontmatter block
+# counts, which is the only place the tool reads it from.
 for dir in "${dirs[@]}"; do
   f="$dir/$stype.md"
-  if [[ -n "$stype" && -f "$f" ]] && grep -qE '^model:[[:space:]]*\S' "$f"; then
+  [[ -n "$stype" && -f "$f" ]] || continue
+  if awk 'NR==1 && $0!="---" {exit 1}
+          NR>1 && /^---[[:space:]]*$/ {exit 1}
+          NR>1 && /^model:[[:space:]]*[^[:space:]]/ {found=1; exit 0}
+          END {exit found?0:1}' "$f"; then
     exit 0
   fi
+  break
 done
 
 cat <<'EOF'
