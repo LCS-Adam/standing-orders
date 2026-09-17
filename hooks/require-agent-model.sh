@@ -8,6 +8,16 @@
 # this hook cannot see.
 input=$(cat)
 model=$(jq -r '.tool_input.model // empty' <<<"$input")
+# INSERTION POINT, docs/augment-runbook.md step 6.
+# Auggie's hook payload is byte-compatible with this one (tool_name plus a
+# tool_input object, aug_cli_hooks.md, verified in docs 2026-09-16), but the
+# name of the tool that dispatches a subagent, and the tool_input key that
+# carries the agent name, are NOT FOUND in the snapshot. Step 6 logs one real
+# dispatch and reads both off it. The fallback then becomes:
+#   stype=$(jq -r '.tool_input.subagent_type // .tool_input.<AUGGIE_FIELD> // empty' <<<"$input")
+# It is not guessed here: a wrong key silently matches nothing, which is the
+# same as having no gate, and this hook exists because a silent inherit is
+# expensive.
 stype=$(jq -r '.tool_input.subagent_type // empty' <<<"$input")
 
 if [[ "$stype" == "fork" || -n "$model" ]]; then
@@ -15,7 +25,9 @@ if [[ "$stype" == "fork" || -n "$model" ]]; then
 fi
 
 # Agent definition with a model pin satisfies the rule (project first, then user).
-for dir in ".claude/agents" "$HOME/.claude/agents"; do
+# .augment/agents holds the generated Auggie subagents, which carry a resolved
+# model: too, so the same rule answers for either tool once step 6 lands.
+for dir in ".claude/agents" "$HOME/.claude/agents" ".augment/agents" "$HOME/.augment/agents"; do
   f="$dir/$stype.md"
   if [[ -n "$stype" && -f "$f" ]] && grep -qE '^model:[[:space:]]*\S' "$f"; then
     exit 0
