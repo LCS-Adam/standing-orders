@@ -137,7 +137,9 @@ Codex, a `.mdc` rule for Cursor, or a one-line `GEMINI.md` import for Gemini CLI
 guidance rather than writing anything, because Intent already reads `AGENTS.md` and a `skills/`
 directory straight from the repo with no adapter needed.
 
-`auggie` does more than write a pointer file, because Augment supports most of this harness. It
+`auggie` does more than write a pointer file, because Augment supports most of this harness. What
+follows comes from Augment's documentation as of 2026-09-16 and has not been run against a live
+Auggie; `docs/augment-runbook.md` is how it gets checked. It
 writes three things: `.augment/agents/`, generated from `agents/` because Auggie's subagent
 frontmatter is a different schema; the security hard stops as `toolPermissions` deny rules in
 `.augment/settings.json`; and `AGENTS.md` into `~/.augment/rules/` for workspaces that are not this
@@ -151,7 +153,8 @@ than typed:
 scripts/resolve-tier.sh --write-conf
 ```
 
-Augment's model allowlist is set per company and moves without telling you, so the binding is
+Augment's model allowlist is administered per company and an admin can change it without
+notifying users, so the binding is
 discovered by asking the CLI which models the account actually has. That command needs `auggie`
 installed and logged in. `harness build-plugin --tool auggie` then packages the whole set as an
 installable plugin. `docs/augment-runbook.md` walks all of it, in order, on a machine that has

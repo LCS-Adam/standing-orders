@@ -16,8 +16,10 @@ supported by some of those tools and not others. Augment goes furthest. Auggie r
 skills and commands with no conversion at all, takes the security hard stops as tool-permission
 rules, and needs only its subagent definitions generated; `harness add --tool auggie` does that.
 Augment's COSMOS takes a different shape again: its Experts are committable YAML bundles applied
-with `auggie cloud`. `adapters/README.md` states exactly what each tool consumes, including the
-gaps, and marks every Augment claim as verified in the vendor's docs or verified in practice.
+with `auggie cloud`. Every Augment claim in this repository comes from the vendor's documentation
+as of 2026-09-16 and none of it has been run against a live Auggie yet. `adapters/README.md` states
+what each tool consumes and marks each claim; `docs/augment-runbook.md` is the procedure that turns
+those claims into verified ones.
 
 Most agent setups accumulate as a pile of machine-specific config that cannot leave the laptop it
 grew on. This one is built to be moved, shared, and forked.
