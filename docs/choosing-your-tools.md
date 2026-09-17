@@ -10,6 +10,20 @@ If you already know what a subagent, a hook, or a context window is, skip to the
 decision table near the end. If you do not, read straight through: the vocabulary is
 small and this is the one place it is explained together.
 
+## Contents
+
+- [Two words you need first](#two-words-you-need-first)
+- [The one distinction that matters most](#the-one-distinction-that-matters-most)
+- [1. `AGENTS.md` / `CLAUDE.md` - the always-on core](#1-agentsmd--claudemd---the-always-on-core)
+- [2. `.claude/rules/*.md` - path-scoped instructions](#2-clauderulesmd---path-scoped-instructions)
+- [3. Skills - procedures you invoke](#3-skills---procedures-you-invoke)
+- [4. Slash commands - one-shot invocations](#4-slash-commands---one-shot-invocations)
+- [5. Hooks - the enforcement layer](#5-hooks---the-enforcement-layer)
+- [6. Subagents - a separate context window with a return value](#6-subagents---a-separate-context-window-with-a-return-value)
+- [The trap: a skill directory and a flat file look alike and are not](#the-trap-a-skill-directory-and-a-flat-file-look-alike-and-are-not)
+- [Decision table](#decision-table)
+- [One more thing worth remembering](#one-more-thing-worth-remembering)
+
 ## Two words you need first
 
 **Context window.** Everything a model can see for a given turn: your prompt, the

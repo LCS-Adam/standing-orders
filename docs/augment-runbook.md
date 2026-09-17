@@ -22,6 +22,22 @@ by number elsewhere in the repo.
 
 ---
 
+## Contents
+
+- [Step 1: prerequisites](#step-1-prerequisites)
+- [Step 2: does headless mode work on this account](#step-2-does-headless-mode-work-on-this-account)
+- [Step 3: is `auggie cloud` available](#step-3-is-auggie-cloud-available)
+- [Step 4: which rules files does Auggie actually read](#step-4-which-rules-files-does-auggie-actually-read)
+- [Step 5: discover the tier binding](#step-5-discover-the-tier-binding)
+- [Step 6: find the subagent-dispatch tool, and arm the model gate](#step-6-find-the-subagent-dispatch-tool-and-arm-the-model-gate)
+- [Step 7: does Auggie mind an undocumented frontmatter key (informational)](#step-7-does-auggie-mind-an-undocumented-frontmatter-key-informational)
+- [Step 8: generate the config and check it took](#step-8-generate-the-config-and-check-it-took)
+- [Step 9: build and publish the plugin](#step-9-build-and-publish-the-plugin)
+- [Step 11: capture the first-day outputs](#step-11-capture-the-first-day-outputs)
+- [Step 12: flip the status cells and commit](#step-12-flip-the-status-cells-and-commit)
+- [Step 13: the Cosmos session](#step-13-the-cosmos-session)
+- [Answers](#answers)
+
 ## Step 1: prerequisites
 
 ```bash

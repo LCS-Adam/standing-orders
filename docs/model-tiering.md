@@ -11,6 +11,16 @@ need here: a subagent is a delegated unit of work that runs in its own context a
 returns a result, and a hook is a script that runs unconditionally and can block an
 action outright, unlike an instruction the model merely reads.
 
+## Contents
+
+- [The four tiers](#the-four-tiers)
+- [Naming a tier in prose, naming a model in config](#naming-a-tier-in-prose-naming-a-model-in-config)
+- [Reviewers sit at or above the tier that produced the work](#reviewers-sit-at-or-above-the-tier-that-produced-the-work)
+- [The hook that enforces the "never inherit silently" rule](#the-hook-that-enforces-the-never-inherit-silently-rule)
+- [What the hook cannot see](#what-the-hook-cannot-see)
+- [Rebinding when the roster changes](#rebinding-when-the-roster-changes)
+- [The eleven agents in this repo](#the-eleven-agents-in-this-repo)
+
 ## The four tiers
 
 `AGENTS.md` defines four tiers by what the task looks like, not by which model

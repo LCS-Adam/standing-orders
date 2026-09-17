@@ -12,6 +12,20 @@ different model family attacking the result). It also says when each one is thea
 
 This document assumes you have read [`docs/operating-process.md`](operating-process.md) and [`docs/model-tiering.md`](model-tiering.md).
 
+## Contents
+
+- [Three shapes, one question](#three-shapes-one-question)
+- [Consensus: independent views, then measure the spread](#consensus-independent-views-then-measure-the-spread)
+- [Chatroom: roles that argue, concede, and stop](#chatroom-roles-that-argue-concede-and-stop)
+- [Cross-model review: a different family attacks the result](#cross-model-review-a-different-family-attacks-the-result)
+- [Briefing a role so it is not a strawman](#briefing-a-role-so-it-is-not-a-strawman)
+- [Worked example 1: a design disagreement (chatroom, stance roles)](#worked-example-1-a-design-disagreement-chatroom-stance-roles)
+- [Worked example 2: a go/no-go (consensus with steelman advocates and an adversary)](#worked-example-2-a-gono-go-consensus-with-steelman-advocates-and-an-adversary)
+- [Worked example 3: a post-incident review (chatroom, lens roles) -- constructed](#worked-example-3-a-post-incident-review-chatroom-lens-roles----constructed)
+- [Worked example 4: cross-model research synthesis](#worked-example-4-cross-model-research-synthesis)
+- [When this is overkill](#when-this-is-overkill)
+- [Where the reports go and what the decision leaves behind](#where-the-reports-go-and-what-the-decision-leaves-behind)
+
 ## Three shapes, one question
 
 | Mode | The question it answers | Who sees whom | What it outputs | Template or skill |

@@ -4,6 +4,22 @@ Every entry here is drawn from a failure this repository already records, not a 
 Each has the same four parts: what happened, what it cost, the rule it produced, and where that
 rule lives in the code today, so you can go read the primary source rather than trust the summary.
 
+## Contents
+
+- [The orphaned resume block](#the-orphaned-resume-block)
+- [Worktree green, main red](#worktree-green-main-red)
+- [The premise that died mid-run](#the-premise-that-died-mid-run)
+- [The long plan spent on dead surface](#the-long-plan-spent-on-dead-surface)
+- [The timeout wrapper that faked a clean review](#the-timeout-wrapper-that-faked-a-clean-review)
+- [Fixtures that pin both sides of an assertion](#fixtures-that-pin-both-sides-of-an-assertion)
+- [Closing the instance instead of the class](#closing-the-instance-instead-of-the-class)
+- [The report lost when a backgrounded agent goes idle](#the-report-lost-when-a-backgrounded-agent-goes-idle)
+- [The fail-open scrub](#the-fail-open-scrub)
+- [The rebind that did nothing](#the-rebind-that-did-nothing)
+- [The shared exemption list](#the-shared-exemption-list)
+- [The report that joined the set it was supposed to be scanned by](#the-report-that-joined-the-set-it-was-supposed-to-be-scanned-by)
+- [The check that cannot fail is worse than no check](#the-check-that-cannot-fail-is-worse-than-no-check)
+
 ## The orphaned resume block
 
 **What happened.** A resume file held a pasted-prompt block at the top and, below it, a long

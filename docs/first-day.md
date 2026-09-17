@@ -4,6 +4,16 @@ Five things, done for real, with the actual output pasted below each one: instal
 harness, scaffold a new project with `harness init`, run one real prompt through it, watch the
 model-tier hook do its job, and hand off a session to your future self.
 
+## Contents
+
+- [Beat 1: install and verify](#beat-1-install-and-verify)
+- [Beat 2: `harness init` in a fresh repo](#beat-2-harness-init-in-a-fresh-repo)
+- [Beat 3: one real prompt](#beat-3-one-real-prompt)
+- [Beat 4: the hook, on purpose](#beat-4-the-hook-on-purpose)
+- [Beat 5: the handoff round trip](#beat-5-the-handoff-round-trip)
+- [Doing the same in Auggie](#doing-the-same-in-auggie)
+- [Your first week](#your-first-week)
+
 ## Beat 1: install and verify
 
 `bin/harness install --user --dry-run` (see `cmd_init` and the sibling `cmd_install` in

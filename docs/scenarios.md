@@ -1,5 +1,16 @@
 # Five projects, start to finish
 
+## Contents
+
+- [How to read these](#how-to-read-these)
+- [The five shapes at a glance](#the-five-shapes-at-a-glance)
+- [Scenario 1: a one-line fix, and why the harness stays in its box](#scenario-1-a-one-line-fix-and-why-the-harness-stays-in-its-box)
+- [Scenario 2: a bounded feature across four files](#scenario-2-a-bounded-feature-across-four-files)
+- [Scenario 3: a three-wave build with parallel agents, run overnight](#scenario-3-a-three-wave-build-with-parallel-agents-run-overnight)
+- [Scenario 4: an investigation with no endpoint on day one](#scenario-4-an-investigation-with-no-endpoint-on-day-one)
+- [Scenario 5: a production incident at 21:40](#scenario-5-a-production-incident-at-2140)
+- [Habits the five scenarios share](#habits-the-five-scenarios-share)
+
 ## How to read these
 
 Each scenario follows the same seven sub-headings: Situation, What the person decides at each

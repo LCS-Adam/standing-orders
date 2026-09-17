@@ -1,5 +1,20 @@
 # Getting started
 
+## Contents
+
+- [What this is](#what-this-is)
+- [Prerequisites](#prerequisites)
+- [Installing at user scope](#installing-at-user-scope)
+- [User scope versus project scope](#user-scope-versus-project-scope)
+- [Setting up a repo](#setting-up-a-repo)
+- [Using it with another tool](#using-it-with-another-tool)
+- [If you are on Windows](#if-you-are-on-windows)
+- [Pulling in the upstream sources](#pulling-in-the-upstream-sources)
+- [Running verify](#running-verify)
+- [A first real task](#a-first-real-task)
+- [Troubleshooting](#troubleshooting)
+- [Where to go next](#where-to-go-next)
+
 ## What this is
 
 `agent-harness` is a portable set of instructions, subagent definitions, skills, and safety hooks

@@ -6,6 +6,19 @@ them corrupt it or leak it. A second reader is the security reviewer who has alr
 [`docs/operating-boundaries.md`](operating-boundaries.md) and wants the vault-specific addendum: what a corpus adds to the
 leakage surface, and which controls close it.
 
+## Contents
+
+- [1. What a vault is](#1-what-a-vault-is)
+- [2. The layout](#2-the-layout)
+- [3. How to tell generated from authored](#3-how-to-tell-generated-from-authored)
+- [4. The edit surface](#4-the-edit-surface)
+- [5. Isolation: enforced, discipline, and absent](#5-isolation-enforced-discipline-and-absent)
+- [6. The improvement process](#6-the-improvement-process)
+- [7. Worked example: an SRE knowledge vault](#7-worked-example-an-sre-knowledge-vault)
+- [8. Replication recipe](#8-replication-recipe)
+- [9. Failure modes](#9-failure-modes)
+- [10. What the harness already provides](#10-what-the-harness-already-provides)
+
 ## 1. What a vault is
 
 A vault is a private corpus with one authorized writer, a deterministic projection into read-only

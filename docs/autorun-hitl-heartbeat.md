@@ -1,5 +1,16 @@
 # Autonomous execution: AUTORUN, HITL reduction, and HEARTBEAT
 
+## Contents
+
+- [Before you read this](#before-you-read-this)
+- [The problem in one sentence](#the-problem-in-one-sentence)
+- [AUTORUN: the full harness](#autorun-the-full-harness)
+- [HEARTBEAT: deliberately much lighter](#heartbeat-deliberately-much-lighter)
+- [Deciding which one to use](#deciding-which-one-to-use)
+- [HITL reduction done responsibly](#hitl-reduction-done-responsibly)
+- [The autonomous build loop](#the-autonomous-build-loop)
+- [When autonomy goes wrong](#when-autonomy-goes-wrong)
+
 ## Before you read this
 
 This document assumes you already know three things [`docs/glossary.md`](glossary.md) defines:

@@ -4,6 +4,29 @@ Terms used across this harness, alphabetical, one paragraph each. Each entry nam
 where the term is actually defined or used, so this page is a map rather than a second source of
 truth.
 
+## The terms
+
+[`.project-state/`](#project-state), [`advisor`](#advisor), [`adversary`](#adversary),
+[AUTORUN](#autorun), [compaction](#compaction),
+[contract (prompt contract)](#contract-prompt-contract), [context window](#context-window),
+[`CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`](#claude_autocompact_pct_override), [denylist](#denylist),
+[effort](#effort), [Environment](#environment), [Expert](#expert),
+[external-LLM review](#external-llm-review), [fold-back](#fold-back), [`fork`](#fork),
+[gate (review gate, human gate, scrub gate)](#gate-review-gate-human-gate-scrub-gate),
+[handoff and resume prompt](#handoff-and-resume-prompt), [HEARTBEAT](#heartbeat),
+[HITL](#hitl),
+[the host built-in subagent types (`Plan`, `Explore`, `general-purpose`)](#the-host-built-in-subagent-types-plan-explore-general-purpose),
+[Level A / B / C autonomy](#level-a--b--c-autonomy), [`/loop`](#loop),
+[MCP (Model Context Protocol)](#mcp-model-context-protocol), [parking](#parking),
+[`paths:` frontmatter](#paths-frontmatter),
+[phase and nested `CLAUDE.md`](#phase-and-nested-claudemd), [plan mode](#plan-mode),
+[prompt](#prompt),
+[rule versus skill versus command versus hook versus context document](#rule-versus-skill-versus-command-versus-hook-versus-context-document),
+[run-id](#run-id), [scope (user versus project)](#scope-user-versus-project),
+[session](#session), [`/ponytail-review`](#ponytail-review), [subagent](#subagent),
+[`SWARM CONFIG`](#swarm-config), [tier](#tier), [wave](#wave), [worktree](#worktree),
+[the Workflow tool](#the-workflow-tool).
+
 ## `.project-state/`
 
 A directory `harness init` writes into a repo to hold what a diff cannot show: intent, next steps,

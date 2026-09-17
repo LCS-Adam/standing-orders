@@ -1,5 +1,17 @@
 # The full lifecycle: from an idea to a deploy
 
+## Contents
+
+- [Before you read this](#before-you-read-this)
+- [The map](#the-map)
+- [Why the planning investment pays: the harness's own evidence](#why-the-planning-investment-pays-the-harnesss-own-evidence)
+- [How the FRONTIER-THINK synthesis planner works](#how-the-frontier-think-synthesis-planner-works)
+- [Improvement rounds: what a round is and when to stop](#improvement-rounds-what-a-round-is-and-when-to-stop)
+- [Finalize: turning an approved plan into a runnable mission](#finalize-turning-an-approved-plan-into-a-runnable-mission)
+- [Orchestrate: dispatching the waves](#orchestrate-dispatching-the-waves)
+- [Execute: minimal HITL, and why the rest is safe to automate](#execute-minimal-hitl-and-why-the-rest-is-safe-to-automate)
+- [Where this doc hands over](#where-this-doc-hands-over)
+
 ## Before you read this
 
 This document assumes you already know three things [`docs/glossary.md`](glossary.md) defines:

@@ -5,6 +5,17 @@ definitions, skills, rules, commands, and hooks. Each section names the frontmat
 real shipped file uses, cites the file, and says what the field does. Nothing here is
 documented because it seems plausible; every field named below exists in a file in this repo.
 
+## Contents
+
+- [Agent definitions](#agent-definitions)
+- [Worktrees](#worktrees)
+- [Skills](#skills)
+- [Rules](#rules)
+- [Commands](#commands)
+- [Hooks](#hooks)
+- [Marking a deliberate shortcut](#marking-a-deliberate-shortcut)
+- [Exercises](#exercises)
+
 ## Agent definitions
 
 An agent definition is a Markdown file with YAML frontmatter under `agents/`. Two examples,

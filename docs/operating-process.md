@@ -8,6 +8,18 @@ points at each of those instead of restating them. Read this fifth, right after 
 
 Seven steps, in order. Everything after step 0 branches on the size you pick there.
 
+## Contents
+
+- [Step 0: size the work](#step-0-size-the-work)
+- [Step 1: scope](#step-1-scope)
+- [Step 2: plan](#step-2-plan)
+- [Step 3: execute](#step-3-execute)
+- [Step 4: review](#step-4-review)
+- [Step 5: hand off](#step-5-hand-off)
+- [Step 6: close](#step-6-close)
+- [One-page checklist](#one-page-checklist)
+- [Worked example: add a `--json` flag to a small CLI](#worked-example-add-a---json-flag-to-a-small-cli)
+
 ## Step 0: size the work
 
 Every task gets sized before anything else happens, using the two questions `AGENTS.md` states:

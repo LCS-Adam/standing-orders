@@ -16,6 +16,18 @@ something (rate limiting, a wrong-tree read), this document says so instead of i
 If your corpus is small, or the value in it is concentrated in a handful of files, skip to
 "When this pattern is wrong" before you build any of this.
 
+## Contents
+
+- [The shape](#the-shape)
+- [Partitioning: two different keys, one deterministic split](#partitioning-two-different-keys-one-deterministic-split)
+- [What a Tier 1 reader returns](#what-a-tier-1-reader-returns)
+- [What a Tier 2 group report contains](#what-a-tier-2-group-report-contains)
+- [What the FRONTIER-THINK synthesis owns that nothing below it can](#what-the-frontier-think-synthesis-owns-that-nothing-below-it-can)
+- [A worked example, with the real numbers](#a-worked-example-with-the-real-numbers)
+- [Scale: what broke, and at what count](#scale-what-broke-and-at-what-count)
+- [When this pattern is wrong](#when-this-pattern-is-wrong)
+- [Where this fits in the harness](#where-this-fits-in-the-harness)
+
 ## The shape
 
 Three layers, each doing a job the layer below or above cannot do:

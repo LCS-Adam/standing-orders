@@ -1,5 +1,16 @@
 # Planning and executing a large build
 
+## Contents
+
+- [Before you read this](#before-you-read-this)
+- [Scope first, or the plan will improve dead code](#scope-first-or-the-plan-will-improve-dead-code)
+- [Writing the plan](#writing-the-plan)
+- [Why a plan needs a review from outside its own model family](#why-a-plan-needs-a-review-from-outside-its-own-model-family)
+- [What a good phase looks like](#what-a-good-phase-looks-like)
+- [The model and effort matrix, and why it travels with the phase](#the-model-and-effort-matrix-and-why-it-travels-with-the-phase)
+- [The nested phase-directory pattern](#the-nested-phase-directory-pattern)
+- [Checking status without re-reading the whole plan](#checking-status-without-re-reading-the-whole-plan)
+
 ## Before you read this
 
 This document assumes you already know three things [`docs/glossary.md`](glossary.md) defines:

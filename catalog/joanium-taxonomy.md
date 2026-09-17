@@ -32,6 +32,31 @@ a taxonomy independently, then one synthesis pass merged the eight and wrote the
 every file. The proposals are not committed; the merge below records where they disagreed and which
 way it went.
 
+## Contents
+
+- [What the corpus actually is](#what-the-corpus-actually-is)
+- [Level-1 count: 16](#level-1-count-16)
+- [Level-1 groups](#level-1-groups)
+  - [security-and-trust (465, 7.6%)](#security-and-trust-465-76)
+  - [reliability-and-incident-response (273, 4.5%)](#reliability-and-incident-response-273-45)
+  - [platform-and-cloud-infrastructure (410, 6.7%)](#platform-and-cloud-infrastructure-410-67)
+  - [data-platform-and-analytics (624, 10.3%)](#data-platform-and-analytics-624-103)
+  - [ai-and-agent-systems (650, 10.7%)](#ai-and-agent-systems-650-107)
+  - [backend-and-api-engineering (440, 7.2%)](#backend-and-api-engineering-440-72)
+  - [software-engineering-craft (359, 5.9%)](#software-engineering-craft-359-59)
+  - [testing-and-quality-assurance (272, 4.5%)](#testing-and-quality-assurance-272-45)
+  - [frontend-and-user-experience (600, 9.9%)](#frontend-and-user-experience-600-99)
+  - [mobile-and-desktop-apps (273, 4.5%)](#mobile-and-desktop-apps-273-45)
+  - [product-growth-and-marketing (441, 7.2%)](#product-growth-and-marketing-441-72)
+  - [product-and-project-management (287, 4.7%)](#product-and-project-management-287-47)
+  - [customer-and-revenue-operations (226, 3.7%)](#customer-and-revenue-operations-226-37)
+  - [content-and-communication (341, 5.6%)](#content-and-communication-341-56)
+  - [people-and-engineering-management (134, 2.2%)](#people-and-engineering-management-134-22)
+  - [specialized-and-systems-engineering (288, 4.7%)](#specialized-and-systems-engineering-288-47)
+- [Boundary rules](#boundary-rules)
+- [Placements that are judgment calls](#placements-that-are-judgment-calls)
+- [Reproducing and checking the assignment](#reproducing-and-checking-the-assignment)
+
 ## What the corpus actually is
 
 The eight proposals converged on a structural fact that decides how the merge has to work: the

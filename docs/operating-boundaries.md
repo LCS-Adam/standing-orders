@@ -5,6 +5,17 @@ when this harness runs: what leaves the machine, where agent output lands, who a
 permission-bypass flag, the hard stops that are already enforced, and what is left as an
 organizational decision this repository does not make for you.
 
+## Contents
+
+- [What leaves the machine](#what-leaves-the-machine)
+- [Where agent output lands, and what to do with each](#where-agent-output-lands-and-what-to-do-with-each)
+- [Who approves a permission-bypass flag](#who-approves-a-permission-bypass-flag)
+- [The hard stops, verbatim](#the-hard-stops-verbatim)
+- [The model-pin gate is not enforced on native Windows](#the-model-pin-gate-is-not-enforced-on-native-windows)
+- [Third-party code the gate does not scan](#third-party-code-the-gate-does-not-scan)
+- [Gate minimalism is a dial, not a default](#gate-minimalism-is-a-dial-not-a-default)
+- [What the agent may read](#what-the-agent-may-read)
+
 ## What leaves the machine
 
 **External LLM review.** Skill `skills/external-llm-review/SKILL.md` is used "when a
