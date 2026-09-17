@@ -291,10 +291,10 @@ In depth: `CLAUDE.md` ("Skills, rules, and commands are three different mechanis
 ## run-id
 
 An identifier substituted into a required-artifact path when the project-scope workspace-brain
-module is in use, for example `active/contracts/<run-id>.md`. The exact format of a run-id is not
-specified in this repo; treat it as whatever stable, unique label the session picks for the task at
-hand, consistent across every artifact path for that same task.
-In depth: `templates/project/CLAUDE.md` ("Artifact Persistence")
+module is in use, for example `active/contracts/<run-id>.md`. The format is `YYYY-MM-DD_<short-slug>`, set by the project `CLAUDE.md` that
+`harness init` scaffolds (its "Run-id format" line). Same-day reruns disambiguate with a slug
+suffix. Whatever label a session picks, it stays the same across every artifact path that run
+writes, which is what makes the artifacts findable afterwards.
 
 ## scope (user versus project)
 

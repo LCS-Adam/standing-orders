@@ -70,7 +70,7 @@ pass.
 
 ## Beat 2: `harness init` in a fresh repo
 
-`cmd_init` in `bin/harness` (`bin/harness:220`) requires a git repository, then copies `AGENTS.md`
+`cmd_init` in `bin/harness` requires a git repository, then copies `AGENTS.md`
 into the repo root, writes a `CLAUDE.md` that only imports it (see `adapters/README.md` for why an
 import rather than a symlink), and copies the `.project-state/` template
 (`templates/project/.project-state`) in.

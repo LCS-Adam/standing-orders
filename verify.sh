@@ -93,10 +93,24 @@ NSHIPPED=$(shipped_l 2>/dev/null | wc -l | tr -d ' ')
 # not this one: any unstaged edit to any tracked file is a divergence, so that
 # gate would fail on the ordinary pre-commit state.
 #
-# CEILING, stated because it is real and chosen: checks 3, 4, 5, 6, 8, 12 and 13
-# read the working tree only. A staged-but-not-checked-out divergence can hand a
-# colleague a stale count or a SKILL.md missing its frontmatter. It cannot hand
-# them a leak, because every check that looks for one reads both sources.
+# CEILING, stated because it is real and chosen. Checks 3, 4, 5, 6, 8, 9, 10, 12,
+# 13 and 14 read the WORKING TREE only. An external reviewer pointed out the
+# original version of this list named seven of them and missed 9, 10 and 14, so
+# the ceiling itself understated the gap.
+#
+# What that allows, concretely: stage a broken file, restore the good working
+# copy without staging the restore, and the gate passes on bytes that are not
+# the bytes being committed. `git add CLAUDE.md` with the import removed, then
+# `git restore CLAUDE.md`, and check 5 certifies a file the next clone will not
+# receive.
+#
+# It cannot hand anyone a LEAK: checks 1, 2 and 7, the three that hunt for one,
+# read both byte sources. The gap is correctness and consistency, not exposure.
+#
+# NOT BUILT, and worth knowing before this gate is used as a merge criterion: a
+# branch or CI mode that validates index blobs for every check. Until that
+# exists, run the gate on a clean tree and read a green result as a statement
+# about your working tree.
 cached() { git ls-files -z --cached -- "$@"; }
 
 # scan <exempt-ere> <extra-grep-flags> <pattern> - grep both byte sources.
@@ -274,6 +288,19 @@ scan_vs_disk() {
   done
 }
 
+# Frontmatter, or nothing. Checks 3 and 4 used to grep the WHOLE file for
+# `^model:` and `^name:`, so a file with a stray line before its opening `---`
+# passed both while the host, which requires the delimiter on line 1, saw no
+# frontmatter at all. A body example beginning `model:` satisfied check 3 the
+# same way. This prints the opening block and stays silent when there is not
+# one, so a structural break fails instead of being searched around.
+frontmatter() { # frontmatter <file>
+  awk 'NR==1 && $0!="---" {exit}
+       NR==1 {next}
+       /^---[[:space:]]*$/ {exit}
+       {print}' "$1" 2>/dev/null
+}
+
 # 3 -------------------------------------------------- every agent pins a tier
 # Guard is a COMPARISON against what is on disk, not a test for zero. A scan set
 # of 1 agent out of 11 reported PASS on almost nothing and printed a reassuring
@@ -284,7 +311,10 @@ elif [ -n "$unscanned" ]; then fail "agent definitions on disk that the scan set
 else
   missing=""
   for f in $scanned; do
-    grep -qE '^model:[[:space:]]*\{\{TIER_(FRONTIER_THINK|FRONTIER_DO|MID|SMALL)\}\}' "$f" 2>/dev/null || missing="$missing $f"
+    # Anchored at BOTH ends. `{{TIER_MID}}-typo` matched the old pattern and
+    # installed as a literal nobody offers.
+    frontmatter "$f" | grep -qE '^model:[[:space:]]*\{\{TIER_(FRONTIER_THINK|FRONTIER_DO|MID|SMALL)\}\}[[:space:]]*$' \
+      || missing="$missing $f"
   done
   if [ -n "$missing" ]; then fail "agent definitions missing a {{TIER_*}} model pin:$missing"
   else pass "all $n agent definitions pin a tier"; fi
@@ -297,8 +327,10 @@ elif [ -n "$unscanned" ]; then fail "SKILL.md files on disk that the scan set do
 else
   bad=""
   for f in $scanned; do
-    head -20 "$f" 2>/dev/null | grep -q '^name:' || bad="$bad $f(name)"
-    head -20 "$f" 2>/dev/null | grep -q '^description:' || bad="$bad $f(description)"
+    fm="$(frontmatter "$f")"
+    [ -n "$fm" ] || { bad="$bad $f(no frontmatter block)"; continue; }
+    printf '%s\n' "$fm" | grep -q '^name:' || bad="$bad $f(name)"
+    printf '%s\n' "$fm" | grep -q '^description:' || bad="$bad $f(description)"
   done
   if [ -n "$bad" ]; then fail "SKILL.md missing required frontmatter:$bad"
   else pass "all $n skills have name and description"; fi
@@ -319,12 +351,21 @@ if [ -z "$(shipped_l 'config/settings.portable.json')" ]; then
 elif [ ! -r config/settings.portable.json ]; then
   fail "config/settings.portable.json is not readable - the check did not run, which is not the same as safe"
 else
+# Parse FIRST. `jq ... 2>/dev/null || true` turned a parse failure into an empty
+# string, which then compared unequal to every unsafe value and passed. A
+# trailing comma in this file therefore read as "no unsafe defaults" while the
+# installer copied malformed JSON into ~/.claude, where the tool would ignore
+# the whole file including the model-pin hook.
+if ! jq -e 'type == "object"' config/settings.portable.json >/dev/null 2>&1; then
+  fail "config/settings.portable.json is not a JSON object - it cannot be checked, and an install would copy it anyway"
+else
 unsafe=$(grep -oE '"(skipDangerousModePermissionPrompt|skipAutoPermissionPrompt|dangerouslySkipPermissions)"' \
          config/settings.portable.json 2>/dev/null || true)
 acceptmode=$(jq -r '.permissions.defaultMode // empty' config/settings.portable.json 2>/dev/null || true)
 if [ -n "$unsafe" ] || [ "$acceptmode" = "acceptEdits" ] || [ "$acceptmode" = "bypassPermissions" ]; then
   fail "unsafe permission defaults in settings.portable.json: ${unsafe:-} ${acceptmode:-}"
 else pass "no permission-bypass defaults in shipped settings"; fi
+fi
 fi
 
 # 7 -------------------------------------------------- shell script portability
