@@ -104,6 +104,22 @@ pass a credential inline on a command line, because tools echo the expanded comm
 and chat history, so source it from a file with `600` permissions at runtime instead; and confirm
 `.env` and secret files are ignored before committing.
 
+## The model-pin gate is not enforced on native Windows
+
+`hooks/require-agent-model.sh` denies a subagent spawn carrying no model pin. On macOS, Linux and
+WSL 2 it does that. On native Windows without Git for Windows installed and detected, it can fail to
+launch at all, and a `PreToolUse` hook that does not exit 2 is treated as a non-blocking error, so
+the spawn proceeds. Nothing in the session reports it.
+
+This is a platform limitation, not a configuration mistake, and it is not one this repository can
+close: the hook cannot report a refusal it was never started to make. It matches an open upstream
+issue (anthropics/claude-code#90077).
+
+If your organization relies on that gate, standardise Windows engineers on WSL 2, or require Git for
+Windows and verify it is detected. `docs/windows.md` has the detail. Do not read a green
+`harness verify` as evidence either way: the gate inspects this repository and cannot see whether a
+hook fired in someone's session.
+
 ## Third-party code the gate does not scan
 
 The scrub gate holds one invariant: nothing reaches `~/.claude` that it did not scan. The installer

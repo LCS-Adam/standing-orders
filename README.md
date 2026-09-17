@@ -45,6 +45,9 @@ third-party code this repository's gate does not scan. The gate prints the count
 `install=` are reference material only: point your coding tool at `.upstream/` and it reads the
 source and installs what it needs in its own format. See `docs/upstream-sources.md`.
 
+**On Windows**, run all of this in Git Bash or WSL 2, not PowerShell. `docs/windows.md` covers the
+setup and one thing you should read before relying on the model-pin gate there.
+
 Put `bin/` on your `PATH`, then in any repository you want the project layer in:
 
 ```bash
@@ -198,6 +201,7 @@ once; the groups below say when each one matters:
 | [Getting started](docs/getting-started.md) | A new user installing the harness for the first time. |
 | [Choosing the right mechanism](docs/choosing-your-tools.md) | Anyone unsure whether they need an instruction, a rule, a skill, a command, a hook, or a subagent. |
 | [Your first day](docs/first-day.md) | A new user who wants the first real session done for real, with actual output. |
+| [Running on Windows](docs/windows.md) | Anyone on Windows, and anyone who needs to know the model-pin gate is not reliably enforced there. |
 | [Troubleshooting](docs/troubleshooting.md) | Anyone looking at a symptom right now who wants the one page that fixes it. |
 | [Operating process](docs/operating-process.md) | A user running their first real task after the first-day tour. |
 | [Managing the context window](docs/context-window-management.md) | Anyone whose sessions degrade over time and wants to know why. |

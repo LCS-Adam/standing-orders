@@ -172,6 +172,12 @@ feature. Do not assume it exists because this section describes the shape it wou
 
 See `adapters/README.md` for the full table of what each tool reads at project and user scope.
 
+## If you are on Windows
+
+Run everything in this document in Git Bash or WSL 2. The installer, the gate and the hooks are
+bash and there is no PowerShell equivalent. `docs/windows.md` has the setup, the prerequisites Git
+Bash does not ship, and a disclosure about the model-pin hook that matters before you rely on it.
+
 ## Pulling in the upstream sources
 
 ```bash
