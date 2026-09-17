@@ -6,8 +6,8 @@ yet, so this page says what is verified, what is not, and what to do first.
 ## Start here
 
 ```bash
-git clone <this-repo> ~/projects/agent-harness
-cd ~/projects/agent-harness
+git clone <this-repo> ~/projects/standing-orders
+cd ~/projects/standing-orders
 ./bin/harness upstream           # clone the referenced repos into .upstream/
 ./bin/harness install --user     # deploy the core into ~/.claude
 ./bin/harness verify             # the scrub gate, fourteen checks

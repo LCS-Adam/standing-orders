@@ -93,7 +93,7 @@ measurement. Ask for the citation.
 `hooks/statusline.sh` renders the window as you work:
 
 ```text
-Opus 5  |  [###-------] 39% (391k)  |  agent-harness docs/training
+Opus 5  |  [###-------] 39% (391k)  |  standing-orders docs/training
 ```
 
 Wire it up by adding this to `~/.claude/settings.json`. The harness does not set it for you,

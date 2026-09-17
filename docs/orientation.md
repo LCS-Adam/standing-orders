@@ -1,7 +1,7 @@
 # Orientation
 
 This is the starting point if you have never used an AI coding agent before. It defines
-the vocabulary the rest of this repo's docs assume, then shows what `agent-harness`
+the vocabulary the rest of this repo's docs assume, then shows what `standing-orders`
 specifically adds on top of that vocabulary. Read it once before [`docs/getting-started.md`](getting-started.md).
 
 ## What a session is

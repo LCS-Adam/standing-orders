@@ -17,7 +17,7 @@
 
 ## What this is
 
-`agent-harness` is a portable set of instructions, subagent definitions, skills, and safety hooks
+`standing-orders` is a portable set of instructions, subagent definitions, skills, and safety hooks
 for AI coding agents. It installs onto a machine in one command and works the same way across
 Claude Code, Auggie, Intent, Codex, Cursor, and Gemini CLI. The problem it solves is that most agent
 setups accumulate as machine-specific config that cannot be moved, shared, or handed to a
@@ -38,8 +38,8 @@ fails with a clear message naming it rather than doing a partial install.
 ## Installing at user scope
 
 ```bash
-git clone <this-repo> ~/projects/agent-harness
-cd ~/projects/agent-harness
+git clone <this-repo> ~/projects/standing-orders
+cd ~/projects/standing-orders
 ./bin/harness install --user --dry-run   # see what would happen first
 ./bin/harness install --user             # the always-on core, into ~/.claude
 ```

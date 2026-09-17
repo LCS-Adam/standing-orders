@@ -1,4 +1,6 @@
-# agent-harness
+# standing-orders
+
+Instructions that stay in force across every session, every tool, and every machine.
 
 An AI coding agent (Claude Code, Codex, Cursor, and similar tools) reads instruction files out of
 your project and its own config directory before it does anything. This repository is a shared,
@@ -39,8 +41,8 @@ grew on. This one is built to be moved, shared, and forked.
 ## Install
 
 ```bash
-git clone <this-repo> ~/projects/agent-harness
-cd ~/projects/agent-harness
+git clone <this-repo> ~/projects/standing-orders
+cd ~/projects/standing-orders
 ./bin/harness upstream           # clone the repos in config/upstream.conf into .upstream/
 ./bin/harness install --user     # the always-on core, into ~/.claude
 ./bin/harness verify             # confirm nothing personal or machine-specific came along
@@ -111,7 +113,7 @@ Four slash commands: `/deep-plan`, `/handoff`, `/next-step`, `/phase-status`.
 
 ```mermaid
 flowchart TD
-    R["agent-harness repo"]
+    R["standing-orders repo"]
     R -->|"harness install --user"| U["~/.claude/<br/>agents, skills, commands,<br/>hooks, rules/00-harness-core.md"]
     R -->|"harness init"| P["your repo/<br/>AGENTS.md + CLAUDE.md<br/>.project-state/"]
     R -->|"harness add --tool"| T["~/.codex/AGENTS.md<br/>~/.augment/rules/<br/>GEMINI.md"]

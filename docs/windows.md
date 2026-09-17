@@ -67,9 +67,9 @@ written. The differences are in getting there.
 Git Bash, and the same folder appears under a mount point when seen from inside WSL:
 
 ```text
-docs say          ~/projects/agent-harness
+docs say          ~/projects/standing-orders
 Git Bash sees     the same, mapped to your profile folder
-File Explorer     %USERPROFILE%\projects\agent-harness
+File Explorer     %USERPROFILE%\projects\standing-orders
 WSL sees          a /mnt mount of the same drive, then the same profile path
 ```
 

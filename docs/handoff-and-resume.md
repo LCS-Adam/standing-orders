@@ -116,7 +116,7 @@ needs to read.
 ## A worked example
 
 ```
-RESUME: agent-harness, Phase 5 documentation set
+RESUME: standing-orders, Phase 5 documentation set
 
 Working directory: ~/projects/your-repo
 Launch: claude (no special flags)

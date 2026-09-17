@@ -305,7 +305,7 @@ harness build-plugin --tool auggie
 ./verify.sh
 ```
 
-The build writes `plugins/agent-harness-auggie/` and `.augment-plugin/marketplace.json`. Check 13
+The build writes `plugins/standing-orders-auggie/` and `.augment-plugin/marketplace.json`. Check 13
 now rebuilds both and compares them byte for byte with what is committed, so the gate tells you if
 they ever drift.
 
@@ -319,7 +319,7 @@ alternative and changes one string. Then, from a scratch repo:
 
 ```bash
 auggie plugin marketplace add <owner>/<repo>
-auggie plugin install agent-harness-auggie@agent-harness --project
+auggie plugin install standing-orders-auggie@standing-orders --project
 ```
 
 Check the agents command and the skills command again: both should now show the plugin as the

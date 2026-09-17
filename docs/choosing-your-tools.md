@@ -1,6 +1,6 @@
 # Choosing the right mechanism
 
-`agent-harness` gives you six different ways to change how an agent behaves. New users
+`standing-orders` gives you six different ways to change how an agent behaves. New users
 tend to reach for the same one or two every time, then get surprised when a rule they
 wrote gets ignored under pressure, or when a "skill" they wrote never actually loads.
 This document walks through all six, what each one is mechanically, when to reach for

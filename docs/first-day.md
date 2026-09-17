@@ -44,7 +44,7 @@ only the home path shortened to `~`:
 
 ```text
 $ ./verify.sh
-Scrubbing ~/projects/agent-harness
+Scrubbing ~/projects/standing-orders
 
   PASS no absolute home paths
   PASS no vendor model names outside config/models.conf
@@ -88,7 +88,7 @@ import rather than a symlink), and copies the `.project-state/` template
 
 ```
 $ git init -q
-$ ~/projects/agent-harness/.worktrees/t-first-day/bin/harness init
+$ ~/projects/standing-orders/.worktrees/t-first-day/bin/harness init
 Scaffolding project scope into ~/projects/first-day-scratch
   + AGENTS.md
   + CLAUDE.md (imports AGENTS.md)
