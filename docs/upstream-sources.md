@@ -103,7 +103,9 @@ so running it more often costs nothing but time.
 
 ## What is still vendored, and why
 
-One skill in `config/upstream.conf` is load-bearing rather than a convenience. `/ponytail-review` is
+Two entries in `config/upstream.conf` are load-bearing rather than conveniences.
+
+The first is `/ponytail-review`, which is
 step 3 of the per-wave review gate stack, and it comes from the ponytail plugin. The harness used to
 ship its own `skills/simplify/` for that step, which was wrong twice over: it duplicated a command
 the host already provides under the same name, so which one ran was unclear, and it was a
@@ -111,6 +113,13 @@ reimplementation that could never receive the original's improvements. It was de
 the real thing. A machine that has not installed ponytail does not have that gate step, and the
 gate's slash-command check lists the plugin's commands separately from the host built-ins for
 exactly that reason.
+
+The second is `humanizer`, which rewrites prose that reads as machine-written. `AGENTS.md` requires
+that anything a third party reads must not read that way, and `verify.sh` can only police the
+characters the habit leaves behind, never the habit. The difference is not academic: this repo bans
+the em dash, so it substitutes a spaced hyphen, and for a while it used that hyphen in exactly the
+places the em dash had been. The glyph changed and the rhythm did not, and no character check can
+see that. It runs through the agent, so no document leaves the machine to be rewritten.
 
 `skills/THIRD_PARTY.md` lists the material that predates this policy and still sits in `skills/` as
 pinned snapshots. They stay for now so the harness keeps working on a machine with no network, and
