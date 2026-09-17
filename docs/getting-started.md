@@ -132,18 +132,37 @@ harness add --tool intent
 harness add --tool cosmos
 ```
 
-`auggie`, `codex`, `cursor`, and `gemini` each write one pointer file for that tool: a rules file
-for Auggie's user scope, `~/.codex/AGENTS.md` for Codex, a `.mdc` rule for Cursor, or a one-line
-`GEMINI.md` import for Gemini CLI. `intent` prints guidance rather than writing anything, because
-Intent already reads `AGENTS.md` and a `skills/` directory straight from the repo with no adapter
-needed.
+`codex`, `cursor`, and `gemini` each write one pointer file for that tool: `~/.codex/AGENTS.md` for
+Codex, a `.mdc` rule for Cursor, or a one-line `GEMINI.md` import for Gemini CLI. `intent` prints
+guidance rather than writing anything, because Intent already reads `AGENTS.md` and a `skills/`
+directory straight from the repo with no adapter needed.
 
-`cosmos` is the one that needs explaining. COSMOS has two paths: a conversational Advisor that
+`auggie` does more than write a pointer file, because Augment supports most of this harness. It
+writes three things: `.augment/agents/`, generated from `agents/` because Auggie's subagent
+frontmatter is a different schema; the security hard stops as `toolPermissions` deny rules in
+`.augment/settings.json`; and `AGENTS.md` into `~/.augment/rules/` for workspaces that are not this
+repo. Skills and slash commands need nothing, since Auggie reads `.claude/skills/` and
+`.claude/commands/` directly.
+
+It will refuse to run until `config/models.auggie.conf` exists, and that file is generated rather
+than typed:
+
+```bash
+scripts/resolve-tier.sh --write-conf
+```
+
+Augment's model allowlist is set per company and moves without telling you, so the binding is
+discovered by asking the CLI which models the account actually has. That command needs `auggie`
+installed and logged in. `harness build-plugin --tool auggie` then packages the whole set as an
+installable plugin. `docs/augment-runbook.md` walks all of it, in order, on a machine that has
+Auggie.
+
+`cosmos` is the one that still needs explaining. COSMOS has two paths: a conversational Advisor that
 edits no files, and `auggie cloud`, which manages Experts as committable YAML bundles. This harness
-does not yet generate those bundles, so `harness add --tool cosmos` prints guidance rather than
-writing a file: either describe the Expert you want to Cosmos Advisor in plain language, or run
-`auggie cloud expert init` to scaffold a bundle yourself and paste the relevant parts of
-`AGENTS.md` into it.
+does not yet generate those bundles, so `harness add --tool cosmos` prints guidance and points at
+`adapters/cosmos/adversary-advisor-prompt.md`, a worked Advisor prompt for one Expert. Either paste
+that, or run `auggie cloud expert init` to scaffold a bundle yourself and paste the relevant parts
+of `AGENTS.md` into it.
 
 Generating Cosmos bundles from the harness's own agent definitions is planned work, not a shipped
 feature. Do not assume it exists because this section describes the shape it would take.

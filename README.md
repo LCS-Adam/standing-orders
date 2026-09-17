@@ -11,10 +11,13 @@ one more sets up a repository.
 
 One instruction set is read by Claude Code, Auggie, Intent, Codex, Cursor, Gemini CLI, Copilot and
 Windsurf, because they converged on `AGENTS.md` and `CLAUDE.md`. Be clear on what that does and
-does not mean: the instruction layer is genuinely shared, while agents, skills and hooks are
-Claude Code mechanisms that other tools support partially or not at all. Augment's COSMOS takes a
-different shape again: its Experts are committable YAML bundles applied with `auggie cloud`.
-`adapters/README.md` states exactly what each tool consumes, including the gaps.
+does not mean: the instruction layer is genuinely shared, while skills, commands and hooks are
+supported by some of those tools and not others. Augment goes furthest. Auggie reads this repo's
+skills and commands with no conversion at all, takes the security hard stops as tool-permission
+rules, and needs only its subagent definitions generated; `harness add --tool auggie` does that.
+Augment's COSMOS takes a different shape again: its Experts are committable YAML bundles applied
+with `auggie cloud`. `adapters/README.md` states exactly what each tool consumes, including the
+gaps, and marks every Augment claim as verified in the vendor's docs or verified in practice.
 
 Most agent setups accumulate as a pile of machine-specific config that cannot leave the laptop it
 grew on. This one is built to be moved, shared, and forked.
@@ -33,7 +36,7 @@ Put `bin/` on your `PATH`, then in any repository you want the project layer in:
 ```bash
 harness init                     # AGENTS.md, CLAUDE.md, .project-state/
 harness add workspace-brain      # state machine, autonomy gates, artifact persistence
-harness add --tool auggie        # another tool's pointer file
+harness add --tool auggie        # another tool's config: see adapters/README.md
 ```
 
 Everything is additive. Nothing is overwritten without `--force`, and every skip is reported. Run
@@ -135,10 +138,15 @@ depth.
 `CLAUDE.md` imports it rather than symlinking it, since symlinks need Administrator rights on
 Windows and check out as plain text when `core.symlinks` is false.
 
-Auggie reads `CLAUDE.md` natively and at higher precedence than `AGENTS.md`. Intent reads both plus
-a `skills/` directory. Codex, Cursor, Gemini CLI, Copilot, and Windsurf read `AGENTS.md`. COSMOS
-Experts are YAML bundles you can commit and apply with `auggie cloud`, alongside a conversational
-Advisor path that is fileless. `adapters/README.md` has the details per tool.
+Auggie reads `CLAUDE.md` natively and at higher precedence than `AGENTS.md`, and it also reads
+`.claude/skills/` and `.claude/commands/` straight out of the repo. Its subagents use a different
+frontmatter schema, so those are generated: `harness add --tool auggie` writes `.augment/agents/`
+and the tool-permission rules, and `harness build-plugin --tool auggie` packages the lot as an
+installable plugin. Intent reads `AGENTS.md` and `CLAUDE.md` plus a `skills/` directory. Codex,
+Cursor, Gemini CLI, Copilot, and Windsurf read `AGENTS.md`. COSMOS Experts are YAML bundles you can
+commit and apply with `auggie cloud`, alongside a conversational Advisor path that is fileless.
+`adapters/README.md` has the details per tool, and `docs/augment-runbook.md` is the procedure for
+standing the Augment side up on a machine that has Auggie.
 
 ## The scrub gate
 
