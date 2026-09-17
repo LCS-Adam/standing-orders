@@ -15,6 +15,16 @@ STAGE=""
 FORCE=0
 DRY=0
 
+# Every mktemp -d goes through here. Two code paths used to each set $STAGE and
+# each install their own EXIT trap, so the second silently orphaned the first
+# directory. One accumulator, one trap.
+STAGES=""
+new_stage() {
+  STAGE="$(mktemp -d)" || die "mktemp failed"
+  STAGES="${STAGES:+$STAGES }$STAGE"
+  trap 'for _d in ${STAGES:-}; do rm -rf "$_d"; done' EXIT
+}
+
 c_ok()   { printf '  \033[32m+\033[0m %s\n' "$1"; }
 c_skip() { printf '  \033[33m=\033[0m %s\n' "$1"; }
 c_info() { printf '\033[1m%s\033[0m\n' "$1"; }
@@ -284,8 +294,7 @@ stage_agents_for_auggie() {
   on a machine with auggie installed and logged in.
   See docs/augment-runbook.md step 5."
   load_models "$AUGGIE_CONF"
-  STAGE="$(mktemp -d)"
-  trap 'rm -rf "${STAGE:-}"' EXIT
+  new_stage
   stage_shipped agents
   while IFS= read -r f; do resolve_tiers "$f"; done < <(find "$STAGE/agents" -type f -name '*.md')
   if grep -rq '{{TIER_' "$STAGE" 2>/dev/null; then
@@ -341,8 +350,7 @@ cmd_install() {
   # rules/ deliberately does not, because it documents the token syntax.
   # Everything bound for ~/.claude goes through stage_shipped, so the set of
   # files that can reach it is the set the gate scans.
-  STAGE="$(mktemp -d)"
-  trap 'rm -rf "${STAGE:-}"' EXIT
+  new_stage
   stage_shipped agents
   stage_shipped skills
   stage_shipped commands
@@ -425,8 +433,7 @@ cmd_add() {
   local T="$HARNESS_ROOT/templates/project"
   if grep -rq '{{TIER_' "$T" 2>/dev/null; then
     load_models
-    STAGE="$(mktemp -d)"
-    trap 'rm -rf "${STAGE:-}"' EXIT
+    new_stage
     cp -R "$T" "$STAGE/project"
     while IFS= read -r f; do resolve_tiers "$f"; done < <(find "$STAGE/project" -type f -name '*.md')
     T="$STAGE/project"
@@ -546,17 +553,14 @@ cmd_build_plugin() {
     die "unresolved tier tokens above; $AUGGIE_CONF did not cover them"
   fi
 
-  local P="$out/plugins/agent-harness-auggie"
-  # Regeneration, not a merge: a deleted agent has to disappear from the built
-  # tree or check 13 reports a difference forever. Guarded by the exact
-  # basename, because this is the one rm -rf in the installer.
-  case "$P" in
-    */plugins/agent-harness-auggie) [ "$DRY" -eq 1 ] || rm -rf "$P" ;;
-    *) die "refusing to remove an unexpected path: $P" ;;
-  esac
+  local final="$out/plugins/agent-harness-auggie"
   if [ "$DRY" -eq 1 ]; then c_ok "plugins/agent-harness-auggie (dry run)"; return; fi
 
-  mkdir -p "$P/.augment-plugin" "$P/rules" "$out/.augment-plugin"
+  # Build into the staging area, then swap. Building in place meant a mid-build
+  # die - an agent with an unmappable tool is enough - left the committed tree
+  # half deleted. The gate would catch that, but it should not have to.
+  local P="$STAGE/out/plugins/agent-harness-auggie"
+  mkdir -p "$P/.augment-plugin" "$P/rules" "$STAGE/out/.augment-plugin"
   local n; n="$(augment_agents "$P/agents")"
   cp -R "$STAGE/skills"   "$P/skills"
   cp -R "$STAGE/commands" "$P/commands"
@@ -590,9 +594,20 @@ cmd_build_plugin() {
       category: "productivity",
       tags: ["agents", "skills", "workflow"]
     }]
-  }' > "$out/.augment-plugin/marketplace.json"
+  }' > "$STAGE/out/.augment-plugin/marketplace.json"
 
-  c_ok "plugins/agent-harness-auggie ($n agents, $(find "$P/skills" -name SKILL.md | wc -l | tr -d ' ') skills, $(find "$P/commands" -name '*.md' | wc -l | tr -d ' ') commands)"
+  # Swap. Only now does anything under $out change. The guard is on the exact
+  # basename, because this is the one rm -rf in the installer.
+  case "$final" in
+    */plugins/agent-harness-auggie) rm -rf "$final" ;;
+    *) die "refusing to remove an unexpected path: $final" ;;
+  esac
+  mkdir -p "$out/plugins" "$out/.augment-plugin"
+  mv "$P" "$final" || die "could not move the built tree into $final"
+  mv "$STAGE/out/.augment-plugin/marketplace.json" "$out/.augment-plugin/marketplace.json" \
+    || die "could not write $out/.augment-plugin/marketplace.json"
+
+  c_ok "plugins/agent-harness-auggie ($n agents, $(find "$final/skills" -name SKILL.md | wc -l | tr -d ' ') skills, $(find "$final/commands" -name '*.md' | wc -l | tr -d ' ') commands)"
   c_ok ".augment-plugin/marketplace.json ($ver)"
   [ "$out" = "$HARNESS_ROOT" ] && c_info "Commit both. They are generated: rebuild after a re-bind (docs/augment-runbook.md step 5b)."
   return 0

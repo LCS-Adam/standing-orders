@@ -139,11 +139,15 @@ binary=$( { shipped | xargs -0r perl -0777 -ne 'print "$ARGV (working tree)\n" i
 # make the SAME claim about the SAME surface. An exemption - "this file is out of
 # THIS check" - stays inside the check that owns it. See the gate-integrity
 # assertion below.
-# plugins/ is a GENERATED copy of agents/, commands/, skills/ and AGENTS.md,
-# every one of which is framework prose at its source. Scanning the copy as a
-# client-facing doc would fail the glyph and count checks on bytes this gate
-# already passed once, and the fix would be to edit generated output.
-FRAMEWORK_PROSE='^(agents|commands|hooks|rules|config|templates|skills|plugins)/|^(AGENTS|CLAUDE)\.md$'
+# .augment/ and plugins/agent-harness-auggie/ are GENERATED copies of agents/,
+# commands/, skills/ and AGENTS.md, every one of which is framework prose at its
+# source. Scanning a copy as a client-facing doc fails the glyph and count
+# checks on bytes this gate already passed once, and the only way to make it
+# green again would be to edit generated output. Reproduced: one
+# `harness add --tool auggie` in a clone turned checks 2 and 8 red on eleven
+# files that are byte-identical, past their frontmatter, to files already in the
+# scan set.
+FRAMEWORK_PROSE='^(agents|commands|hooks|rules|config|templates|skills)/|^(AGENTS|CLAUDE)\.md$|^\.augment/|^plugins/agent-harness-auggie/'
 CLIENT_DOCS=$(shipped_l '*.md' | grep -vE "$FRAMEWORK_PROSE")
 
 # ---------------------------------------------------------------- gate integrity
@@ -220,15 +224,21 @@ else pass "no absolute home paths"; fi
 # the one thing that must never happen here: a dropped family pattern is exactly
 # how a same-family reviewer gets through a gate that wants a different opinion.
 #
-# The last two are the Augment side, and neither exists in THIS checkout:
-# config/models.auggie.conf is written by scripts/resolve-tier.sh --write-conf
-# on the work machine, and plugins/ is written by `harness build-plugin` there.
-# Both are generated output whose whole content is literal model ids and copies
-# of files this gate already scans at their source. They are exempted here
-# rather than later so the work machine's first `./verify.sh` is green for a
-# real reason instead of red for a bookkeeping one.
-# Exact paths and one generated directory, never a broad prefix.
-EXEMPT_VENDOR='^verify\.sh:|^adapters/README\.md|^docs/|^config/models\.conf|^scripts/resolve-tier\.sh:|^config/models\.auggie\.conf:|^plugins/'
+# The last three are the Augment side, and none of them exists in THIS
+# checkout. config/models.auggie.conf is written by
+# scripts/resolve-tier.sh --write-conf; .augment/agents/ by
+# `harness add --tool auggie`; plugins/agent-harness-auggie/ by
+# `harness build-plugin`. All three are GENERATED, and in all three a literal
+# model id is the payload rather than a leak: a subagent's `model:` field is a
+# binding, the same category as config/models.conf, and the alternative is a
+# subagent that inherits whatever the CLI defaults to.
+#
+# They are exempted now rather than when they first appear, so that the first
+# `./verify.sh` after the runbook is red for a real reason or green for a real
+# one, never red for bookkeeping. Each is the exact generated path: not
+# `^plugins/`, which would cover a second plugin nobody generated, and not
+# `^\.augment/`, which would cover a hand-written settings file.
+EXEMPT_VENDOR='^verify\.sh:|^adapters/README\.md|^docs/|^config/models\.conf|^scripts/resolve-tier\.sh:|^config/models\.auggie\.conf:|^\.augment/agents/|^plugins/agent-harness-auggie/'
 # -w, not \b: git grep -E does not implement \b, so the index side of this scan
 # would have matched nothing and passed forever. Both engines implement -w and
 # both return the same hits on this repo.
