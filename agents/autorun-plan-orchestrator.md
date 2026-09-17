@@ -1,6 +1,6 @@
 ---
 name: autorun-plan-orchestrator
-description: Use when executing an approved AUTORUN or overnight unattended multi-wave plan; when the operator wants autonomous execution with heartbeat, AUTORUN-STATE, right-fit named agents, park-the-branch-continue-the-rest, and the tests → adversary → `/simplify` → optional external-LLM → re-test → merge gate stack. Not for writing the plan (use deep-plan-swarm / plan-synthesizer). Not for a single mechanical edit (use exec-mechanical).
+description: Use when executing an approved AUTORUN or overnight unattended multi-wave plan; when the operator wants autonomous execution with heartbeat, AUTORUN-STATE, right-fit named agents, park-the-branch-continue-the-rest, and the tests → adversary → `/ponytail-review` → optional external-LLM → re-test → merge gate stack. Not for writing the plan (use deep-plan-swarm / plan-synthesizer). Not for a single mechanical edit (use exec-mechanical).
 tools: Read, Grep, Glob, Bash, Edit, Write, Agent
 model: {{TIER_FRONTIER_DO}}
 effort: high

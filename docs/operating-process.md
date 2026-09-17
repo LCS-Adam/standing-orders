@@ -106,14 +106,14 @@ that worktree.
 ## Step 4: review
 
 The review stack, in order, is the same for every size once there is a diff to review: run the test
-command the plan named, then the `adversary` agent, then `/simplify`, then re-run the tests, then
+command the plan named, then the `adversary` agent, then `/ponytail-review`, then re-run the tests, then
 merge.
 
 `adversary` is a read-only FRONTIER-DO reviewer that tries to break the change: fail-open paths,
 bypasses, false-positive and false-negative gaps, defect classes the tests do not cover
-(`agents/adversary.md`). `/simplify` runs after `adversary` has cleared the diff for correctness; it
+(`agents/adversary.md`). `/ponytail-review` runs after `adversary` has cleared the diff for correctness; it
 is a quality-only pass that removes over-engineering and never hunts bugs
-(`skills/simplify/SKILL.md`). Re-run the test command after any fix either step makes, since a fix
+(`config/upstream.conf` (the ponytail entry)). Re-run the test command after any fix either step makes, since a fix
 for correctness or simplicity can regress what was passing before it.
 
 This ordering follows `AGENTS.md`'s rule that a reviewer sits at or above the tier that produced the
@@ -128,7 +128,7 @@ does not apply, full stop; the four-step stack above (tests, adversary, simplify
 actual gate, not this extra. Do not treat the optional step as required just because a plan
 mentions it.
 
-Command: the plan's test command, then Agent dispatch of `adversary`, then `/simplify`, then the
+Command: the plan's test command, then Agent dispatch of `adversary`, then `/ponytail-review`, then the
 test command again.
 Artifact: an adversary findings report (severity-ranked), a simplify diff, and a final green test
 run.
@@ -175,7 +175,7 @@ applicable) exits clean.
 - [ ] **3. Execute it** - inline (small), or `git worktree add .worktrees/<name> -b <branch>` plus
       Agent dispatch to a listed `agents/` name (bounded/large); `/autorun-plan` for unattended
       multi-wave runs, the `heartbeat` skill (armed with `/loop`) for a watched simple run.
-- [ ] **4. Review it** - the plan's test command, `adversary`, `/simplify`, the test command again;
+- [ ] **4. Review it** - the plan's test command, `adversary`, `/ponytail-review`, the test command again;
       `skills/external-llm-review/SKILL.md` only if a third-party CLI is installed.
 - [ ] **5. Hand off** - `/handoff` before any clear or compact.
 - [ ] **6. Close it** - conventional commit, no AI attribution trailer, branch and PR, never a push
@@ -253,12 +253,12 @@ $ git log --oneline
 0c395c9 chore: add report.py CLI with text output
 ```
 
-**Step 4: review.** For a change this size, `adversary` and `/simplify` are Agent-tool and
+**Step 4: review.** For a change this size, `adversary` and `/ponytail-review` are Agent-tool and
 slash-command dispatches that need a live Claude Code session; they were not run against this
 scratch repo, so no adversary or simplify output is reported here, and none is fabricated. What
 runs in a real session: dispatch `adversary` against the two-file diff (it would check for the flag
 silently swallowing a `json.dumps` failure on a non-serializable report, and find none, since
-`build_report()` returns only strings and ints), then `/simplify` (it would find nothing to remove,
+`build_report()` returns only strings and ints), then `/ponytail-review` (it would find nothing to remove,
 since the diff is already the smallest version of the feature), then re-run
 `python3 -m pytest tests/ -q` to confirm the two passes above still hold.
 

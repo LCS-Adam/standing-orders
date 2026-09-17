@@ -68,7 +68,7 @@ Emit these parts, in this order. This is the deep-plan four-part shape plus two 
      CLI, and do not hardcode Codex as the only execution reviewer.
    - Bake into EVERY code-producing wave's gate, in order: **(1) tests green (the command the
      PLAN names for this repo; read it, never assume one) -> (2) `adversary` correctness
-     review of the merged wave diff -> (3) **`/simplify`** on the wave diff (quality:
+     review of the merged wave diff -> (3) **`/ponytail-review`** on the wave diff (quality:
      reuse/simplification/altitude; it applies fixes; it does NOT hunt bugs and never
      replaces step 2) -> (4) external-LLM fold-back loop on the FINAL simplified diff (review
      -> apply fixes -> re-review; **loop until a round returns no new CRITICAL/HIGH — NO

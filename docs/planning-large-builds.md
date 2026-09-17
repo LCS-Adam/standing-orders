@@ -12,7 +12,7 @@ This article also describes an optional external second-opinion review step. Tha
 one of several third-party CLIs (`skills/external-llm-review/SKILL.md:15` names codex,
 cursor-agent, and gemini) installed and authenticated on your machine. If you do not have one of
 those set up, that step does not apply to you, and the gate is the rest of the stack: the test
-command, the `adversary` agent, `/simplify`, re-running the tests, and merging. Do not treat the
+command, the `adversary` agent, `/ponytail-review`, re-running the tests, and merging. Do not treat the
 external review step as required; it is a strengthening step, not a floor.
 
 An agent session does not survive a large build. Context fills up, gets compacted, or the session

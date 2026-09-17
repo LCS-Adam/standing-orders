@@ -1,6 +1,6 @@
 ---
 name: autorun-plan
-description: Use when executing an approved multi-wave AUTORUN or overnight unattended plan; when running per-wave review gates with tests, adversary, `/simplify`, and an optional external-LLM fold-back; when heartbeating, writing AUTORUN-STATE, parking a branch and continuing; or when minimizing HITL via auto-proceed-on-rule.
+description: Use when executing an approved multi-wave AUTORUN or overnight unattended plan; when running per-wave review gates with tests, adversary, `/ponytail-review`, and an optional external-LLM fold-back; when heartbeating, writing AUTORUN-STATE, parking a branch and continuing; or when minimizing HITL via auto-proceed-on-rule.
 version: 0.1.0
 user-invocable: true
 argument-hint: "[path-to-mission-or-plan]"
@@ -153,7 +153,7 @@ named Agents, gates in this session.
 ## 3. Per-wave review stack (code-producing waves)
 
 Bake into EVERY code-producing wave's gate, in order: **(1) `<the test command the plan names>` green -> (2)
-`adversary` correctness review of the merged wave diff -> (3) **`/simplify`** on the wave
+`adversary` correctness review of the merged wave diff -> (3) **`/ponytail-review`** on the wave
 diff (quality: reuse/simplification/altitude; it applies fixes; it does NOT hunt bugs and never
 replaces step 2) -> (4, only with a reviewer CLI) external-LLM fold-back loop on the FINAL simplified diff (review -> apply
 fixes -> re-review; **loop until a round returns no new CRITICAL/HIGH — NO ROUND CAP,
@@ -414,6 +414,6 @@ continuing on faith.
 
 - Wait on the operator for a rule you can evaluate.
 - Close a wave gate on a silent external review.
-- Inherit models. Skip `/simplify`. Skip 4.5 after a late fix.
+- Inherit models. Skip `/ponytail-review`. Skip 4.5 after a late fix.
 - Execute a reaches-a-person send or a read-only-source write because "autonomy is the goal."
 - Start a second Grok/codex plan review unless the mission says this session owns it.

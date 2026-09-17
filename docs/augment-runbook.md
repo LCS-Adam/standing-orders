@@ -222,7 +222,7 @@ interactively and check three things:
 
 ```
 /agents     expect 11 subagent definitions
-/skills     expect 13, with source .claude/skills
+/skills     expect 12, with source .claude/skills
 /plugins    expect nothing yet; step 9 changes that
 ```
 

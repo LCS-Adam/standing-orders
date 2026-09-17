@@ -238,7 +238,12 @@ else pass "no absolute home paths"; fi
 # while the same bytes under skills/ failed. It is gitignored now instead
 # (.gitignore), which is the honest answer: in THIS repo .augment/ is local
 # scratch, and the distributable copy is the plugin tree.
-EXEMPT_VENDOR='^verify\.sh:|^adapters/README\.md|^docs/|^config/models\.conf|^scripts/resolve-tier\.sh:|^config/models\.auggie\.conf:|^plugins/agent-harness-auggie/'
+#
+# config/retired.conf is the sixth: a list of FILENAMES the harness once
+# installed at user scope, several of them named after the model they ran.
+# Retiring one needs its literal name, and a literal belongs in a config file
+# the gate exempts by exact path rather than in code or in prose.
+EXEMPT_VENDOR='^verify\.sh:|^adapters/README\.md|^docs/|^config/models\.conf|^scripts/resolve-tier\.sh:|^config/models\.auggie\.conf:|^config/retired\.conf:|^plugins/agent-harness-auggie/'
 # -w, not \b: git grep -E does not implement \b, so the index side of this scan
 # would have matched nothing and passed forever. Both engines implement -w and
 # both return the same hits on this repo.
@@ -443,6 +448,16 @@ fi
 # repo's convention, so this catches what is written, not what could be.
 BUILTIN_SLASH="clear compact loop agents help model resume"
 NOT_A_COMMAND="tmp something notes-repo-recon"
+# A third category, and the only one that is neither this repo nor the host: a
+# command a PLUGIN provides. `/ponytail-review` is step 3 of the per-wave gate
+# stack and it is not a harness skill; the harness used to ship its own
+# `skills/simplify/`, which duplicated a command the host already provides
+# under that name. The plugin is recorded in config/upstream.conf, so the
+# reference is resolvable in the sense that matters: a reader can find out
+# where it comes from and install it. These resolve only when that plugin is
+# installed, which is exactly why they are listed separately from the host
+# built-ins rather than quietly added to them.
+PLUGIN_SLASH="ponytail ponytail-review ponytail-audit ponytail-debt ponytail-gain ponytail-help"
 # Trailing [^`]* so a command documented WITH ITS ARGUMENT is still seen. The old
 # matcher required the closing backtick right after the token, so `/deep-plan
 # rescope ...` - the normal way to document a command - was invisible.
@@ -455,7 +470,7 @@ while IFS= read -r tok; do
   [ -n "$tok" ] || continue
   seen=$((seen+1))
   printf '%s\n' "$defined" | grep -qxF "$tok" && continue
-  case " $BUILTIN_SLASH $NOT_A_COMMAND " in *" $tok "*) continue ;; esac
+  case " $BUILTIN_SLASH $NOT_A_COMMAND $PLUGIN_SLASH " in *" $tok "*) continue ;; esac
   dangling="$dangling $tok"
 done <<< "$tokens"
 ntokens=$(printf '%s\n' "$tokens" | grep -c . || true)

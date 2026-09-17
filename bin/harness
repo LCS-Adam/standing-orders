@@ -343,6 +343,57 @@ merge_settings() {
   c_ok "settings.json (merged, backup written)"
 }
 
+# ------------------------------------------------------------ retiring old files
+#
+# put() adds and replaces. It never removed, so every rename left the OLD file
+# installed and live: after the agents were renamed for their job instead of
+# their model, a machine carried both names for the same agent, and a plan
+# written against either one "worked". A roster the installer cannot shrink is
+# a roster that only ever grows.
+#
+# So the installer records what it put there. On the next run, anything in the
+# previous manifest that this run did not ship is retired: MOVED, not deleted,
+# into a timestamped directory, and reported line by line. Files the harness
+# never installed are untouched, which is what keeps a hand-written agent or a
+# skill from another source safe.
+MANIFEST="$CLAUDE_HOME/.harness-manifest"
+
+# The pre-manifest past lives in config/retired.conf, as data rather than a
+# string in this file: the old filenames carry literal model names, and a
+# literal model name belongs in a config file the gate exempts by exact path,
+# never in prose or code. Retiring one a user wrote by hand is recoverable (it
+# is moved, and reported); leaving a stale duplicate of a renamed agent is not,
+# because nothing ever says which one a dispatch hit.
+RETIRED_CONF="$HARNESS_ROOT/config/retired.conf"
+legacy_managed() {
+  [ -f "$RETIRED_CONF" ] || return 0
+  sed -e 's/#.*//' -e 's/[[:space:]]//g' "$RETIRED_CONF" | grep -v '^$' || true
+}
+
+# retire_missing <file-listing-what-this-run-shipped>
+retire_missing() {
+  local now="$1" rel f dest n=0
+  local stamp; stamp="$(date +%Y%m%d%H%M%S)"
+  local attic="$CLAUDE_HOME/backups/harness-retired-$stamp"
+  {
+    [ -f "$MANIFEST" ] && cat "$MANIFEST"
+    [ -f "$MANIFEST" ] || legacy_managed
+  } | sort -u | while IFS= read -r rel; do
+    [ -n "$rel" ] || continue
+    grep -qxF "$rel" "$now" && continue
+    f="$CLAUDE_HOME/$rel"
+    [ -e "$f" ] || continue
+    if [ "$DRY" -eq 1 ]; then c_skip "$rel (would retire)"; continue; fi
+    dest="$attic/$(printf '%s' "$rel" | tr '/' '_')"
+    mkdir -p "$attic"
+    mv "$f" "$dest" && c_ok "$rel (retired to backups/harness-retired-$stamp)"
+    # A skill is a directory; drop it once its SKILL.md has gone.
+    rmdir "$(dirname "$f")" 2>/dev/null || true
+    n=$((n+1))
+  done
+  return 0
+}
+
 # ---------------------------------------------------------------- install --user
 
 cmd_install() {
@@ -398,6 +449,20 @@ cmd_install() {
 
   MANAGED=0
   merge_settings
+
+  # What this run shipped, as paths relative to CLAUDE_HOME. Written AFTER the
+  # copies succeed, so a half-finished install does not record files it never
+  # made, and used first to retire whatever the last run shipped and this one
+  # does not.
+  local now; now="$(mktemp)"
+  ( cd "$STAGE" && find agents skills commands hooks -type f 2>/dev/null ) > "$now"
+  printf 'rules/00-harness-core.md\nrules/10-claude-specifics.md\nrules/shell-portability.md\n' >> "$now"
+  retire_missing "$now"
+  if [ "$DRY" -eq 0 ]; then
+    sort -u "$now" > "$MANIFEST"
+  fi
+  rm -f "$now"
+
   echo
   c_info "Done. Run 'harness verify' to check the result."
 }

@@ -12,7 +12,7 @@ This article also describes an optional external second-opinion review step. Tha
 one of several third-party CLIs (`skills/external-llm-review/SKILL.md:15` names codex,
 cursor-agent, and gemini) installed and authenticated on your machine. If you do not have one of
 those set up, that step does not apply to you, and the gate is the rest of the stack: the test
-command, the `adversary` agent, `/simplify`, re-running the tests, and merging. Do not treat the
+command, the `adversary` agent, `/ponytail-review`, re-running the tests, and merging. Do not treat the
 external review step as required; it is a strengthening step, not a floor.
 
 A six-hour build cannot have a human watching every step, and an agent that goes wrong early in an
@@ -44,7 +44,7 @@ Every code-producing wave passes through the same ordered stack before it merges
 |---|---|---|
 | 1 | The test command the plan names, green | Basic correctness the wave claims to have |
 | 2 | `adversary` review of the merged wave diff | Fail-open paths, bypasses, tamper vectors, defect classes the tests did not exercise |
-| 3 | `/simplify` on the wave diff | Reuse, over-engineering, wrong altitude - quality only, never a bug hunt, never a substitute for step 2 |
+| 3 | `/ponytail-review` on the wave diff | Reuse, over-engineering, wrong altitude - quality only, never a bug hunt, never a substitute for step 2 |
 | 4 | External-LLM fold-back loop on the final simplified diff | Shared blind spots a same-family reviewer cannot see |
 | 4.5 | Re-run the test command plus phase-specific tests, after the last step-3/4 fix | Regressions introduced by the review fixes themselves |
 | 5 | Merge | - |
@@ -125,7 +125,7 @@ finishes or hits a real human gate, and it does this with no review gates, no ad
 external-LLM loop, and no improvement rounds.
 
 The skill is explicit, in its own words, about what it does not do: no adversary pass, no
-`/simplify`, no external-LLM review or fold-back, no plan-quality judgment. The plan is
+`/ponytail-review`, no external-LLM review or fold-back, no plan-quality judgment. The plan is
 already approved, so heartbeat's job is to execute it, not to re-litigate whether it is a good
 plan. Its state file is also named differently on purpose - `.project-state/HEARTBEAT-STATE-<mission-slug>.md`
 rather than an `AUTORUN-STATE-*` file - specifically so that a future reader of the state file can

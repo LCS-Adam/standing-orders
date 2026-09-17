@@ -76,6 +76,22 @@ depends on the target, and the tool doing the installing knows its own format be
 conversion script in this repo could. A script would also have to be rewritten every time an
 upstream author reorganised their repo, which is the staleness problem again in a new costume.
 
+## Sources that are not git repos
+
+Not everything ships as a repository, and the manifest only knows how to clone. One entry is in
+this category today:
+
+| Skill | How it actually ships | Install |
+|---|---|---|
+| `graphify` | PyPI package `graphifyy` | `uv tool install graphifyy`, or `pip install graphifyy` |
+
+`graphify` turns a folder into a navigable knowledge graph and carries a `references/` directory of
+sub-procedures. Its own `SKILL.md` names no source repository, and the only GitHub link in it is a
+sponsors page, so there is nothing to clone and no URL worth guessing at. A coding tool setting this
+machine up should install the package and take the skill from wherever it is already installed.
+
+If you find the upstream repository, move it into `config/upstream.conf` and delete this row.
+
 ## Refreshing, and when to do it
 
 There is no automatic refresh and nothing warns you that a clone is behind. That is a deliberate
@@ -87,6 +103,15 @@ for real work, and when the author announces something you want. `harness upstre
 so running it more often costs nothing but time.
 
 ## What is still vendored, and why
+
+One skill in `config/upstream.conf` is load-bearing rather than a convenience. `/ponytail-review` is
+step 3 of the per-wave review gate stack, and it comes from the ponytail plugin. The harness used to
+ship its own `skills/simplify/` for that step, which was wrong twice over: it duplicated a command
+the host already provides under the same name, so which one ran was unclear, and it was a
+reimplementation that could never receive the original's improvements. It was deleted in favour of
+the real thing. A machine that has not installed ponytail does not have that gate step, and the
+gate's slash-command check lists the plugin's commands separately from the host built-ins for
+exactly that reason.
 
 `skills/THIRD_PARTY.md` lists the material that predates this policy and still sits in `skills/` as
 pinned snapshots. They stay for now so the harness keeps working on a machine with no network, and

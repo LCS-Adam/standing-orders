@@ -33,7 +33,7 @@ The read-only correctness reviewer dispatched against a merged wave diff: FRONTI
 effort, and it tries specifically to break the change rather than confirm it works. It sweeps a
 fixed taxonomy first (fail-open paths, bypasses, tamper vectors, vacuous assertions) and then hunts
 freely, returning severity-ranked findings; it never edits. It is step 2 of the AUTORUN per-wave
-review gate stack, and it runs before `/simplify` because there is no point simplifying code a
+review gate stack, and it runs before `/ponytail-review` because there is no point simplifying code a
 correctness review is about to rewrite.
 In depth: `agents/adversary.md`, `docs/autorun-hitl-heartbeat.md:39`
 
@@ -42,7 +42,7 @@ In depth: `agents/adversary.md`, `docs/autorun-hitl-heartbeat.md:39`
 The full unattended-execution mechanism, run by the `autorun-plan` skill via the
 `autorun-plan-orchestrator` agent, for an approved multi-wave plan meant to run overnight or
 otherwise unattended for a long stretch. Every code-producing wave passes through an ordered review
-gate stack (tests, `adversary`, `/simplify`, external-LLM fold-back, a regression re-run, then
+gate stack (tests, `adversary`, `/ponytail-review`, external-LLM fold-back, a regression re-run, then
 merge) before it lands, and the run maintains a mission-scoped `AUTORUN-STATE-<mission-slug>.md`
 file that gets reconciled against the real world on every wake rather than trusted blindly.
 In depth: `docs/autorun-hitl-heartbeat.md:32`
@@ -153,7 +153,7 @@ In depth: `docs/writing-your-own.md`, `hooks/require-agent-model.sh:6`
 ## gate (review gate, human gate, scrub gate)
 
 Three distinct uses of "gate" in this repo. A **review gate** is one step in the AUTORUN per-wave
-stack (tests, adversary, `/simplify`, external-LLM fold-back) that a wave must pass before merging.
+stack (tests, adversary, `/ponytail-review`, external-LLM fold-back) that a wave must pass before merging.
 A **human gate** is a point where auto-proceed-on-rule explicitly does not apply: live judgment
 needed, a real person reached, an untested irreversible action, or a required physical action, and
 these are the only stopping points AUTORUN respects while otherwise running unattended. A **scrub
@@ -314,13 +314,13 @@ or the process exiting. A session has no memory of a prior session's conversatio
 written to a durable file survives the boundary.
 In depth: `docs/context-window-management.md:5`
 
-## `/simplify`
+## `/ponytail-review`
 
 The `simplify` skill, run as step 3 of the AUTORUN per-wave review gate stack, after `adversary` has
 cleared the wave diff for correctness. It is a quality-only pass: reuse what already exists, remove
 over-engineering, fix wrong altitude. It applies its own fixes but never hunts bugs and is never a
 substitute for the `adversary` step that runs before it.
-In depth: `skills/simplify/SKILL.md`, `docs/autorun-hitl-heartbeat.md:39`
+In depth: `config/upstream.conf` (the ponytail entry), `docs/autorun-hitl-heartbeat.md:39`
 
 ## subagent
 
@@ -357,7 +357,7 @@ In depth: `AGENTS.md:36`, `config/models.conf`
 
 One code-producing unit of work inside a multi-phase build, ending in a diff that merges. Every
 wave passes through the same review gate stack before it lands: the plan's test command, `adversary`,
-`/simplify`, an optional external-LLM fold-back, a regression re-run, then merge. "Wave diff" means
+`/ponytail-review`, an optional external-LLM fold-back, a regression re-run, then merge. "Wave diff" means
 the merged diff for one wave, the unit the review stack and the adversarial review operate on.
 In depth: `docs/autorun-hitl-heartbeat.md:39`
 

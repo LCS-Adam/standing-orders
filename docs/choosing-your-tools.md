@@ -115,7 +115,7 @@ adds no benefit).
 frontmatter declares `name:` and `description:`. That shape is what makes it a real
 skill: something the Skill tool can list, something invocable by typing `/<name>`, and
 something the harness's skill-matching can surface unprompted when a task looks like a
-match. Thirteen skills currently ship in `skills/`:
+match. Twelve skills currently ship in `skills/`:
 
 | Skill | For |
 |---|---|
@@ -128,7 +128,7 @@ match. Thirteen skills currently ship in `skills/`:
 | `repo-recon` | Read-only inventory of a repo or binary with file:line citations |
 | `requesting-code-review` | Dispatching a review subagent before proceeding |
 | `scope-audit` | Establishing what a system actually uses before planning changes to it |
-| `simplify` | Cutting a diff back to the smallest thing that holds, before it merges |
+| `/ponytail-review` | Cutting a diff back to the smallest thing that holds, before it merges. Not a harness skill: it comes from the ponytail plugin, recorded in `config/upstream.conf` |
 | `systematic-debugging` | Four-phase root-cause debugging before attempting a fix |
 | `test-driven-development` | Writing the failing test before the implementation |
 | `verify-unexecuted` | Syntax and body-flow smoke checks for scripts that cannot run in the build environment |

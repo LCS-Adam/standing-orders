@@ -8,13 +8,13 @@ description: Keep an already-approved plan executing unattended until it finishe
 **One job: the plan keeps executing instead of stopping to ask.**
 
 This is deliberately NOT `autorun-plan`. That skill carries a per-wave gate stack (tests ->
-adversary -> `/simplify` -> external-LLM fold-back), HITL doctrine, and morning-report
+adversary -> `/ponytail-review` -> external-LLM fold-back), HITL doctrine, and morning-report
 ceremony. For a plan that has already been reviewed, all of that costs context it does not earn.
 **If the plan needs those gates, use `autorun-plan` instead. Do not run both.**
 
 ## What this skill does NOT do
 
-No adversary pass. No `/simplify`. No external-LLM review or fold-back rounds. No
+No adversary pass. No `/ponytail-review`. No external-LLM review or fold-back rounds. No
 improvement passes. No plan-quality judgement. **The plan is already approved — execute it, do not
 re-litigate it.**
 
