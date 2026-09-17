@@ -18,11 +18,15 @@ DRY=0
 # Every mktemp -d goes through here. Two code paths used to each set $STAGE and
 # each install their own EXIT trap, so the second silently orphaned the first
 # directory. One accumulator, one trap.
-STAGES=""
+# An ARRAY, not a space-joined string. `for _d in ${STAGES:-}` word-splits, so a
+# TMPDIR with a space in it turned one cleanup into two rm -rf calls on
+# truncated paths. BSD mktemp -d ignores TMPDIR so it never fired here; GNU
+# coreutils honours it, and this repo exists to be carried to other machines.
+STAGES=()
 new_stage() {
   STAGE="$(mktemp -d)" || die "mktemp failed"
-  STAGES="${STAGES:+$STAGES }$STAGE"
-  trap 'for _d in ${STAGES:-}; do rm -rf "$_d"; done' EXIT
+  STAGES+=("$STAGE")
+  trap 'rm -rf ${STAGES[@]+"${STAGES[@]}"}' EXIT
 }
 
 c_ok()   { printf '  \033[32m+\033[0m %s\n' "$1"; }
@@ -211,8 +215,14 @@ augment_agent_rewrite() {
     my %map = (Read => "view", Grep => "codebase-retrieval", Glob => "codebase-retrieval",
                Edit => "str-replace-editor", Write => "save-file", Bash => "launch-process",
                WebFetch => "web-fetch", WebSearch => "web-search");
+    # A MISSING tools: line means every tool in Claude Code. Falling through to
+    # the read-only branch would have silently taken write access away from the
+    # next agent written without one. Every agent has one today; this refuses
+    # rather than guessing the day one does not.
+    die "$src: no tools: -- cannot tell all-tools from read-only, add one\n"
+      unless exists $f{tools} && length $f{tools};
     my @claude = grep { length } map { my $t = $_; $t =~ s/^\s+|\s+$//g; $t }
-                 split /,/, ($f{tools} // "");
+                 split /,/, $f{tools};
     my %have = map { $_ => 1 } @claude;
     # Validate the WHOLE list before choosing a branch. Doing it inside the
     # allowlist branch meant a tool with no mapping was silently dropped on any
@@ -270,24 +280,38 @@ merge_augment_settings() {
   # below, where the failure used to be invisible.
   jq -e 'type == "object" and ((.toolPermissions // []) | type == "array")' "$target" >/dev/null 2>&1 \
     || die "$target must be a JSON object whose toolPermissions, if present, is an array; fix it before merging (nothing was changed)"
-  local bak="$target.bak-$(date +%Y%m%d%H%M%S)"
+  # OUTSIDE the repo. This file can carry webhook URLs, which the vendor doc
+  # warns never to commit, and the runbook's own commit step is `git add -A`.
+  # A .bak beside it in a consumer repo with no matching ignore rule is one
+  # careless commit away from being published.
+  local bak; bak="$(mktemp -t augment-settings-backup)" || die "mktemp failed"
   cp "$target" "$bak"
   # `jq ... && mv` put jq to the LEFT of a && , where set -e does not fire on
   # its failure. The merge could fail, the mv be skipped, the file be left
   # untouched, and the success line below still print. That is a security
   # control reporting itself installed while installing nothing, which is the
   # exact shape the ordering logic above exists to prevent.
+  # `*` deep-merges objects but REPLACES arrays with the right-hand side. That is
+  # fine while toolPermissions is the only array, and stops being fine at runbook
+  # step 6, which adds hooks.PreToolUse to the template and then tells you to
+  # re-run this command: a user's own PreToolUse hooks would be replaced by the
+  # harness's one entry. Every array the harness writes is merged by name, using
+  # the same prepend-and-dedupe shape as toolPermissions.
   if ! jq -s '
+    def fold($mine; $theirs): $mine + ($theirs - $mine);
     .[0] as $cur | .[1] as $new
-    | $cur * ($new | del(.toolPermissions))
-    | .toolPermissions = (($new.toolPermissions // [])
-                          + (($cur.toolPermissions // []) - ($new.toolPermissions // [])))
+    | $cur * ($new | del(.toolPermissions) | del(.hooks))
+    | .toolPermissions = fold($new.toolPermissions // []; $cur.toolPermissions // [])
+    | if ($new.hooks // {}) == {} and ($cur.hooks // {}) == {} then . else
+        .hooks = reduce (($new.hooks // {}) | to_entries[]) as $e
+          (($cur.hooks // {}); .[$e.key] = fold($e.value; (.[$e.key] // [])))
+      end
   ' "$target" "$incoming" > "$target.tmp"; then
     rm -f "$target.tmp"
     die "could not merge $target (nothing was changed; your file is unmodified and a copy is at $bak)"
   fi
   mv "$target.tmp" "$target" || die "could not replace $target (a copy is at $bak)"
-  c_ok ".augment/settings.json (merged, harness rules first, backup written)"
+  c_ok ".augment/settings.json (merged, harness rules first; previous copy at $bak)"
 }
 
 # augment_agents <destdir> - the whole set. Requires $STAGE and a loaded tier
@@ -690,13 +714,27 @@ cmd_build_plugin() {
   # Swap. Only now does anything under $out change. The guard is on the exact
   # basename, because this is the one rm -rf in the installer.
   case "$final" in
-    */plugins/agent-harness-auggie) rm -rf "$final" ;;
-    *) die "refusing to remove an unexpected path: $final" ;;
+    */plugins/agent-harness-auggie) ;;
+    *) die "refusing to replace an unexpected path: $final" ;;
   esac
   mkdir -p "$out/plugins" "$out/.augment-plugin"
-  mv "$P" "$final" || die "could not move the built tree into $final"
-  mv "$STAGE/out/.augment-plugin/marketplace.json" "$out/.augment-plugin/marketplace.json" \
-    || die "could not write $out/.augment-plugin/marketplace.json"
+  # Move the old tree ASIDE, put the new one in place, then drop the old one.
+  # `rm -rf` first left a window where a failing mkdir or mv had already deleted
+  # the committed tree, which is the failure the staging rewrite was supposed to
+  # have removed. The manifest is written before the old tree is discarded, so
+  # the pair is never left half new and half old.
+  local prev=""
+  if [ -e "$final" ]; then prev="$final.replacing-$$"; mv "$final" "$prev" || die "could not set aside $final"; fi
+  if ! mv "$P" "$final"; then
+    [ -z "$prev" ] || mv "$prev" "$final"
+    die "could not move the built tree into $final (nothing changed)"
+  fi
+  if ! mv "$STAGE/out/.augment-plugin/marketplace.json" "$out/.augment-plugin/marketplace.json"; then
+    rm -rf "$final"
+    [ -z "$prev" ] || mv "$prev" "$final"
+    die "could not write $out/.augment-plugin/marketplace.json (nothing changed)"
+  fi
+  [ -z "$prev" ] || rm -rf "$prev"
 
   c_ok "plugins/agent-harness-auggie ($n agents, $(find "$final/skills" -name SKILL.md | wc -l | tr -d ' ') skills, $(find "$final/commands" -name '*.md' | wc -l | tr -d ' ') commands)"
   c_ok ".augment-plugin/marketplace.json ($ver)"

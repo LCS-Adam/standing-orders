@@ -59,9 +59,11 @@ final assistant message.
 
 If it refuses, the reason is almost certainly licensing: Augment's own documentation says
 non-interactive mode "may be disabled if it is not included in your agreement (enterprise)". Record
-`headless: no` and carry on. Steps 6 and 7 then have to be done interactively instead of scripted,
-which is slower but not blocked. Note the exact error text in the answers table; nobody has seen it
-yet and it is worth having written down.
+`headless: no` and carry on. Steps 5, 6 and 7 then have to be done interactively instead of
+scripted, which is slower but not blocked. Step 5 is the one that catches people out: its
+confirmation loop is a `--print` call per model id, and it is not optional prose, it is how a
+discovered id becomes a confirmed one. Step 5 gives the interactive substitute. Note the exact
+error text in the answers table; nobody has seen it yet and it is worth having written down.
 
 ## Step 3: is `auggie cloud` available
 
@@ -121,6 +123,10 @@ done
 
 Expect `PING` four times. Record the four accepted literals and the resolver's audit lines.
 
+Without headless (step 2 said no), do the same check by hand: start `auggie`, set each id in turn
+with the model command, send `reply PING`, and note which ids the CLI refuses. The point is not the
+reply, it is finding out which of the four discovered ids this account will actually dispatch to.
+
 **Never fix a problem here by typing an id into the conf.** The point of discovering the binding is
 that the company allowlist moves without telling anyone. A hand-typed id is how this ends up wrong
 six months from now with nothing to catch it.
@@ -179,8 +185,10 @@ Add a temporary logging hook to `.augment/settings.json`, matching everything:
 }
 ```
 
-Create a throwaway subagent at `.augment/agents/probe.md`, dispatch it once from an interactive
-session ("use the probe agent to list the files in this directory"), then read the log:
+Create a throwaway subagent at `.augment/agents/probe.md`. Give it a `name:`, a `description:` and
+a `model:` (any id step 5 confirmed), because step 6.5 below works by deleting that `model:` line
+and expecting a refusal. Dispatch it once from an interactive session ("use the probe agent to list
+the files in this directory"), then read the log:
 
 ```bash
 jq -r '.tool_name' < /tmp/auggie-hook.log | sort -u
@@ -192,7 +200,12 @@ Two values come out: the tool name, and the `tool_input` key holding the agent n
 1. In `hooks/require-agent-model.sh`, at the insertion point marked with this step number, extend
    the `stype` line to fall back to that key.
 2. In `templates/project/.augment/settings.json`, add a `hooks.PreToolUse` entry whose `matcher` is
-   that tool name and whose command runs `hooks/require-agent-model.sh`.
+   that tool name and whose command runs the model-gate hook. Decide where that script LIVES for
+   Auggie first: nothing puts it there today. `harness install --user` writes hooks into
+   `~/.claude/hooks/`, and `harness add --tool auggie` writes only the agents, the settings and the
+   user-scope rules file. Either point the command at the harness checkout's copy by absolute path,
+   or extend `cmd_add_tool` to install it beside the settings. Record which you chose; the runbook
+   is wrong until this says one thing.
 3. Remove the temporary logging hook.
 4. Re-run `harness add --tool auggie` so the repo picks up the new template.
 5. Prove it works: delete the `model:` line from `.augment/agents/probe.md`, dispatch it again, and
@@ -244,6 +257,15 @@ git push --force origin scratch
 git merge-base HEAD HEAD
 ```
 
+One more probe, and it is the one ordering question the harness cannot close from inside the repo.
+Auggie reads `~/.augment/settings.json` as well as the repo's `.augment/settings.json`, and whether
+those two form ONE policy or TWO is not stated in the documentation. It matters: within a single
+policy the first matching rule wins, so a personal `allow` on `terminal` sitting in your home
+settings would defeat the repo's denies; across policies the most restrictive wins and the deny
+holds. `harness add --tool auggie` can only order rules inside the repo file, so this is the one
+route it cannot close. Test it: put an `allow` on `terminal` in `~/.augment/settings.json`, ask for
+`git merge main`, and record which won.
+
 `verify.sh` check 14 already runs every deny pattern against a table of commands, but it runs them
 under perl. Auggie's own regex engine is not documented, so this step is the one that proves the
 rules bite. If a verdict is wrong, fix the pattern in
@@ -251,7 +273,13 @@ rules bite. If a verdict is wrong, fix the pattern in
 
 ## Step 9: build and publish the plugin
 
+**Return to the harness checkout first.** The two commands are scoped differently and the
+difference bites here: `harness add --tool auggie` writes into whatever repository you are standing
+in, which is why step 8 sent you to a scratch clone, while `harness build-plugin` always writes
+into the harness checkout itself. Run step 9 there, and run the gate there.
+
 ```bash
+cd <the harness checkout>
 harness build-plugin --tool auggie
 ./verify.sh
 ```
@@ -323,7 +351,8 @@ Four questions get answered along the way, all of them about what a Cosmos sessi
 3. With both `probe/SKILL.md` and `probe2/probe2.md` present, which does Cosmos list?
 4. Do the `toolPermissions` deny rules reach a Cosmos agent? Ask one to run `git merge main`.
 
-If step 3 was a go, export the Expert once it has proved itself:
+If runbook step 3 was a go (`auggie cloud` is available on this account), export the Expert once it
+has proved itself:
 
 ```bash
 auggie cloud expert export <expert-id> -o cosmos/experts/adversary.yaml
@@ -353,6 +382,7 @@ Fill this in as you go. One row per step, and a real answer rather than "done".
 | 7 | Does an undocumented frontmatter key error | `effort: high` on `probe.md` | | |
 | 8 | Counts: subagents, skills, commands | the agents, skills and command lists | | |
 | 8 | Are the deny rules enforced | `git merge main`, `git push --force`, `git merge-base` | | |
+| 8 | Is a user-scope allow able to defeat a repo-scope deny | see below | | |
 | 9 | Which repository hosts the marketplace | `auggie plugin marketplace add` | | |
 | 9 | Does the gate pass with `plugins/` committed | `./verify.sh` | | |
 | 11 | First-day outputs captured | `grep -c 'captured on the work machine'` | | |

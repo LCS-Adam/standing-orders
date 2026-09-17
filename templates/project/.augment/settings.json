@@ -1,11 +1,53 @@
 {
   "toolPermissions": [
-    { "toolName": "terminal", "shellInputRegex": "\\bgit\\s+merge(\\s|$)", "permission": { "type": "deny" } },
-    { "toolName": "terminal", "shellInputRegex": "\\bgit\\s+push\\b.*(\\s--force|\\s-f(\\s|$)|\\s\\+)", "permission": { "type": "deny" } },
-    { "toolName": "terminal", "shellInputRegex": "\\bgit\\s+push\\b.*[\\s:](main|master)(\\s|:|$)", "permission": { "type": "deny" } },
-    { "toolName": "terminal", "shellInputRegex": "\\bgit\\s+push\\b.*(\\s--delete(\\s|$)|\\s-d(\\s|$)|\\s:)", "permission": { "type": "deny" } },
-    { "toolName": "terminal", "shellInputRegex": "\\bgit\\s+reset\\b.*\\s--hard(\\s|$)", "permission": { "type": "deny" } },
-    { "toolName": "terminal", "shellInputRegex": "\\bgit\\s+branch\\b.*\\s-D(\\s|$)", "permission": { "type": "deny" } },
-    { "toolName": "terminal", "shellInputRegex": "--dangerously-skip-permissions", "permission": { "type": "deny" } }
+    {
+      "toolName": "terminal",
+      "shellInputRegex": "\\bgit\\s+merge(\\s|$)",
+      "permission": {
+        "type": "deny"
+      }
+    },
+    {
+      "toolName": "terminal",
+      "shellInputRegex": "\\bgit\\s+push\\b.*(\\s--force|\\s-f(\\s|$)|\\s\\+)",
+      "permission": {
+        "type": "deny"
+      }
+    },
+    {
+      "toolName": "terminal",
+      "shellInputRegex": "\\bgit\\s+push\\b.*[\\s:/'\\\"](main|master)([\\s:'\\\"]|$)",
+      "permission": {
+        "type": "deny"
+      }
+    },
+    {
+      "toolName": "terminal",
+      "shellInputRegex": "\\bgit\\s+push\\b.*(\\s--delete(\\s|$)|\\s-d(\\s|$)|\\s:)",
+      "permission": {
+        "type": "deny"
+      }
+    },
+    {
+      "toolName": "terminal",
+      "shellInputRegex": "\\bgit\\s+reset\\b.*\\s--hard(\\s|$)",
+      "permission": {
+        "type": "deny"
+      }
+    },
+    {
+      "toolName": "terminal",
+      "shellInputRegex": "\\bgit\\s+branch\\b.*\\s-D(\\s|$)",
+      "permission": {
+        "type": "deny"
+      }
+    },
+    {
+      "toolName": "terminal",
+      "shellInputRegex": "--dangerously-skip-permissions",
+      "permission": {
+        "type": "deny"
+      }
+    }
   ]
 }

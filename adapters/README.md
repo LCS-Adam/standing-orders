@@ -48,14 +48,16 @@ cell each step flips.
 | `hooks/require-agent-model.sh` | the payload shape matches, but the tool name that dispatches a subagent is not documented, so the hook is NOT wired | `toolPermissions` are honoured by Cosmos agents; hooks are not documented there | NOT FOUND; runbook step 6 |
 | The security hard stops | `toolPermissions` deny rules in `.augment/settings.json`, written by `harness add --tool auggie` | the same file is read by Cosmos cloud agents | verified in docs 2026-09-16, `aug_cli_permissions.md`; runbook steps 8 and 12 |
 | Distribution | a plugin tree built by `harness build-plugin --tool auggie`, installed from a GitHub marketplace | not applicable | verified in docs 2026-09-16, `aug_cli_plugins.md`; runbook step 9 |
+| Two settings files, one policy or two | `~/.augment/settings.json` and `.augment/settings.json` are both read; whether a home-scope `allow` can outrank a repo-scope `deny` is not stated | same two files | NOT FOUND; runbook step 8 |
 | Upstream material from other repos | cloned to `.upstream/` by `harness upstream`, then read and installed by Auggie itself in its own format | the same clones are readable by a Cosmos session on a synced repo, untested | policy, not a vendor claim: `docs/upstream-sources.md`; runbook steps 1 and 8 |
 | `config/models.conf` | `config/models.auggie.conf`, DISCOVERED by `scripts/resolve-tier.sh --write-conf` rather than typed, because the model allowlist is per-company | a bundle's model field is set at `apply` time | verified in docs 2026-09-16, `aug_cli_reference.md`; runbook step 5 |
 
 Three consequences worth stating plainly:
 
 1. **Skills and commands need no conversion at all.** Auggie reads the Claude Code directories
-   directly. The vendor recommends migrating to `.augment/skills/` and `.augment/commands/` for new
-   projects, but nothing here has to move.
+   directly. For commands the vendor recommends migrating to `.augment/commands/` in new projects;
+   for skills it states a precedence order, with `~/.augment/skills/` highest, and recommends no
+   migration. Either way nothing here has to move.
 2. **Subagents are the one generated artifact.** Auggie's subagent frontmatter is a different
    schema, so `.augment/agents/` is built from `agents/` and rebuilt when the tier binding moves.
    `docs/augment-runbook.md` step 5b lists the three triggers.

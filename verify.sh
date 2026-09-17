@@ -597,20 +597,19 @@ GEN_SCRIPT="scripts/gen-reference.sh"
 GEN_DOC="docs/reference.md"
 gentmp=$(mktemp) || gate_error "mktemp failed - check 13 cannot run"
 generr=$(mktemp) || gate_error "mktemp failed - check 13 cannot run"
+genmsg=""; gendiff=""
 if [ -z "$(shipped_l "$GEN_SCRIPT")" ] || [ -z "$(shipped_l "$GEN_DOC")" ]; then
-  fail "$GEN_SCRIPT or $GEN_DOC is not in the shipped set - nothing was regenerated, which is not the same as current"
+  genmsg="$GEN_SCRIPT or $GEN_DOC is not in the shipped set - nothing was regenerated, which is not the same as current"
 else
   bash "$GEN_SCRIPT" >"$gentmp" 2>"$generr"; genrc=$?
   if [ "$genrc" -ne 0 ]; then
-    fail "$GEN_SCRIPT exited $genrc - the check could not run"
-    tail -3 "$generr" | while IFS= read -r l; do show "$l"; done
+    genmsg="$GEN_SCRIPT exited $genrc - the check could not run"
+    gendiff="$(tail -3 "$generr")"
   elif [ ! -s "$gentmp" ]; then
-    fail "$GEN_SCRIPT produced no output - an empty regeneration is not the same as an up-to-date file"
+    genmsg="$GEN_SCRIPT produced no output - an empty regeneration is not the same as an up-to-date file"
   elif ! diff -q "$gentmp" "$GEN_DOC" >/dev/null 2>&1; then
-    fail "$GEN_DOC is stale - regenerate it with: $GEN_SCRIPT > $GEN_DOC"
-    diff "$gentmp" "$GEN_DOC" 2>&1 | head -10 | while IFS= read -r l; do show "$l"; done
-  else
-    genok=1
+    genmsg="$GEN_DOC is stale - regenerate it with: $GEN_SCRIPT > $GEN_DOC"
+    gendiff="$(diff "$gentmp" "$GEN_DOC" 2>&1 | head -10)"
   fi
 fi
 rm -f "$gentmp" "$generr"
@@ -655,10 +654,18 @@ else
   fi
 fi
 
-if [ -n "$plugmsg" ]; then
+# ONE verdict for the whole check. Both halves could fail - a rebind makes both
+# artifacts stale at once, which is exactly step 5b - and each called fail,
+# which incremented RAN twice and ended the run with
+# "GATE ERROR ran 15 of 14 checks - the gate itself is broken". That message is
+# this gate's reserved signal for a check that did not run. Spending it on
+# ordinary staleness teaches the reader to discount it.
+if [ -n "${genmsg:-}" ] || [ -n "$plugmsg" ]; then
   fail "generated files are not current"
-  show "$plugmsg"
-elif [ "${genok:-0}" -eq 1 ]; then
+  [ -z "${genmsg:-}" ] || show "$genmsg"
+  [ -z "${gendiff:-}" ] || printf '%s\n' "$gendiff" | head -6 | while IFS= read -r l; do show "$l"; done
+  [ -z "$plugmsg" ] || show "$plugmsg"
+else
   pass "$GEN_DOC matches what $GEN_SCRIPT generates${plugskip:+; }${plugskip}"
   [ -z "$plugskip" ] && show "plugins/ matches what harness build-plugin generates"
 fi
@@ -726,6 +733,10 @@ else
         [deny  => "git push origin +topic"],
         [deny  => "git push origin main"],
         [deny  => "git push origin HEAD:main"],
+        [deny  => "git push origin HEAD:refs/heads/main"],
+        [deny  => "git push origin refs/heads/main"],
+        [deny  => "git push -u origin main"],
+        [allow => "git push origin refs/heads/maintenance"],
         [deny  => "git push origin master"],
         [allow => "git push origin feature"],
         [allow => "git push origin maintenance"],
@@ -753,7 +764,7 @@ else
       fail "Augment deny rules do not match their own table"
       printf '%s\n' "$tpbad" | head -10 | while IFS= read -r l; do show "$l"; done
     else
-      pass "all $(printf '%s\n' "$tpre" | wc -l | tr -d ' ') Augment deny rules give the expected verdict on 23 commands"
+      pass "all $(printf '%s\n' "$tpre" | wc -l | tr -d ' ') Augment deny rules give the expected verdict on 27 commands"
     fi
   fi
 fi
