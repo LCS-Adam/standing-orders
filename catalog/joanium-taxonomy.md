@@ -15,6 +15,18 @@ is committed here is the taxonomy and the per-file assignment, which are small a
 `harness upstream` clones the corpus; `joanium-assign.py` regenerates the assignment from that
 clone, so the mapping is reproducible rather than a one-off judgment.
 
+Build the tree with:
+
+```bash
+harness upstream                    # clone the corpus, if you have not
+catalog/build-joanium-tree.sh       # writes .upstream/joanium-organized/
+```
+
+That takes about a minute and a half and produces 16 directories, 80 beneath them, and a skill
+directory per file. It is for BROWSING. Claude Code discovers skills at `skills/<name>/SKILL.md`
+with no category nesting, so nothing in the tree is invocable where it sits; copy a leaf directory
+into `~/.claude/skills/` to use one. Installing all of them would swamp every session.
+
 How it was built: eight agents each read a hash-partitioned sample of the whole corpus and proposed
 a taxonomy independently, then one synthesis pass merged the eight and wrote the rules that assign
 every file. The proposals are not committed; the merge below records where they disagreed and which
@@ -330,7 +342,7 @@ deliverable is the content or the audience. Community moderation and health are 
 trust-and-safety (P2 dissent): the corpus's community stems are about running a community, and
 abuse handling has its own security folder.
 
-### people-and-engineering-management (135, 2.2%)
+### people-and-engineering-management (134, 2.2%)
 Hiring, onboarding, developing, and leading the people who do the work.
 
 | level 2 | files |
@@ -338,10 +350,10 @@ Hiring, onboarding, developing, and leading the people who do the work.
 | hiring-and-interviewing | 63 |
 | employee-onboarding-and-training | 31 |
 | performance-and-team-health | 30 |
-| leadership-and-career-growth | 11 |
+| leadership-and-career-growth | 10 |
 
 Converged: P1, P3, P5, P7, P8 (people/hiring), P4 team-and-org-operations. P3 warned it might be
-under 2% and worth folding; at 135 files it is the smallest group, but every alternative home
+under 2% and worth folding; at 134 files it is the smallest group, but every alternative home
 buries hiring under a reader who is not hiring. P2's career-development leftovers (interview
 prep, resume writing, personal branding, GrillMe) sit in leadership-and-career-growth.
 
