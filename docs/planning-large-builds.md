@@ -105,9 +105,10 @@ final message; the orchestrator that dispatched it writes that text to disk.
 
 After synthesis, `deep-plan-swarm` runs the plan past `external-llm-review`: a genuinely different
 model family attacking the same document. The default reviewer at planning time is `codex`, used
-unless the plan or the operator names `cursor-agent` or `gemini` instead. This step is not
-optional and not interchangeable with another Claude-run advisor pass. The reasoning is in the next
-section.
+unless the plan or the operator names `cursor-agent` or `gemini` instead. Where a reviewer CLI is
+available the step is not interchangeable with another Claude-run advisor pass, and where none is
+available the step is skipped and recorded as skipped rather than replaced by one. That is the
+distinction the note at the top of this article draws, and the reasoning is in the next section.
 
 ## Why a plan needs a review from outside its own model family
 

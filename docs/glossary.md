@@ -316,10 +316,14 @@ In depth: `docs/context-window-management.md:5`
 
 ## `/ponytail-review`
 
-The `simplify` skill, run as step 3 of the AUTORUN per-wave review gate stack, after `adversary` has
-cleared the wave diff for correctness. It is a quality-only pass: reuse what already exists, remove
-over-engineering, fix wrong altitude. It applies its own fixes but never hunts bugs and is never a
-substitute for the `adversary` step that runs before it.
+Step 3 of the AUTORUN per-wave review gate stack, after `adversary` has cleared the wave diff for
+correctness. It is a quality-only pass: reuse what already exists, remove over-engineering, fix
+wrong altitude. It never hunts bugs and is never a substitute for the `adversary` step that runs
+before it.
+
+It comes from the ponytail plugin rather than from this repo. The harness used to ship its own
+`simplify` skill for this step, which duplicated a command the host already provides under that
+name; `config/upstream.conf` records the plugin as a dependency and why.
 In depth: `config/upstream.conf` (the ponytail entry), `docs/autorun-hitl-heartbeat.md:39`
 
 ## subagent

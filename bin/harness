@@ -315,18 +315,45 @@ merge_augment_settings() {
 }
 
 # augment_agents <destdir> - the whole set. Requires $STAGE and a loaded tier
-# binding. Returns the count it wrote on stdout.
+# binding. Writes a .harness-generated manifest beside the files listing what it
+# produced, and returns the count on stdout.
 augment_agents() {
-  local dest="$1" f name n=0
+  local dest="$1" f name n=0 now=""
+  mkdir -p "$dest"
   for f in "$STAGE"/agents/*.md; do
     [ -e "$f" ] || die "no staged agents to convert"
     name="$(basename "$f")"
-    mkdir -p "$dest"
     augment_agent_rewrite "agents/$name" < "$f" > "$dest/$name" \
       || die "could not convert agents/$name"
+    now="$now$name"$'\n'
     n=$((n+1))
   done
+  printf '%s' "$now" > "$dest/.harness-generated"
   printf '%s\n' "$n"
+}
+
+# prune_generated <real-dest> <old-manifest-contents> - remove what a previous
+# run generated and this one did not.
+#
+# Without this, renaming or deleting an agent left the old file in a consumer's
+# .augment/agents/ forever, still pinned to whatever model id was current when
+# it was written, in a directory the runbook tells you to commit and share. Same
+# defect the user-scope install had, one directory over.
+#
+# Manifest-driven, like the install: only a name a previous run RECORDED is ever
+# removed, so a hand-written subagent is never touched. It runs after the copy,
+# so a failed generation cannot delete an agent it never replaced.
+prune_generated() {
+  local dest="$1" prev="$2" name
+  [ -n "$prev" ] || return 0
+  [ -f "$dest/.harness-generated" ] || return 0
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    grep -qxF "$name" "$dest/.harness-generated" && continue
+    [ -e "$dest/$name" ] || continue
+    if [ "$DRY" -eq 1 ]; then c_skip "$name (would remove, no longer in agents/)"; continue; fi
+    rm -f "$dest/$name" && c_ok "$name (removed, no longer in agents/)"
+  done <<< "$prev"
 }
 
 # stage_agents_for_auggie - stage agents/ and bind the tokens to the Augment
@@ -587,13 +614,16 @@ cmd_add_tool() {
       # rejects at dispatch time, which is the failure this refuses to ship.
       stage_agents_for_auggie
       echo "  tiers: FRONTIER-THINK=$TIER_FRONTIER_THINK FRONTIER-DO=$TIER_FRONTIER_DO MID=$TIER_MID SMALL=$TIER_SMALL"
-      local n
+      local n prevman=""
+      [ -f "$root/.augment/agents/.harness-generated" ] \
+        && prevman="$(cat "$root/.augment/agents/.harness-generated")"
       n="$(augment_agents "$STAGE/out")"
       # MANAGED: these are generated copies of agents/, not anyone's work, so a
       # re-run after a re-bind replaces them and keeps the previous copy.
       MANAGED=1
       put_dir "$STAGE/out" "$root/.augment/agents"
       MANAGED=0
+      prune_generated "$root/.augment/agents" "$prevman"
       c_info "  $n subagents written to .augment/agents/ (commit them: workspace scope is shared)"
       # INSERTION POINT, runbook step 6: once the Auggie subagent-dispatch tool
       # name is known, the template below also carries a hooks.PreToolUse entry
@@ -677,6 +707,9 @@ cmd_build_plugin() {
   local P="$STAGE/out/plugins/agent-harness-auggie"
   mkdir -p "$P/.augment-plugin" "$P/rules" "$STAGE/out/.augment-plugin"
   local n; n="$(augment_agents "$P/agents")"
+  # The manifest is a prune aid for a live .augment/agents/, not something to
+  # publish inside a plugin nobody prunes.
+  rm -f "$P/agents/.harness-generated"
   cp -R "$STAGE/skills"   "$P/skills"
   cp -R "$STAGE/commands" "$P/commands"
   cp "$HARNESS_ROOT/AGENTS.md" "$P/rules/harness-core.md"

@@ -147,7 +147,7 @@ Therefore, in the produced plan:
 ## Do NOT
 - **Do not plan before the scope gate (0.5).** An investigation swarm run first will map dead surface
   beautifully and you will not notice for 32 review rounds.
-- Do not skip the external-LLM layer or substitute a Claude reviewer for it (see `external-llm-review`).
+- Do not substitute a Claude reviewer for the external-LLM layer (see `external-llm-review`). Where no reviewer CLI is installed the layer is SKIPPED and recorded as skipped, never replaced by a same-family pass.
 - Do not hand the planner 16 raw 180-line reports — synthesize to a registry first.
 - Do not let any spawned agent inherit a model; pin every one by name or explicit `model`.
 - Do not execute the plan from this skill — it ends at approval. Execution is
