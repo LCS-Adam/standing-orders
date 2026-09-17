@@ -52,7 +52,7 @@ Only for a change that touches a system that already exists.
 Command: `/scope-audit`.
 Artifact: a normative IN SCOPE / OUT OF SCOPE document built from runtime evidence, not from
 reading code alone (`skills/scope-audit/SKILL.md`).
-Lands: `.project-state/SCOPE-<system>.md` (`skills/scope-audit/SKILL.md:93`).
+Lands: `.project-state/SCOPE-<system>.md` (`skills/scope-audit/SKILL.md` ("The output document")).
 Done when: the scope file exists and later plan phases are filtered against it, so no phase spends
 effort on dead surface.
 
@@ -82,7 +82,7 @@ For a bounded change or a large build, isolate each workstream in its own worktr
 git worktree add .worktrees/<name> -b <branch>
 ```
 
-(`docs/writing-your-own.md:114`). Dispatch each workstream to a named execution agent this repo
+(`docs/writing-your-own.md` ("output that was never meant to ship.")). Dispatch each workstream to a named execution agent this repo
 actually ships. Run `ls agents/` before naming one; as of this writing that directory holds
 `adversary.md`, `autorun-plan-orchestrator.md`, `code-reviewer.md`,
 `data-eng-sa-orchestrator.md`, `data-eng-sa-reviewer.md`, `design-reviewer.md`, `exec-critical.md`,
@@ -141,7 +141,7 @@ defects are actually found, so never economize on the reviewer to afford the bui
 A second opinion from a non-Claude model family exists as an OPTIONAL extra step, described in
 `skills/external-llm-review/SKILL.md`. It requires one of three third-party CLIs (codex,
 cursor-agent, or gemini) to be installed and authenticated on the machine running the review
-(`skills/external-llm-review/SKILL.md:15`, `:3`). If none of those CLIs is available, this step
+(`skills/external-llm-review/SKILL.md` ("External LLM Review (independent second opinion, fold-back loop)"), `:3`). If none of those CLIs is available, this step
 does not apply, full stop; the four-step stack above (tests, adversary, simplify, tests) is the
 actual gate, not this extra. Do not treat the optional step as required just because a plan
 mentions it.
@@ -164,8 +164,8 @@ Command: `/handoff` (`commands/handoff.md`).
 Artifact: a resume prompt whose first block is copy-pasteable on its own, per `AGENTS.md`'s
 "Session handoff" section and `docs/project-management.md`'s state-file table.
 Lands: `.project-state/SESSION_HANDOFF.md`, with any prior version archived to
-`.project-state/handoffs/<timestamp>.md` rather than overwritten (`commands/handoff.md:8-9`,
-`docs/project-management.md:23-24`).
+`.project-state/handoffs/<timestamp>.md` rather than overwritten (`commands/handoff.md`,
+`docs/project-management.md` ("`.project-state/` as shipped in the template")).
 Done when: the pasted block alone, with no other file open, names the handoff file itself as the
 first thing to read, per the failure `docs/anti-patterns.md` records first under "The orphaned
 resume block": a resume block that lists what to read next but omits itself orphans everything

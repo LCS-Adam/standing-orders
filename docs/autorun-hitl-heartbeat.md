@@ -9,7 +9,7 @@ This document assumes you already know three things `docs/glossary.md` defines:
 answer to "Workflow or subagents" below is always subagents.
 
 This article also describes an optional external second-opinion review step. That step requires
-one of several third-party CLIs (`skills/external-llm-review/SKILL.md:15` names codex,
+one of several third-party CLIs (`skills/external-llm-review/SKILL.md` ("External LLM Review (independent second opinion, fold-back loop)") names codex,
 cursor-agent, and gemini) installed and authenticated on your machine. If you do not have one of
 those set up, that step does not apply to you, and the gate is the rest of the stack: the test
 command, the `adversary` agent, `/ponytail-review`, re-running the tests, and merging. Do not treat the

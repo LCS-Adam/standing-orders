@@ -9,8 +9,13 @@ carry habits across.
 Nothing here was verified by running Auggie. This machine has never had it installed. Every claim
 below is one of two things, and each is labelled:
 
-- **Docs 2026-09-16**, followed by a page name, means it was read in an offline capture of
-  Augment's documentation taken on that date. The live docs are at `docs.augmentcode.com`.
+- **Docs 2026-09-16**, followed by a page name and a line, means it was read in an offline capture
+  of Augment's documentation taken on that date. That capture is a set of pages kept outside this
+  repository, in the maintainer's own fork under
+  `.project-state/research/2026-09-16_augment-docs-snapshot/`, which is why you will not find
+  `aug_cli_reference.md` and its siblings here. The line numbers are stable because the capture is
+  frozen. If you do not have it, read the same page live at `docs.augmentcode.com` and expect it to
+  have moved on. `adapters/README.md` carries the same convention.
 - **NOT FOUND** means the documentation does not answer the question. These are kept visible on
   purpose. A precise list of what is undocumented is worth as much as the list of what is.
 
@@ -96,7 +101,7 @@ context control in the documentation.
 A rule can be marked as requested by the agent rather than always applied, and the docs frame this
 explicitly as a context-usage choice (Docs 2026-09-16, `aug_cli_rules.md:95`). It is the same idea
 as the `paths:` frontmatter this harness already uses for Claude Code rules, described at
-`CLAUDE.md:47`, for the same reason: keep the always-on set small.
+`CLAUDE.md` ("Context discipline"), for the same reason: keep the always-on set small.
 
 ### Narrowing what gets indexed
 
@@ -123,7 +128,7 @@ uses when it gives each workstream its own agent and its own report file.
 
 NOT FOUND: the exact return contract. The docs say a summary comes back, without specifying a
 schema. If you need structure, specify it in the prompt and have the subagent write a file, which
-is what `agents/exec-standard.md:36` already tells agents in this repo to do.
+is what `agents/exec-standard.md` ("Report to a FILE, not just as your final message") already tells agents in this repo to do.
 
 In Cosmos the heavier equivalent is a worker, which is a full separate Expert with its own
 environment. Augment's own guidance there is worth repeating verbatim in spirit: prefer a single

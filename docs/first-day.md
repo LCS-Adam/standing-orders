@@ -190,7 +190,7 @@ $ echo '{"tool_input":{"subagent_type":"exec-mechanical"}}' | bash hooks/require
 {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Right-fit model rule (operator hard rule): this Agent/Task spawn passes no explicit model and its agent definition pins none, so it would silently inherit the parent session's model. Re-issue the call with an explicit model sized to the task (tier bindings live in the harness repo config/models.conf), and set effort where the surface supports it. Do not disable this hook; pick a model."}}
 ```
 
-The emitting line is `hooks/require-agent-model.sh:25-27`, a `cat <<'EOF'` heredoc. The JSON has
+The emitting line is `hooks/require-agent-model.sh` ("expensive."), a `cat <<'EOF'` heredoc. The JSON has
 three fields:
 
 - `hookEventName`: which hook event fired (`PreToolUse`, the same event every gate in this harness

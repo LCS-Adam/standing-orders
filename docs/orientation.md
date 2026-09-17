@@ -88,7 +88,7 @@ covers subagents) in the same order, with worked examples from this repo.
 ## What loads at session start versus on demand
 
 This diagram follows the "Loads when" column of the mechanism table in `CLAUDE.md`
-(the row for each mechanism, `CLAUDE.md:45` through `CLAUDE.md:49`):
+(the row for each mechanism, `CLAUDE.md` ("Context discipline") through `CLAUDE.md` ("Context discipline")):
 
 ```mermaid
 flowchart TD

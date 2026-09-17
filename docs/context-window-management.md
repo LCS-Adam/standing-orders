@@ -146,7 +146,7 @@ timeline
     You invoke it or it is judged relevant : a skill's SKILL.md
 ```
 
-`CLAUDE.md:33` states the rule this timeline follows: "`.claude/rules/*.md` load every session
+`CLAUDE.md` ("Skills, rules, and commands are three different mechanisms") states the rule this timeline follows: "`.claude/rules/*.md` load every session
 unless they carry `paths:` frontmatter, in which case they load only when Claude reads a matching
 file." Everything without `paths:` frontmatter is in the always-on cost column; everything with it
 sits idle until a file of the matching type gets read. `docs/writing-your-own.md`'s exercise 1

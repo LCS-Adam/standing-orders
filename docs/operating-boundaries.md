@@ -45,7 +45,7 @@ before running either integration.
 | Location | What it holds | Recommendation |
 |---|---|---|
 | `runtime/` | Every `exec-*` agent's verification report, defaulted there in each agent's own file (`.gitignore:8-9`). | Ignore, do not commit. `.gitignore:9-11` explains why: an unignored report lands in the shipped set and check 1 then scans the absolute worktree paths an agent naturally writes there, failing the packaging gate on output that was never meant to ship. |
-| `.project-state/` | Planning and handoff state: `PROJECT_STATE.md`, `NEXT_STEPS.md`, `ERRORS.md`, `SESSION_HANDOFF.md` and its `handoffs/` archive, `DEPENDENCIES.md`, `CLEANUP.md`, `SKILL_CANDIDATES.md` (`docs/project-management.md:19-27`). | Commit. This directory is designed to be the durable, cross-session record git history does not give you: "intent, next steps, blockers, and decisions" (`docs/project-management.md:35-37`). Treat it like any other tracked doc: review its content for anything sensitive before it ships, same as code. |
+| `.project-state/` | Planning and handoff state: `PROJECT_STATE.md`, `NEXT_STEPS.md`, `ERRORS.md`, `SESSION_HANDOFF.md` and its `handoffs/` archive, `DEPENDENCIES.md`, `CLEANUP.md`, `SKILL_CANDIDATES.md` (`docs/project-management.md` ("`.project-state/` as shipped in the template")). | Commit. This directory is designed to be the durable, cross-session record git history does not give you: "intent, next steps, blockers, and decisions" (`docs/project-management.md` ("How this differs from git history")). Treat it like any other tracked doc: review its content for anything sensitive before it ships, same as code. |
 | `active/` | Artifact directories mandated by the optional workspace-brain module (`README.md`: the quickstart's `harness add workspace-brain` line, and the scope note that the brain "mandates writing `active/` artifact directories"). Not present unless that module was added. | Project-scope by design (`README.md`: "brain is project scope on purpose") so it does not appear in every repo you touch; if the module is added, decide per-project whether its contents are safe to commit or belong in `.gitignore`, the same review you would give any new tracked directory. |
 
 ## Who approves a permission-bypass flag
@@ -56,7 +56,7 @@ using a permission-bypass flag.
 `AGENTS.md` lists "using any permission-bypass flag" among the actions that require the operator
 to "Stop and get explicit human approval before" acting (the "Security" section).
 
-Where a bypass flag has a concrete, named use, `templates/project/rules/multi-agent-runtime.md:5-9`
+Where a bypass flag has a concrete, named use, `templates/project/rules/multi-agent-runtime.md` ("--dangerously-skip-permissions Usage")
 narrows it further: `--dangerously-skip-permissions` is "Reserved for isolated, operator-approved
 worker sessions only," specifically:
 
@@ -67,8 +67,8 @@ worker sessions only," specifically:
 
 The same file ties the approval level to the flag: launching any multi-agent run requires "The
 parent operator has approved the launch (Level B gate minimum; Level C if `--bypass` is used)"
-(`templates/project/rules/multi-agent-runtime.md:16`). Level C is the harness's hard-stop tier;
-`templates/project/rules/workflow.md:59-69` defines it as requiring explicit operator approval
+(`templates/project/rules/multi-agent-runtime.md` ("Launch Gate Requirements")). Level C is the harness's hard-stop tier;
+`templates/project/rules/workflow.md` ("Level C - Hard Stop") defines it as requiring explicit operator approval
 before proceeding, including for "using unsafe permission bypass flags."
 
 ## The hard stops, verbatim
@@ -135,18 +135,18 @@ harness works without them; you lose the upstream skills and keep everything els
 ## Gate minimalism is a dial, not a default
 
 This harness ships with few human gates on purpose, and says so explicitly at the point where an
-autonomous run is assembled. `agents/plan-synthesizer.md:31-32` states: "Review gates - MINIMAL BY
+autonomous run is assembled. `agents/plan-synthesizer.md` ("The output contract - a MULTI-STEP EXECUTION PLAN, not a design essay") states: "Review gates - MINIMAL BY
 DEFAULT. This is a dial; an organization sets it deliberately." The rule that follows
-(`agents/plan-synthesizer.md:34-38`) is a four-part test for when a human gate exists at all: the
+(`agents/plan-synthesizer.md` ("The output contract - a MULTI-STEP EXECUTION PLAN, not a design essay")) is a four-part test for when a human gate exists at all: the
 pass/fail rule cannot be stated in advance and needs live judgment, or the action reaches a person
 outside the system, or the action is irreversible and lacks a tested rollback, or it requires
-physical human action. Everything else is auto-proceed-on-rule (`agents/plan-synthesizer.md:40-43`).
+physical human action. Everything else is auto-proceed-on-rule (`agents/plan-synthesizer.md` ("The output contract - a MULTI-STEP EXECUTION PLAN, not a design essay")).
 
 The same section states the dial is adjustable, not fixed: "this is a dial, and an organization sets
-it deliberately" (`agents/plan-synthesizer.md:61`). An organization that wants more gates than
+it deliberately" (`agents/plan-synthesizer.md` ("The output contract - a MULTI-STEP EXECUTION PLAN, not a design essay")). An organization that wants more gates than
 this default sets its position by editing `agents/plan-synthesizer.md` directly, changing the
 four-part test or adding categories that must gate regardless of how cleanly their rule can be
-stated. `agents/plan-synthesizer.md:55-57` shows the harness already carves out a few categories
+stated. `agents/plan-synthesizer.md` ("The output contract - a MULTI-STEP EXECUTION PLAN, not a design essay") shows the harness already carves out a few categories
 that never weaken under this rule regardless of how statable they are: sends that reach a person
 outside the system, deletion of tracked content, and writes to a source of truth the plan marks
 read-only.

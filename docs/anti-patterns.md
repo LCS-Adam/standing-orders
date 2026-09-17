@@ -36,7 +36,7 @@ directory on the main checkout is invisible to every pre-merge run.
 not just in the worktree. Expect the first post-merge run to differ from every pre-merge run and
 treat that as part of the gate, not a formality.
 
-**Where the rule lives.** `skills/autorun-plan/SKILL.md:127-137`.
+**Where the rule lives.** `skills/autorun-plan/SKILL.md` ("2. Right-fit dispatch (custom agents/skills)").
 
 ## The premise that died mid-run
 
@@ -52,7 +52,7 @@ premise change in state is not the same as acting on it.
 this makes unnecessary, what downstream requirements just lost their justification, and whether the
 current in-flight work still earns its place. Sunk cost on a branch is not a reason to finish it.
 
-**Where the rule lives.** `skills/autorun-plan/SKILL.md:370-389`.
+**Where the rule lives.** `skills/autorun-plan/SKILL.md` ("5. Close-out").
 
 ## The long plan spent on dead surface
 
@@ -71,7 +71,7 @@ README or the plan itself. A plan phase earns its place only if it touches somet
 SCOPE list; work aimed at OUT OF SCOPE surface is inherited maintenance, not improvement, no matter
 how well-argued.
 
-**Where the rule lives.** `skills/scope-audit/SKILL.md:11-24`.
+**Where the rule lives.** `skills/scope-audit/SKILL.md` ("Scope audit (what is this system, really?)").
 
 ## The timeout wrapper that faked a clean review
 
@@ -86,7 +86,7 @@ you check file size instead of file content.
 reviewer's output by its content and its verdict line, never by its size or its exit code alone. A
 reconnect loop that keeps a file growing is a failed round too, not a slow one.
 
-**Where the rule lives.** `skills/external-llm-review/SKILL.md:123-125`.
+**Where the rule lives.** `skills/external-llm-review/SKILL.md` ("Harness traps that fake a verdict").
 
 ## Fixtures that pin both sides of an assertion
 
@@ -100,7 +100,7 @@ deleted, because nothing in the fixture can produce a red result.
 a named mutation. Watch for a fixture that pins the same override on both sides of a contract, and
 for a fixture that gives each sandbox its own copy of something that is global in production.
 
-**Where the rule lives.** `agents/adversary.md:39-41` and `agents/exec-mechanical.md:52-54`.
+**Where the rule lives.** `agents/adversary.md` ("Sweep this taxonomy FIRST, then hunt freely") and `agents/exec-mechanical.md` ("Tests must be able to FAIL").
 
 ## Closing the instance instead of the class
 
@@ -116,7 +116,7 @@ the full surface it ranges over (callers, subcommands, scope states, config stat
 table-driven test, with every cell an expected verdict and every claimed exemption backed by its
 own negative test.
 
-**Where the rule lives.** `agents/exec-mechanical.md:40-48`.
+**Where the rule lives.** `agents/exec-mechanical.md` ("When you fix a defect, close the CLASS, not the instance").
 
 ## The report lost when a backgrounded agent goes idle
 
@@ -130,7 +130,7 @@ unreachable.
 as the final message. Write an early stub and overwrite it as the review proceeds, so a review that
 gets cut short still leaves findings on disk.
 
-**Where the rule lives.** `agents/adversary.md:24-27`.
+**Where the rule lives.** `agents/adversary.md` ("Write the report to a FILE before you finish").
 
 ## The fail-open scrub
 
