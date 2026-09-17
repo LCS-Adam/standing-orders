@@ -139,15 +139,13 @@ binary=$( { shipped | xargs -0r perl -0777 -ne 'print "$ARGV (working tree)\n" i
 # make the SAME claim about the SAME surface. An exemption - "this file is out of
 # THIS check" - stays inside the check that owns it. See the gate-integrity
 # assertion below.
-# .augment/ and plugins/agent-harness-auggie/ are GENERATED copies of agents/,
-# commands/, skills/ and AGENTS.md, every one of which is framework prose at its
-# source. Scanning a copy as a client-facing doc fails the glyph and count
-# checks on bytes this gate already passed once, and the only way to make it
-# green again would be to edit generated output. Reproduced: one
-# `harness add --tool auggie` in a clone turned checks 2 and 8 red on eleven
-# files that are byte-identical, past their frontmatter, to files already in the
-# scan set.
-FRAMEWORK_PROSE='^(agents|commands|hooks|rules|config|templates|skills)/|^(AGENTS|CLAUDE)\.md$|^\.augment/|^plugins/agent-harness-auggie/'
+# plugins/agent-harness-auggie/ is a GENERATED copy of agents/, commands/,
+# skills/ and AGENTS.md, every one of which is framework prose at its source.
+# Scanning the copy as a client-facing doc fails the glyph and count checks on
+# bytes this gate already passed once, and the only way to make it green again
+# would be to edit generated output. `.augment/` was listed here too and is
+# gitignored instead, so it never reaches this set at all.
+FRAMEWORK_PROSE='^(agents|commands|hooks|rules|config|templates|skills)/|^(AGENTS|CLAUDE)\.md$|^plugins/agent-harness-auggie/'
 CLIENT_DOCS=$(shipped_l '*.md' | grep -vE "$FRAMEWORK_PROSE")
 
 # ---------------------------------------------------------------- gate integrity
@@ -224,21 +222,23 @@ else pass "no absolute home paths"; fi
 # the one thing that must never happen here: a dropped family pattern is exactly
 # how a same-family reviewer gets through a gate that wants a different opinion.
 #
-# The last three are the Augment side, and none of them exists in THIS
-# checkout. config/models.auggie.conf is written by
-# scripts/resolve-tier.sh --write-conf; .augment/agents/ by
-# `harness add --tool auggie`; plugins/agent-harness-auggie/ by
-# `harness build-plugin`. All three are GENERATED, and in all three a literal
-# model id is the payload rather than a leak: a subagent's `model:` field is a
-# binding, the same category as config/models.conf, and the alternative is a
-# subagent that inherits whatever the CLI defaults to.
+# The last two are the Augment side, and neither exists in THIS checkout.
+# config/models.auggie.conf is written by scripts/resolve-tier.sh --write-conf;
+# plugins/agent-harness-auggie/ by `harness build-plugin`. Both are GENERATED
+# and in both a literal model id is the payload rather than a leak: a
+# subagent's `model:` field is a binding, the same category as
+# config/models.conf, and the alternative is a subagent that inherits whatever
+# the CLI defaults to.
 #
-# They are exempted now rather than when they first appear, so that the first
-# `./verify.sh` after the runbook is red for a real reason or green for a real
-# one, never red for bookkeeping. Each is the exact generated path: not
-# `^plugins/`, which would cover a second plugin nobody generated, and not
-# `^\.augment/`, which would cover a hand-written settings file.
-EXEMPT_VENDOR='^verify\.sh:|^adapters/README\.md|^docs/|^config/models\.conf|^scripts/resolve-tier\.sh:|^config/models\.auggie\.conf:|^\.augment/agents/|^plugins/agent-harness-auggie/'
+# An exemption has to be EARNED by something re-deriving the content. Check 13
+# rebuilds plugins/agent-harness-auggie/ and diffs it byte for byte, so that
+# one is earned. `.augment/agents/` was exempted here too and was not: nothing
+# compared it to agents/, and `harness add --tool auggie` writes into it
+# without pruning, so a hand-written file with four vendor literals passed
+# while the same bytes under skills/ failed. It is gitignored now instead
+# (.gitignore), which is the honest answer: in THIS repo .augment/ is local
+# scratch, and the distributable copy is the plugin tree.
+EXEMPT_VENDOR='^verify\.sh:|^adapters/README\.md|^docs/|^config/models\.conf|^scripts/resolve-tier\.sh:|^config/models\.auggie\.conf:|^plugins/agent-harness-auggie/'
 # -w, not \b: git grep -E does not implement \b, so the index side of this scan
 # would have matched nothing and passed forever. Both engines implement -w and
 # both return the same hits on this repo.
@@ -609,13 +609,23 @@ rm -f "$gentmp" "$generr"
 # generated on the work machine. On a machine without it the comparison is
 # SKIPPED and says so out loud in the check's own output, because a skip that
 # looks like a pass is the failure this gate is built around.
+# The build writes TWO things and they are only meaningful together: the plugin
+# tree, and the marketplace manifest whose `source` points at it. Testing only
+# plugins/ left a seventh path green - manifest committed, tree absent - where
+# `auggie plugin marketplace add` lists a plugin that cannot install.
 plugmsg=""
-if [ -z "$(shipped_l 'config/models.auggie.conf')" ]; then
+plugtree="$(shipped_l 'plugins/*')"
+plugman="$(shipped_l '.augment-plugin/*')"
+plughave=""
+if [ -n "$plugtree" ] || [ -n "$plugman" ]; then plughave=1; fi
+if [ -n "$plughave" ] && { [ -z "$plugtree" ] || [ -z "$plugman" ]; }; then
+  plugmsg="half of the generated Auggie output is committed: plugins/ $([ -n "$plugtree" ] && echo present || echo ABSENT), .augment-plugin/ $([ -n "$plugman" ] && echo present || echo ABSENT) - the manifest points at the tree, so one without the other cannot install"
+elif [ -z "$(shipped_l 'config/models.auggie.conf')" ]; then
   plugskip="plugins/ not compared: config/models.auggie.conf is unbound (docs/augment-runbook.md step 5)"
-  [ -z "$(shipped_l 'plugins/*')" ] || plugmsg="plugins/ is committed but cannot be re-derived here - $plugskip"
+  [ -z "$plughave" ] || plugmsg="plugins/ is committed but cannot be re-derived here - $plugskip"
 else
   plugskip=""
-  if [ -z "$(shipped_l 'plugins/*')" ]; then
+  if [ -z "$plughave" ]; then
     plugmsg="the tier binding is bound but plugins/ is not committed - run: harness build-plugin --tool auggie"
   else
     plugtmp=$(mktemp -d) || gate_error "mktemp failed - check 13 cannot run"
@@ -662,11 +672,29 @@ if [ -z "$(shipped_l "$TP_TEMPLATE")" ]; then
 elif ! jq -e . "$TP_TEMPLATE" >/dev/null 2>&1; then
   fail "$TP_TEMPLATE is not valid JSON - Auggie would load no rules at all"
 else
+  # REACHABILITY FIRST, then the patterns. Selecting on permission.type alone
+  # proved nothing about production: retarget every rule at a toolName that
+  # does not exist, or set eventType to tool-response so the check happens
+  # after the command has already run, and the table below still passed. The
+  # vendor is explicit that the shell is the single tool `terminal`, that rules
+  # are first-match-wins top-down, and that tool-response fires post-execution.
   tpre=$(jq -r '.toolPermissions[]
-                | select(.permission.type == "deny" and has("shellInputRegex"))
+                | select(.toolName == "terminal"
+                         and (.eventType // "tool-call") == "tool-call"
+                         and (.permission | type) == "object"
+                         and .permission.type == "deny"
+                         and has("shellInputRegex"))
                 | .shellInputRegex' "$TP_TEMPLATE" 2>/dev/null)
+  # Every `terminal` rule must be one of those. The equality is what closes
+  # first-match-wins: a single allow, a bare-string permission the vendor drops
+  # at load time, or a post-execution rule sitting anywhere in the list makes
+  # the counts differ, and any of them can render the denies inert.
+  nterm=$(jq -r '[.toolPermissions[] | select(.toolName == "terminal")] | length' "$TP_TEMPLATE" 2>/dev/null)
+  ndeny=$(printf '%s\n' "$tpre" | grep -c . || true)
   if [ -z "$tpre" ]; then
-    fail "$TP_TEMPLATE carries no deny rule with a shellInputRegex - the table below would pass over nothing"
+    fail "$TP_TEMPLATE carries no reachable terminal deny rule - the table below would pass over nothing"
+  elif [ "${nterm:-0}" -ne "${ndeny:-0}" ]; then
+    fail "$TP_TEMPLATE has ${nterm:-0} terminal rules but only ${ndeny:-0} are reachable denies - first match wins, so the rest can make these inert"
   else
     # verdict<TAB>command. Every line is asserted; a row whose verdict is wrong
     # names itself.

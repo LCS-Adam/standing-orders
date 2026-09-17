@@ -25,9 +25,17 @@ if [[ "$stype" == "fork" || -n "$model" ]]; then
 fi
 
 # Agent definition with a model pin satisfies the rule (project first, then user).
-# .augment/agents holds the generated Auggie subagents, which carry a resolved
-# model: too, so the same rule answers for either tool once step 6 lands.
-for dir in ".claude/agents" "$HOME/.claude/agents" ".augment/agents" "$HOME/.augment/agents"; do
+# The directory list is chosen by WHICH TOOL IS ASKING, never searched as one
+# pool. Searching both let a pin in .augment/agents/ answer for a Claude Code
+# dispatch: `harness add --tool auggie` generates a pinned file for all eleven
+# agent names, so a .claude/agents/ definition that forgot its pin was waved
+# through on the strength of a file Claude Code does not read. A guard reading
+# state scoped to one tool while gating another is not a guard.
+case "$(jq -r '.tool_name // empty' <<<"$input")" in
+  Agent|Task|"") dirs=(".claude/agents" "$HOME/.claude/agents") ;;
+  *)             dirs=(".augment/agents" "$HOME/.augment/agents") ;;
+esac
+for dir in "${dirs[@]}"; do
   f="$dir/$stype.md"
   if [[ -n "$stype" && -f "$f" ]] && grep -qE '^model:[[:space:]]*\S' "$f"; then
     exit 0

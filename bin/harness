@@ -258,15 +258,28 @@ merge_augment_settings() {
     mkdir -p "$(dirname "$target")"; cp "$incoming" "$target"
     c_ok ".augment/settings.json (created)"; return
   fi
-  jq -e . "$target" >/dev/null 2>&1 \
-    || die "$target is not valid JSON; fix it before merging (nothing was changed)"
-  cp "$target" "$target.bak-$(date +%Y%m%d%H%M%S)"
-  jq -s '
+  # Shape, not just syntax. `jq -e .` accepts `[]` and it accepts a
+  # toolPermissions that is an object; both then blow up inside the merge
+  # below, where the failure used to be invisible.
+  jq -e 'type == "object" and ((.toolPermissions // []) | type == "array")' "$target" >/dev/null 2>&1 \
+    || die "$target must be a JSON object whose toolPermissions, if present, is an array; fix it before merging (nothing was changed)"
+  local bak="$target.bak-$(date +%Y%m%d%H%M%S)"
+  cp "$target" "$bak"
+  # `jq ... && mv` put jq to the LEFT of a && , where set -e does not fire on
+  # its failure. The merge could fail, the mv be skipped, the file be left
+  # untouched, and the success line below still print. That is a security
+  # control reporting itself installed while installing nothing, which is the
+  # exact shape the ordering logic above exists to prevent.
+  if ! jq -s '
     .[0] as $cur | .[1] as $new
     | $cur * ($new | del(.toolPermissions))
     | .toolPermissions = (($new.toolPermissions // [])
                           + (($cur.toolPermissions // []) - ($new.toolPermissions // [])))
-  ' "$target" "$incoming" > "$target.tmp" && mv "$target.tmp" "$target"
+  ' "$target" "$incoming" > "$target.tmp"; then
+    rm -f "$target.tmp"
+    die "could not merge $target (nothing was changed; your file is unmodified and a copy is at $bak)"
+  fi
+  mv "$target.tmp" "$target" || die "could not replace $target (a copy is at $bak)"
   c_ok ".augment/settings.json (merged, harness rules first, backup written)"
 }
 

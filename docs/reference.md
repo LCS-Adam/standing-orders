@@ -98,7 +98,7 @@ core instructions.
 | `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` | `config/settings.portable.json:4` | `"85"`. Starts auto-compaction at 85 percent of the context window. |
 | `Agent\|Task` matcher | `config/settings.portable.json:9` | The `PreToolUse` matcher that routes every subagent spawn through `hooks/require-agent-model.sh`. |
 | `CLAUDE_CONFIG_DIR` | `bin/harness:10` | Environment variable. Overrides the install target, which otherwise defaults to `.claude` under your home directory. |
-| `--user` | `bin/harness:660` | Accepted and ignored. `harness install` is user-scope already; the flag reads as documentation at the call site. |
+| `--user` | `bin/harness:673` | Accepted and ignored. `harness install` is user-scope already; the flag reads as documentation at the call site. |
 
 ## Scrub gate
 

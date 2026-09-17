@@ -14,3 +14,8 @@ runtime/
 # Upstream clones (scripts/sync-upstream.sh). Read material, not our code:
 # tracked would make this repo a fork of every project it references.
 .upstream/
+
+# Local Auggie scratch. `harness add --tool auggie` writes it into whatever repo
+# you run it in; in THIS repo the distributable copy is the plugin tree, which
+# check 13 re-derives and diffs. An exemption nothing verifies is not earned.
+.augment/
