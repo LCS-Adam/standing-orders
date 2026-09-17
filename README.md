@@ -184,12 +184,14 @@ New to agentic coding? Read them in this order, newcomer to specialist.
 | [Watching the context window](docs/context-health.md) | Anyone who wants the status line, and what the published research does and does not support. |
 | [Context in Augment](docs/augment-context.md) | Anyone moving between Claude Code and Auggie, where the context model is different. |
 | [Standing up the Augment side](docs/augment-runbook.md) | Whoever has a machine with Auggie on it and has to turn the documentation claims into verified ones. |
+| [Reading a corpus too big for one agent](docs/corpus-swarms.md) | Anyone facing more files than one session can hold, who needs the grouped-swarm shape and the honest limits on it. |
 | [Sizing the model to the task](docs/model-tiering.md) | Anyone dispatching subagents or writing plans that name a tier. |
 | [Writing your own extensions](docs/writing-your-own.md) | Someone authoring a new agent, skill, rule, command, or hook. |
 | [Handing off between sessions](docs/handoff-and-resume.md) | Anyone closing a session that another session must resume. |
 | [Anti-patterns](docs/anti-patterns.md) | Anyone who wants to learn from failures this repo already recorded. |
 | [Operating boundaries](docs/operating-boundaries.md) | A security reviewer or an engineer's employer asking what this harness actually does. |
 | [Getting more than one answer](docs/deliberation.md) | Anyone facing a contested design decision, a go/no-go, or a research synthesis where one model's first answer is not enough. |
+| [Worked scenarios](docs/scenarios.md) | Anyone who wants to see five real-shaped projects run start to finish, including one where the harness deliberately stays out of the way. |
 | [The full lifecycle](docs/lifecycle.md) | Anyone who wants the whole path, idea to deploy, on one page before diving into any single stage. |
 | [Planning and executing a large build](docs/planning-large-builds.md) | Someone scoping a multi-day or multi-phase change. |
 | [Autonomous execution](docs/autorun-hitl-heartbeat.md) | Someone running an unattended, multi-hour build. |
