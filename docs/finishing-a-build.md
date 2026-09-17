@@ -151,3 +151,18 @@ what already exists rather than a new skill:
 
 Nothing in the harness runs after deploy. That check, and the decision to roll back if it fails,
 stay with the person at the gate.
+
+**One shape worth knowing for the smoke check itself**, which is a shape rather than tooling and so
+survives not knowing your host. Write it as a read-only probe: it inspects, it never mutates, and
+it says so in its own description so nobody reaches for it expecting a fix. It runs the same way
+before a change as after one, which is what makes a failure interpretable, because you have the
+same output from before the change to compare against. It prints one verdict line, pass or fail,
+and underneath it the evidence for every individual probe including the ones that passed. The
+single verdict is what a scheduled run or an autonomous loop reads; the per-probe evidence is what
+a person reads at 2am when the verdict is fail and the question is which part.
+
+The failure mode this avoids is the one `docs/anti-patterns.md` calls the fail-open scrub: a probe
+that could not reach the thing it was checking, and reported success. Every probe needs to
+distinguish "checked, and it is fine" from "could not check", and the second has to count as a
+failure rather than silence. A healthcheck that cannot fail tells you nothing on the day it
+matters.

@@ -18,6 +18,7 @@ rule lives in the code today, so you can go read the primary source rather than 
 - [The rebind that did nothing](#the-rebind-that-did-nothing)
 - [The shared exemption list](#the-shared-exemption-list)
 - [The report that joined the set it was supposed to be scanned by](#the-report-that-joined-the-set-it-was-supposed-to-be-scanned-by)
+- [Retired before the ledger existed](#retired-before-the-ledger-existed)
 - [The check that cannot fail is worse than no check](#the-check-that-cannot-fail-is-worse-than-no-check)
 
 ## The orphaned resume block
@@ -216,6 +217,28 @@ meant to ship, belongs in a gitignored directory. A verification pass has to dis
 part of the shipped set" from "this exists because an agent ran here."
 
 **Where the rule lives.** `.gitignore:8-12` (see `git show aefe6d4`).
+
+## Retired before the ledger existed
+
+**What happened.** A pair of slash commands were dropped in one commit. The install manifest, which
+records what the last install shipped so the next one can retire whatever it no longer ships, was
+added in the commit after. Retirement reads the manifest when there is one and falls back to a
+hand-written ledger when there is not. So on a machine that installed before the manifest existed,
+the only list that could have named those two commands was the ledger, and the ledger did not
+name them: it was written one commit too late to know they had ever shipped.
+
+**What it cost.** Nothing yet, and that is the point. On any pre-manifest install both commands
+stay deployed and dispatchable forever, reading task files that no longer exist, and no reinstall
+removes them. It surfaced only from auditing what the repository had ever deleted, not from any
+failure a user would report.
+
+**The rule it produced.** A retirement ledger has to cover everything dropped at or before the
+commit that introduced the manifest, because the manifest by construction cannot know about any of
+it. When a cleanup mechanism is added partway through a project's life, its first job is to account
+for the past, not the future.
+
+**Where the rule lives.** `config/retired.conf`, the comment above the `commands/` entries that
+begins "were retired one commit BEFORE the manifest existed".
 
 ## The check that cannot fail is worse than no check
 
