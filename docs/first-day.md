@@ -42,7 +42,7 @@ Scrubbing ~/projects/agent-harness
   PASS all 13 skills have name and description
   PASS CLAUDE.md imports AGENTS.md on line 1
   PASS no permission-bypass defaults in shipped settings
-  PASS all 5 shell scripts use an absolute-path shebang
+  PASS all 6 shell scripts use an absolute-path shebang
   PASS no banned glyphs in client-facing docs (28 files)
   PASS no dangling ~/.claude/rules references
   PASS every backticked slash command resolves to commands/, skills/, or the built-in allowlist
