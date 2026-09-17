@@ -59,7 +59,8 @@ raw stdin, trigger it once, and revert.
 
 ## bash 3.2 cannot parse a one-line `case` inside a command substitution
 
-`/bin/bash` on macOS is 3.2, and every script here starts `#!/bin/bash`, so that is the interpreter
+The `bash` at /bin on macOS is 3.2, and every script here starts with a `#!` line naming it, so
+that is the interpreter
 whatever else is installed. It rejects this:
 
 ```bash
@@ -84,8 +85,9 @@ Write it with parameter expansion instead, which every shell handles:
 [ "${a#\#}" = "$a" ] || continue
 ```
 
-Or put `;;` and `esac` on their own lines. If you need certainty, run the script under `/bin/bash`
-rather than `bash`: the two are different programs on this platform.
+Or put `;;` and `esac` on their own lines. If you need certainty, run the script with the
+interpreter at /bin rather than whichever `bash` is first on PATH: they are different programs on
+this platform, and usually different major versions.
 ## BSD versus GNU tools
 
 macOS ships BSD userland. These differ from GNU in ways that pass on Linux CI and fail on a Mac:
