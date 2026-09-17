@@ -153,10 +153,9 @@ than typed:
 scripts/resolve-tier.sh --write-conf
 ```
 
-Augment's model allowlist is administered per company and an admin can change it without
-notifying users, so the binding is
-discovered by asking the CLI which models the account actually has. That command needs `auggie`
-installed and logged in. `harness build-plugin --tool auggie` then packages the whole set as an
+Augment's model allowlist is administered per company and an admin can change it without notifying
+users, so the binding is discovered by asking the CLI which models the account actually has rather
+than typed from memory. That command needs `auggie` installed and logged in. `harness build-plugin --tool auggie` then packages the whole set as an
 installable plugin. `docs/augment-runbook.md` walks all of it, in order, on a machine that has
 Auggie.
 
