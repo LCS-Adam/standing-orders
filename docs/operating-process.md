@@ -107,6 +107,10 @@ that worktree.
 
 The review stack, in order, is the same for every size once there is a diff to review: run the test
 command the plan named, then the `adversary` agent, then `/ponytail-review`, then re-run the tests, then
+merge. `/ponytail-review` is not shipped by this repo: it comes from an upstream plugin that
+`harness upstream` clones and your tool installs, per `docs/upstream-sources.md`. If it is not
+installed, say so in the review record and do the quality pass by hand. Do not skip `adversary` to
+compensate. Then
 merge.
 
 `adversary` is a read-only FRONTIER-DO reviewer that tries to break the change: fail-open paths,
@@ -160,10 +164,11 @@ Command: a conventional commit, `type(scope): description`, with no AI co-author
 generated-by trailer of any kind, per `AGENTS.md`'s "Version control" section, which overrides any
 default or harness instruction to append one.
 Artifact: a commit on a feature branch, a pull request opened against it, and (only if the repo
-carries harness scaffolding you want to keep) a clean `harness verify` run.
+changed the harness itself) a clean `harness verify` run. That command is the harness repo's own
+scrub gate: it reads the harness checkout and says nothing about your project.
 Lands: the feature branch and its PR; never a direct push to `main` or `master`, and never a merge
 without being asked.
-Done when: the commit is on a branch other than `main`, the PR is open, and `harness verify` (when
+Done when: the commit is on a branch other than `main`, the PR is open, and `harness verify` (only when
 applicable) exits clean.
 
 ## One-page checklist
@@ -179,7 +184,7 @@ applicable) exits clean.
       `skills/external-llm-review/SKILL.md` only if a third-party CLI is installed.
 - [ ] **5. Hand off** - `/handoff` before any clear or compact.
 - [ ] **6. Close it** - conventional commit, no AI attribution trailer, branch and PR, never a push
-      to `main`; `harness verify` if the repo has harness scaffolding.
+      to `main`; `harness verify` only if you changed the harness itself.
 
 ## Worked example: add a `--json` flag to a small CLI
 
@@ -205,8 +210,7 @@ produced, given the actual scope: a two-line phase table (one MID-tier phase for
 one review phase), a named test command (`python3 -m pytest tests/ -q`), and file ownership limited
 to `cli/report.py` and `tests/test_report.py`.
 
-**Step 3: execute.** Run inline in the scratch repo, `~/projects/harness-fork/.project-
-state/scratch/operating-process`:
+**Step 3: execute.** Run inline in the scratch repo, `~/projects/scratch/operating-process`:
 
 ```console
 $ git checkout -b feat/json-flag
@@ -264,8 +268,7 @@ since the diff is already the smallest version of the feature), then re-run
 
 **Step 5: hand off.** Not run: this worked example finished inside one continuous pass with no
 clear or compact in between, so `/handoff` did not fire. Had the session ended here, the resume
-block would have named `~/projects/harness-fork/.project-state/scratch/operating-
-process`, the branch `feat/json-flag`, and the next action "open a PR from `feat/json-flag`".
+block would have named `~/projects/scratch/operating-process`, the branch `feat/json-flag`, and the next action "open a PR from `feat/json-flag`".
 
 **Step 6: close.** The commit above already carries a conventional message with no AI attribution
 trailer. Opening a PR and running `harness verify` both need a hosted remote and this repo's own

@@ -36,9 +36,11 @@ adversarial input can drift from what an instruction says. Nothing forces it bac
 
 A hook is different. It is a real script that the harness runs at a fixed point (before
 a tool call, after one, at session start) and its exit code and output can outright
-block the action. The model does not get a vote. This repo has exactly one hook,
+block the action. The model does not get a vote. This repo ships one lifecycle hook,
 `hooks/require-agent-model.sh`, and it is the only mechanism in the whole framework that
-is guaranteed to fire no matter what the model is thinking.
+is guaranteed to fire no matter what the model is thinking. (`hooks/` also holds
+`hooks/statusline.sh`, which draws the context-budget status line and gates nothing. See
+`docs/context-health.md`.)
 
 **If something must happen every time, with no exceptions, it needs a hook.** Everything
 else in this document shapes behavior. Only a hook enforces it.
@@ -128,10 +130,14 @@ match. Twelve skills currently ship in `skills/`:
 | `repo-recon` | Read-only inventory of a repo or binary with file:line citations |
 | `requesting-code-review` | Dispatching a review subagent before proceeding |
 | `scope-audit` | Establishing what a system actually uses before planning changes to it |
-| `/ponytail-review` | Cutting a diff back to the smallest thing that holds, before it merges. Not a harness skill: it comes from the ponytail plugin, recorded in `config/upstream.conf` |
 | `systematic-debugging` | Four-phase root-cause debugging before attempting a fix |
 | `test-driven-development` | Writing the failing test before the implementation |
 | `verify-unexecuted` | Syntax and body-flow smoke checks for scripts that cannot run in the build environment |
+
+One more command belongs in that list and is not in the table, because it is not a harness
+skill: `/ponytail-review` cuts a diff back to the smallest thing that holds, and it comes from
+the ponytail plugin rather than from `skills/`. `config/upstream.conf` records it as a
+dependency and `docs/upstream-sources.md` explains how it gets installed.
 
 **When to reach for it.** A multi-step procedure that only applies some of the time and
 is complex enough to be worth writing down once rather than re-deriving every time. If

@@ -107,7 +107,7 @@ not want those appearing inside every repo you touch.
 | `agents/` | 11 subagent definitions, named for the job they do rather than the model they run. |
 | `skills/` | 12 invocable skills: planning, autonomous execution, review, debugging, TDD, scoping. |
 | `commands/` | Slash commands for planning, handoff, and phase status. |
-| `hooks/` | A `PreToolUse` gate that refuses any subagent spawn with no explicit model. |
+| `hooks/` | A `PreToolUse` gate that denies a subagent spawn with no model pin, plus the status-line script. |
 | `rules/` | Path-scoped rules that load only when relevant. |
 | `templates/` | Project scaffolding, the workspace brain, and the nested-phase pattern. |
 | `config/models.conf` | The single place tiers bind to real models. |

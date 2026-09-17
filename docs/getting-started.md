@@ -247,7 +247,7 @@ what you have staged.
 ## A first real task
 
 `docs/first-day.md` now does this job properly: five beats, done for real, with the actual command
-output pasted below each one, ending with a fix, a test, a verify run, and a commit. Read that
+output pasted below each one, ending with a fix, a test, and a handoff. Read that
 document for the full walkthrough rather than a summary here.
 
 ## Troubleshooting
