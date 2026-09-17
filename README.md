@@ -103,9 +103,10 @@ roster change does not turn every filename into a lie:
 | `data-eng-sa-reviewer` | FRONTIER-DO | Reviews them for grain and metric correctness. |
 | `code-reviewer` | FRONTIER-DO | Reviews a diff against its plan for production readiness. |
 
-Thirteen skills, invocable as `/<name>`: `autorun-plan`, `brainstorming`, `deep-plan-swarm`,
-`external-llm-review`, `grill-me`, `heartbeat`, `readme-coauthoring`, `repo-recon`, `requesting-code-review`,
-`scope-audit`, `systematic-debugging`, `test-driven-development`, `verify-unexecuted`.
+Sixteen skills, invocable as `/<name>`: `autorun-plan`, `brainstorming`, `deep-plan-swarm`,
+`external-llm-review`, `grill-me`, `heartbeat`, `macos-launchd`, `readme-coauthoring`,
+`readonly-healthcheck`, `repo-recon`, `requesting-code-review`, `scope-audit`,
+`systematic-debugging`, `test-driven-development`, `verify-unexecuted`, `version-drift-check`.
 
 Four slash commands: `/deep-plan`, `/handoff`, `/next-step`, `/phase-status`.
 
@@ -134,7 +135,7 @@ not want those appearing inside every repo you touch.
 | `AGENTS.md` | The canonical instruction set. Self-contained, vendor-neutral, read by every tool. |
 | `CLAUDE.md` | A one-line import of `AGENTS.md` plus Claude Code specifics. |
 | `agents/` | 11 subagent definitions, named for the job they do rather than the model they run. |
-| `skills/` | 13 invocable skills: planning, autonomous execution, review, debugging, TDD, scoping. |
+| `skills/` | 16 invocable skills: planning, autonomous execution, review, debugging, TDD, scoping. |
 | `commands/` | Slash commands for planning, handoff, and phase status. |
 | `hooks/` | A `PreToolUse` gate that denies a subagent spawn with no model pin, plus the status-line script. |
 | `rules/` | Path-scoped rules that load only when relevant. |

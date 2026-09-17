@@ -49,7 +49,7 @@ Scrubbing ~/projects/standing-orders
   PASS no absolute home paths
   PASS no vendor model names outside config/models.conf
   PASS all 11 agent definitions pin a tier
-  PASS all 13 skills have name and description
+  PASS all 16 skills have name and description
   PASS CLAUDE.md imports AGENTS.md on line 1
   PASS no permission-bypass defaults in shipped settings
   PASS all 7 shell scripts use an absolute-path shebang
@@ -58,7 +58,7 @@ Scrubbing ~/projects/standing-orders
   PASS every backticked slash command resolves to commands/, skills/, or the built-in allowlist
   PASS every file harness install would ship from this repo is in the scanned set
          plus 91 file(s) from 13 upstream skill(s), which this gate does not scan (config/upstream.conf)
-  PASS documented counts match (11 agents, 13 skills, 4 commands, 14 checks)
+  PASS documented counts match (11 agents, 16 skills, 4 commands, 14 checks)
   PASS docs/reference.md matches what scripts/gen-reference.sh generates; plugins/ not compared: config/models.auggie.conf is unbound (docs/augment-runbook.md step 5)
   PASS all 7 Augment deny rules give the expected verdict on 41 commands
 
@@ -337,7 +337,7 @@ $ auggie
 <captured on the work machine: runbook step 11>
 ```
 
-Expect both `CLAUDE.md` and `AGENTS.md`, 11 subagent definitions, and 13 skills sourced from
+Expect both `CLAUDE.md` and `AGENTS.md`, 11 subagent definitions, and 16 skills sourced from
 `.claude/skills`.
 
 ### Three differences worth knowing before you start

@@ -130,7 +130,7 @@ adds no benefit).
 frontmatter declares `name:` and `description:`. That shape is what makes it a real
 skill: something the Skill tool can list, something invocable by typing `/<name>`, and
 something the harness's skill-matching can surface unprompted when a task looks like a
-match. Thirteen skills currently ship in `skills/`:
+match. Sixteen skills currently ship in `skills/`:
 
 | Skill | For |
 |---|---|
@@ -140,13 +140,16 @@ match. Thirteen skills currently ship in `skills/`:
 | `external-llm-review` | Getting an independent, non-Claude review of a plan or diff |
 | `heartbeat` | Keeping a simple approved plan running unattended, no review gates |
 | `grill-me` | Interrogating a plan or design until every open decision is resolved |
+| `macos-launchd` | Troubleshooting a macOS launchd agent that will not load, stay up, or find its interpreter |
 | `readme-coauthoring` | Writing or rewriting a project README |
+| `readonly-healthcheck` | Writing a check that inspects a system, never changes it, and cannot pass by accident |
 | `repo-recon` | Read-only inventory of a repo or binary with file:line citations |
 | `requesting-code-review` | Dispatching a review subagent before proceeding |
 | `scope-audit` | Establishing what a system actually uses before planning changes to it |
 | `systematic-debugging` | Four-phase root-cause debugging before attempting a fix |
 | `test-driven-development` | Writing the failing test before the implementation |
 | `verify-unexecuted` | Syntax and body-flow smoke checks for scripts that cannot run in the build environment |
+| `version-drift-check` | Reporting that a newer release exists, and refusing to install it |
 
 One more command belongs in that list and is not in the table, because it is not a harness
 skill: `/ponytail-review` cuts a diff back to the smallest thing that holds, and it comes from
