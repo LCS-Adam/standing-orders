@@ -249,7 +249,6 @@ steps. Keep this file short: it is loaded whenever the agent touches a file in t
 
 | Task | Status |
 |---|---|
-
 | [01-first-task](01-first-task.md) | PENDING |
 
 ## Done when
