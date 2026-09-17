@@ -138,14 +138,14 @@ auggie models list --full-info | head -60
 ```
 
 Paste that output into the answers table. Then open `scripts/resolve-tier.sh` and set the five
-knobs in the SCHEMA KNOBS block near the top.
-
-One thing to ignore while you are in there: the script also resolves a `REVIEWER` role. That is
-vestigial. External second-opinion review was cut from this project, nothing calls `REVIEWER`, and
-it survives only because the same-family rule is part of the binding rather than part of any
-consumer. Do not wire anything to it and do not delete it as part of this step to match the real field names: `MODELS_JQ`, `F_ID`,
+knobs in the SCHEMA KNOBS block near the top to match the real field names: `MODELS_JQ`, `F_ID`,
 `F_NAME`, `F_COST`, `F_EFFORT`. If the cost tiers are words rather than integers, also set
 `COST_TIER_ORDER` to the labels, highest first.
+
+One thing to ignore while you are in that file: it also resolves a `REVIEWER` role. That is
+vestigial. External second-opinion review was cut from this project, nothing calls `REVIEWER`, and
+it survives only because the same-family rule is part of the binding rather than part of any
+consumer. Do not wire anything to it, and do not delete it as part of this step.
 
 Re-run step 5. Commit that edit on its own, with the captured shape in the commit message, so the
 next person can see what the schema actually was.
