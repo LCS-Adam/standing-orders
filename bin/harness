@@ -11,6 +11,8 @@ CLAUDE_HOME="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 # Overridable so an offline test can point at a fixture. Nothing else sets it.
 # The default path is ABSENT from this repo on purpose - see load_models.
 AUGGIE_CONF="${HARNESS_AUGGIE_CONF:-$HARNESS_ROOT/config/models.auggie.conf}"
+UPSTREAM_CONF="${HARNESS_UPSTREAM_CONF:-$HARNESS_ROOT/config/upstream.conf}"
+UPSTREAM_DIR="${HARNESS_UPSTREAM_DIR:-$HARNESS_ROOT/.upstream}"
 STAGE=""
 FORCE=0
 DRY=0
@@ -452,6 +454,95 @@ retire_missing() {
   return 0
 }
 
+# ------------------------------------------------- upstream skills, into the stage
+#
+# config/upstream.conf may say `install=` for a clone, naming the skills the
+# harness wants from it. Those get staged alongside the harness's own, so they
+# flow through the same put_dir, the same manifest, and the same retirement:
+# drop the install= and the next install takes them back out again.
+#
+# NO NETWORK HERE. This only reads .upstream/, which `harness upstream` fills.
+# Keeping the clone and the install apart is deliberate: an install that
+# reaches the network fails differently on a locked-down machine, and the whole
+# point of the manifest is that refreshing is a decision someone makes.
+#
+# Two repo shapes, detected rather than declared. A root SKILL.md means the
+# repo IS one skill. A skills/<name>/SKILL.md tree means it ships several. The
+# frontmatter `name:` is what the skill is called, never the directory, because
+# the directory is the author's choice and the name is the contract.
+skill_name_of() { # skill_name_of <SKILL.md>
+  sed -n '1,/^---[[:space:]]*$/!d; s/^name:[[:space:]]*//p' "$1" 2>/dev/null | head -1 \
+    | tr -d '"'"'"'' | tr -d '[:space:]'
+}
+
+stage_upstream_skills() {
+  [ -f "$UPSTREAM_CONF" ] || return 0
+  local name url ref spec want src dest sname n=0
+  while read -r name url ref spec; do
+    case "${name:-}" in ''|\#*) continue ;; esac
+    case "${spec:-}" in install=*) want="${spec#install=}" ;; *) continue ;; esac
+    [ -n "$want" ] || continue
+    local root="$UPSTREAM_DIR/$name"
+    if [ ! -d "$root" ]; then
+      c_skip "upstream $name not cloned, skipping its skills (run: harness upstream)"
+      continue
+    fi
+    # Collect candidate SKILL.md paths for this clone.
+    # -iname, not -name. One upstream ships `skill.md` in lower case, which a
+    # case-insensitive filesystem hides and a Linux checkout does not: the skill
+    # simply would not be found there. It is copied out as SKILL.md below, so
+    # whatever the author called it, what gets installed is the canonical name.
+    local found=""
+    while IFS= read -r f; do found="$found${found:+$'\n'}$f"; done \
+      < <(find "$root" -maxdepth 1 -iname 'SKILL.md' 2>/dev/null | sort)
+    if [ -d "$root/skills" ]; then
+      while IFS= read -r f; do found="$found${found:+$'\n'}$f"; done \
+        < <(find "$root/skills" -mindepth 2 -maxdepth 2 -iname 'SKILL.md' 2>/dev/null | sort)
+    fi
+    [ -n "$found" ] || { c_skip "upstream $name ships no SKILL.md"; continue; }
+    while IFS= read -r src; do
+      [ -n "$src" ] || continue
+      sname="$(skill_name_of "$src")"
+      [ -n "$sname" ] || { c_skip "$name: a SKILL.md has no name: in its frontmatter, skipped"; continue; }
+      case "$want" in
+        '*') ;;
+        *) case ",$want," in *",$sname,"*) ;; *) continue ;; esac ;;
+      esac
+      dest="$STAGE/skills/$sname"
+      if [ -d "$dest" ]; then
+        c_info "  $sname: upstream $name overrides the harness copy"
+        rm -rf "$dest"
+      fi
+      mkdir -p "$dest"
+      # The whole skill directory, so references/ and scripts/ come too. A root
+      # SKILL.md brings only itself plus sibling support dirs that a skill uses.
+      if [ "$(dirname "$src")" = "$root" ]; then
+        cp "$src" "$dest/SKILL.md"
+        local d
+        for d in references scripts assets; do
+          [ -d "$root/$d" ] && cp -R "$root/$d" "$dest/$d"
+        done
+      else
+        cp -R "$(dirname "$src")/." "$dest/"
+        # Normalise the case, via a temp name. A plain `[ -f SKILL.md ] || mv`
+        # is a no-op on a case-insensitive filesystem, which means the file
+        # keeps the author's lower-case name here and only gets renamed on
+        # Linux. Two machines installing the same clone would then hold
+        # different bytes on disk, and only one of them would work.
+        local base; base="$(basename "$src")"
+        if [ "$base" != "SKILL.md" ]; then
+          mv "$dest/$base" "$dest/.skill.tmp.$$" && mv "$dest/.skill.tmp.$$" "$dest/SKILL.md"
+        fi
+      fi
+      # Named on its own line so the gate can tell repo content from upstream
+      # content. verify.sh check 11 reads these.
+      c_ok "upstream-skill: $sname (from $name)"
+      n=$((n+1))
+    done <<< "$found"
+  done < "$UPSTREAM_CONF"
+  [ "$n" -eq 0 ] || c_ok "$n skill(s) staged from .upstream/ (config/upstream.conf install=)"
+}
+
 # ---------------------------------------------------------------- install --user
 
 cmd_install() {
@@ -483,6 +574,10 @@ cmd_install() {
   # its own skills/THIRD_PARTY.md that way. It stays in the repo, where it
   # belongs next to what it documents, and stops being installed.
   find "$STAGE/skills" -maxdepth 1 -type f -delete 2>/dev/null || true
+  # Upstream skills join the stage BEFORE token resolution and before anything
+  # is copied, so they are indistinguishable from the harness's own downstream:
+  # same resolution, same manifest, same retirement.
+  stage_upstream_skills
   while IFS= read -r f; do resolve_tiers "$f"; done < <(find "$STAGE" -type f -name '*.md')
 
   if grep -rq '{{TIER_' "$STAGE" 2>/dev/null; then

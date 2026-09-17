@@ -508,9 +508,36 @@ labels=$(printf '%s\n' "$instout" | sed $'s/\033\\[[0-9;]*m//g' \
          | sed -n -E 's#^  [+=] ((agents|skills|commands|hooks)/.+)$#\1#p' \
          | sed -E 's# \([^)]*\)$##' | sort -u)
 shipset=$(shipped_l 'agents' 'skills' 'commands' 'hooks')
+# Upstream skills are the ONE declared exception, and it is declared twice: once
+# in config/upstream.conf by whoever added the entry, and once by the installer,
+# which names each on an "upstream-skill:" line. They are another project's
+# files. This gate does not scan them and must not pretend to: holding someone
+# else's repo to this repo's style rules would fail on their first absolute path
+# and teach the reader to ignore the result.
+#
+# So the invariant is narrowed and stated rather than quietly widened. Nothing
+# from THIS repo reaches ~/.claude unscanned. Content from an upstream clone
+# does, by the operator's explicit choice, and the count is printed every run so
+# the size of that surface is never a surprise.
+upnames=$(printf '%s\n' "$instout" | sed $'s/\033\\[[0-9;]*m//g' \
+          | sed -n -E 's#^  \+ upstream-skill: ([^ ]+) .*$#\1#p' | sort -u)
+is_upstream() { # is_upstream <label>
+  local nm
+  [ -n "$upnames" ] || return 1
+  while IFS= read -r nm; do
+    [ -n "$nm" ] || continue
+    case "$1" in "skills/$nm/"*) return 0 ;; esac
+  done <<< "$upnames"
+  return 1
+}
 unscanned=$(printf '%s\n' "$labels" | grep -v '^$' | while IFS= read -r l; do
-              printf '%s\n' "$shipset" | grep -qxF "$l" || printf '%s\n' "$l"
+              printf '%s\n' "$shipset" | grep -qxF "$l" && continue
+              is_upstream "$l" && continue
+              printf '%s\n' "$l"
             done)
+upfiles=$(printf '%s\n' "$labels" | grep -v '^$' | while IFS= read -r l; do
+            is_upstream "$l" && printf '%s\n' "$l"
+          done | grep -c . || true)
 if [ "$instrc" -ne 0 ]; then
   fail "harness install --dry-run exited $instrc - the check could not run"
   printf '%s\n' "$instout" | tail -3 | while IFS= read -r l; do show "$l"; done
@@ -521,7 +548,13 @@ elif [ -n "$unscanned" ]; then
   fail "harness install would ship files this gate never scanned"
   printf '%s\n' "$unscanned" | head -10 | while IFS= read -r l; do show "$l"; done
 else
-  pass "all $(printf '%s\n' "$labels" | wc -l | tr -d ' ') files harness install would ship are in the scanned set"
+  nup=$(printf '%s\n' "$upnames" | grep -c . || true)
+  if [ "${nup:-0}" -gt 0 ]; then
+    pass "every file harness install would ship from this repo is in the scanned set"
+    show "plus ${upfiles:-0} file(s) from ${nup} upstream skill(s), which this gate does not scan (config/upstream.conf)"
+  else
+    pass "all $(printf '%s\n' "$labels" | wc -l | tr -d ' ') files harness install would ship are in the scanned set"
+  fi
 fi
 
 # 12 ------------------------------------------------- documented counts

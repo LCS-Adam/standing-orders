@@ -93,6 +93,45 @@ pass a credential inline on a command line, because tools echo the expanded comm
 and chat history, so source it from a file with `600` permissions at runtime instead; and confirm
 `.env` and secret files are ignored before committing.
 
+## Third-party code the gate does not scan
+
+The scrub gate holds one invariant: nothing reaches `~/.claude` that it did not scan. The installer
+and the gate share a single definition of what the repository contains, so a file that is ignored
+by git reaches neither of them. That is the property, and it still holds for everything in this
+repository.
+
+There is exactly one declared exception, and a reviewer should understand its shape.
+
+`config/upstream.conf` lists other people's repositories that this harness uses rather than copies.
+An entry may carry an `install=` field naming skills that `harness install --user` should deploy
+from the clone. Those files are another project's work. This gate does not scan them, and it should
+not: holding someone else's repository to this one's style rules would fail on their first absolute
+path and teach you to ignore the result.
+
+So the claim is narrowed rather than quietly widened. The gate prints both halves on every run:
+
+```text
+PASS every file harness install would ship from this repo is in the scanned set
+     plus 91 file(s) from 13 upstream skill(s), which this gate does not scan (config/upstream.conf)
+```
+
+What that means in practice:
+
+- Adding an upstream entry with `install=` is a decision to run unscanned third-party code. It is a
+  commit to this repository, so it is reviewable, and the count above changes when it lands.
+- Remove the `install=` field and the clone becomes reference material again. The next install
+  retires whatever it had deployed, because upstream skills go through the same manifest as
+  everything else.
+- The clones live in `.upstream/`, which is gitignored. A local edit there would be installed
+  unscanned, so treat that directory as read-only. `harness upstream` refreshes with a hard reset
+  and will discard anything you changed.
+- Nothing is cloned or installed without someone running `harness upstream` first. An install on a
+  machine that has never run it deploys only this repository's own content and says so, once per
+  entry.
+
+If your organization cannot accept unscanned third-party skills, remove the `install=` fields. The
+harness works without them; you lose the upstream skills and keep everything else.
+
 ## Gate minimalism is a dial, not a default
 
 This harness ships with few human gates on purpose, and says so explicitly at the point where an
