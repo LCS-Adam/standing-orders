@@ -26,10 +26,28 @@ file.
 Lands: nowhere on disk; it decides which of steps 1 through 4 you actually run.
 Done when: you can name the size out loud and point to which question drove it.
 
+| Step | Small | Bounded | Large |
+|---|---|---|---|
+| 1. Scope | skip | skip | `/scope-audit` |
+| 2. Plan | skip | `/deep-plan` | `/deep-plan-swarm` |
+| 3. Execute | inline | worktree + Agent dispatch | worktree + Agent dispatch, `/autorun-plan` or `heartbeat` for unattended runs |
+| 4. Review | tests, `adversary`, `/ponytail-review`, tests | same | same |
+| 5. Hand off | `/handoff` | `/handoff` | `/handoff` |
+| 6. Close | commit | commit + PR | commit + PR |
+
+A large build whose scope was already settled by an earlier `scope-audit` run skips step 1 too,
+same as a small fix; the table's "Large" cell for scope is the default, not an unconditional rule.
+
+```mermaid
+flowchart TD
+    A[Size it] --> B[Small]
+    A --> C[Bounded]
+    A --> D[Large]
+```
+
 ## Step 1: scope
 
-Only for a change that touches a system that already exists. A small fix skips this step outright,
-and so does a large build whose scope was already settled by an earlier `scope-audit` run.
+Only for a change that touches a system that already exists.
 
 Command: `/scope-audit`.
 Artifact: a normative IN SCOPE / OUT OF SCOPE document built from runtime evidence, not from
@@ -39,8 +57,6 @@ Done when: the scope file exists and later plan phases are filtered against it, 
 effort on dead surface.
 
 ## Step 2: plan
-
-A small fix has no plan step; you already know the change and the test that proves it.
 
 For a bounded change: `/deep-plan`. It runs advisor pre-flight, a Plan subagent at the
 FRONTIER-THINK tier, then an advisor critique (`commands/deep-plan.md`).
@@ -59,8 +75,6 @@ Done when: the plan names a tier and effort for every phase, a test command the 
 re-run, and which files each workstream owns.
 
 ## Step 3: execute
-
-A small fix executes inline in the current session: make the change, run the test, done.
 
 For a bounded change or a large build, isolate each workstream in its own worktree and branch:
 

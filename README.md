@@ -170,16 +170,25 @@ planting each defect class into a scratch copy and confirming a non-zero exit.
 
 ## Documentation
 
-New to agentic coding? Read them in this order, newcomer to specialist.
+New to agentic coding? Read them in this order, newcomer to specialist. It is a long table and it
+is not a queue, so here is the map:
+
+- **Day one:** Orientation, Glossary, Getting started, Choosing the right mechanism, Your first day.
+- **Your first week:** Operating process, Worked scenarios, the two context documents, Sizing the
+  model to the task, Handing off between sessions.
+- **When you need it:** everything else. Reach for a row when its "who it is for" describes you
+  today.
+- **If you are reviewing this harness rather than using it:** Operating boundaries, then Reference.
 
 | Document | Who it is for |
 |---|---|
 | [Orientation](docs/orientation.md) | Anyone who has never used an AI coding agent before; defines the vocabulary everything else assumes. |
+| [Glossary](docs/glossary.md) | Anyone who hits an unfamiliar term and wants the one place it is defined. |
 | [Getting started](docs/getting-started.md) | A new user installing the harness for the first time. |
 | [Choosing the right mechanism](docs/choosing-your-tools.md) | Anyone unsure whether they need an instruction, a rule, a skill, a command, a hook, or a subagent. |
 | [Your first day](docs/first-day.md) | A new user who wants the first real session done for real, with actual output. |
+| [Troubleshooting](docs/troubleshooting.md) | Anyone looking at a symptom right now who wants the one page that fixes it. |
 | [Operating process](docs/operating-process.md) | A user running their first real task after the first-day tour. |
-| [Glossary](docs/glossary.md) | Anyone who hits an unfamiliar term and wants the one place it is defined. |
 | [Managing the context window](docs/context-window-management.md) | Anyone whose sessions degrade over time and wants to know why. |
 | [Watching the context window](docs/context-health.md) | Anyone who wants the status line, and what the published research does and does not support. |
 | [Context in Augment](docs/augment-context.md) | Anyone moving between Claude Code and Auggie, where the context model is different. |

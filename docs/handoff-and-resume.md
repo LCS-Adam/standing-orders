@@ -50,19 +50,36 @@ the block itself explicitly says to go read that file. A resume prompt that assu
 also seen the rest of the document it was written in is making an assumption that will not hold,
 because the rest of the document is not what gets pasted.
 
-Here is the failure this rule is drawn from. A resume file contained the pasted-prompt block at the
-top, and below it, a long section holding everything the next session would need: state details,
-file inventories, open questions. The block itself named four files to read first. It did not name
-the file it was sitting in. Pasting that block exactly as designed would have orphaned the entire
-lower half of the document, because nothing in the pasted text told the next session that more
-detail existed just below it, in the same file.
+Here is the failure this rule is drawn from, and the fix for it, as a before-and-after pair.
 
-The fix is that the block must name its own file in its own read list. This matters most exactly
-when the prompt and the supporting detail live in the same file, because that co-location is
-precisely what makes the omission easy to miss. When you are looking at one file with the prompt
-at the top and the detail right below it, it feels redundant to tell the block to read the file it
-is already inside. It is not redundant. The block is the only part that travels; if it does not
-carry its own location, the location is lost.
+Before, the block names four files but not the file it is sitting in:
+
+```
+Read first, in this order:
+1. AGENTS.md, section "Session handoff"
+2. docs/context-window-management.md
+3. templates/phase/CLAUDE.md
+4. .project-state/NEXT_STEPS.md
+```
+
+Pasting this exactly as designed orphans the long section of state details, file inventories, and
+open questions sitting below it in the same file, because nothing in the pasted text says that
+detail exists.
+
+After, the block names itself first, with an instruction to keep reading past it:
+
+```
+Read first, in this order:
+1. .project-state/SESSION_HANDOFF.md (this file, read everything below this block)
+2. AGENTS.md, section "Session handoff"
+3. docs/context-window-management.md
+4. templates/phase/CLAUDE.md
+5. .project-state/NEXT_STEPS.md
+```
+
+This matters most exactly when the prompt and the supporting detail live in the same file: the
+block is the only part that travels, so if it does not carry its own location, the location is
+lost, no matter how thoroughly the detail is written below it.
 
 ## The three-step check before declaring a handoff done
 

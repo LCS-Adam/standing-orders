@@ -342,3 +342,16 @@ Expect both `CLAUDE.md` and `AGENTS.md`, 11 subagent definitions, and 12 skills 
    would silently inherit the parent model. Under Auggie the generator refuses to write an agent
    with no resolved model, which covers everything this repo generates, but a hand-written
    `.augment/agents/*.md` is not caught. Runbook step 6 is what arms it.
+
+## Your first week
+
+The five beats above are one sitting. The five days below spread the same material across real
+work, so each idea gets used before the next one lands.
+
+| Day | Do | Read | Self-check |
+|---|---|---|---|
+| 1 | Run beats 1 through 5 above, on your own machine, in a scratch repo | This document | `./verify.sh` exits clean in the harness checkout, and your scratch repo's `.project-state/SESSION_HANDOFF.md` exists with a resume block that names itself |
+| 2 | Pick a real one-line fix in a repo you actually work in and run it the way scenario 1 does: no plan, no worktree, no adversary | docs/scenarios.md, "Scenario 1: a one-line fix, and why the harness stays in its box" | The resulting diff touches exactly one file, and you can say out loud why that size did not call for `/deep-plan` or a worktree |
+| 3 | Pick a real bounded change (a few files, one clear boundary) and run it the way scenario 2 does: `/deep-plan`, one worktree, one `adversary` pass | docs/scenarios.md, "Scenario 2: a bounded feature across four files" | The adversary report exists on disk at the path you named in the dispatch brief, and every finding in it is either fixed or filed with a reason |
+| 4 | Work through writing-your-own exercises 1 through 3 yourself, in order | docs/writing-your-own.md, "Exercises" | Each exercise's own stated checkable answer holds for you: the path-scoped rule only shows up after a matching file is read, the unpinned dispatch is denied by name, and the two-line skill answers with exactly "hello there" |
+| 5 | End the day by running `/handoff`, then clear or start a fresh session and resume from nothing but the pasted block | commands/handoff.md; the resume block itself | The new session reads `.project-state/SESSION_HANDOFF.md` first, without you telling it to, because the block named its own file |

@@ -56,6 +56,16 @@ draft. Step 4.5 exists because steps 3 and 4 both apply fixes, and any fix that 
 re-enters the review at step 2 rather than skipping straight to merge; a fix is a code change, and
 an unreviewed code change is exactly what the earlier steps exist to prevent.
 
+```mermaid
+flowchart LR
+    A[Tests] --> B[adversary]
+    B --> C[ponytail-review]
+    C --> D[External review<br/>where available]
+    D --> E[Re-test]
+    E --> F[Merge]
+    E -.->|fix changes code| B
+```
+
 Two of these steps deserve their own explanation, because they are easy to mistake for each other.
 `adversary` is a Claude reviewer at the top model tier, run at maximum effort, and it tries
 specifically to break the change: it sweeps a fixed taxonomy first (fail-open, fail-stuck,
@@ -99,22 +109,29 @@ human reviewing in the morning can pick each one up without re-deriving what sto
 ### Auto-proceed-on-rule
 
 This is the mechanism that actually reduces human-in-the-loop interruptions, and it has a strict
-definition. A human stop exists only if one of four conditions holds: the pass/fail rule cannot be
-stated in advance because it needs live judgment; the action reaches a real person outside the
-system; the action is irreversible and has no tested rollback; or it requires
-physical human action, like a UI click or a desktop paste. Everything else auto-proceeds: the rule
-gets stated in the plan up front, the run proceeds while the rule holds, and it parks the branch
-loudly the moment the rule stops holding.
+definition. A human stop exists only if one of four conditions holds: (a) the pass/fail rule cannot
+be stated in advance because it needs live judgment; (b) the action reaches a real person outside
+the system; (c) the action is irreversible and has no tested rollback; or (d) it requires physical
+human action, like a UI click or a desktop paste. Everything else auto-proceeds: the rule gets
+stated in the plan up front, the run proceeds while the rule holds, and it parks the branch loudly
+the moment the rule stops holding.
+
+| Action | Gate? | Which rule | Example |
+|---|---|---|---|
+| Mechanical refactor across many files | No | rule (a) does not apply; pass/fail is statable | Renaming a function and its call sites |
+| Merge a green wave | No | rule (a) does not apply; the test command is the rule | A wave whose named tests pass |
+| Send that reaches a person outside the system | Always | never weakens | An email, a Slack message, a PR comment |
+| Deletion of tracked content | Always | never weakens | `git rm` on a tracked file |
+| Write to a source of truth the plan marks read-only | Always | never weakens | Writing to an upstream config the plan only reads |
+| Live-data mutation with a tested rollback | No, with the corollary | rule (c); needs a branch, patch, snapshot, and tested rollback first | A reversible database write staged behind a snapshot |
+| Production change | Hard stop | `AGENTS.md` security list | Deploying to external hosting |
+| UI click or desktop paste | Yes | rule (d) | Approving a dialog no API exposes |
 
 The skill calls a "does this look right?" gate a defect in the plan, not a safety feature, because
 if the rule can be written down, a human clicking approve on it is providing no information the
-rule did not already provide. The corollary the harness enforces hard: a phase is never allowed to
-auto-proceed a live-data mutation without a branch, a precomputed patch, a snapshot, and a tested
-rollback all in place first. And a short list of actions never auto-proceeds regardless of how
-cleanly the rule reads: sends that reach a person outside the system, deletion of tracked content,
-and writes to a source of truth the plan marks read-only. These stay gated even when their pass/fail rule is
-perfectly expressible, because the cost of being wrong there is categorically different from being
-wrong about, say, which files a mechanical refactor touches.
+rule did not already provide. The three "never weakens" rows above hold regardless of how cleanly
+the pass/fail rule reads, because the cost of being wrong there is categorically different from
+being wrong about, say, which files a mechanical refactor touches.
 
 ## HEARTBEAT: deliberately much lighter
 
