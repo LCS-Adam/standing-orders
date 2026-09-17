@@ -11,7 +11,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF="$ROOT/${BASH_SOURCE[0]##*/}"
 FAIL=0
 RAN=0
-EXPECTED_CHECKS=13
+EXPECTED_CHECKS=14
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -589,6 +589,83 @@ else
   fi
 fi
 rm -f "$gentmp" "$generr"
+
+# 14 ------------------------------------------------- Augment tool-permission rules
+# templates/project/.augment/settings.json denies the mechanical subset of the
+# AGENTS.md security hard stops at Auggie's tool layer. A deny regex nobody
+# exercises is the fail-open shape this gate exists to refuse: it looks the same
+# whether it blocks a force push or nothing at all.
+#
+# WHAT THIS PROVES AND WHAT IT DOES NOT. It runs each rule's shellInputRegex
+# under perl against a table of commands and asserts the verdict. Auggie's own
+# regex engine is NOT FOUND in the docs snapshot, so this is evidence the
+# patterns are well formed and say what the table claims, not evidence that
+# Auggie agrees. Only the constructs every common engine shares are used:
+# \b, \s, alternation, a character class, and (\s|$). Runbook step 8 is what
+# settles the live verdicts.
+#
+# CEILING, stated: a bare `git push` with main as the upstream is ALLOWED here,
+# because the branch name is not in the command string. So is
+# `git branch --delete --force`. These rules block what AGENTS.md already
+# forbids in the shapes people actually type; they are not a sandbox.
+TP_TEMPLATE='templates/project/.augment/settings.json'
+if [ -z "$(shipped_l "$TP_TEMPLATE")" ]; then
+  fail "$TP_TEMPLATE is not in the shipped set - no permission rules were exercised, which is not the same as safe"
+elif ! jq -e . "$TP_TEMPLATE" >/dev/null 2>&1; then
+  fail "$TP_TEMPLATE is not valid JSON - Auggie would load no rules at all"
+else
+  tpre=$(jq -r '.toolPermissions[]
+                | select(.permission.type == "deny" and has("shellInputRegex"))
+                | .shellInputRegex' "$TP_TEMPLATE" 2>/dev/null)
+  if [ -z "$tpre" ]; then
+    fail "$TP_TEMPLATE carries no deny rule with a shellInputRegex - the table below would pass over nothing"
+  else
+    # verdict<TAB>command. Every line is asserted; a row whose verdict is wrong
+    # names itself.
+    tpbad=$(printf '%s\n' "$tpre" | perl -CSD -e '
+      chomp(my @re = <STDIN>);
+      my @cases = (
+        [deny  => "git merge main"],
+        [deny  => "git merge origin/main --no-ff"],
+        [allow => "git merge-base HEAD HEAD"],
+        [allow => "git merge-base --is-ancestor a b"],
+        [deny  => "git push --force origin topic"],
+        [deny  => "git push --force-with-lease origin topic"],
+        [deny  => "git push -f origin topic"],
+        [deny  => "git push origin +topic"],
+        [deny  => "git push origin main"],
+        [deny  => "git push origin HEAD:main"],
+        [deny  => "git push origin master"],
+        [allow => "git push origin feature"],
+        [allow => "git push origin maintenance"],
+        [deny  => "git push --delete origin topic"],
+        [deny  => "git push origin :topic"],
+        [deny  => "git reset --hard HEAD~1"],
+        [allow => "git reset HEAD~1"],
+        [deny  => "git branch -D topic"],
+        [allow => "git branch -d topic"],
+        [allow => "git branch --list"],
+        [deny  => "claude -p --dangerously-skip-permissions do the thing"],
+        [allow => "git status"],
+        [allow => "npm test"],
+      );
+      for my $c (@cases) {
+        my ($want, $cmd) = @$c;
+        my @hit = grep { $cmd =~ /$_/ } @re;
+        my $got = @hit ? "deny" : "allow";
+        next if $got eq $want;
+        printf "%s: expected %s, got %s%s\n", $cmd, $want, $got,
+          @hit ? " (matched " . join(", ", @hit) . ")" : "";
+      }
+    ' 2>&1)
+    if [ -n "$tpbad" ]; then
+      fail "Augment deny rules do not match their own table"
+      printf '%s\n' "$tpbad" | head -10 | while IFS= read -r l; do show "$l"; done
+    else
+      pass "all $(printf '%s\n' "$tpre" | wc -l | tr -d ' ') Augment deny rules give the expected verdict on 23 commands"
+    fi
+  fi
+fi
 
 # ---------------------------------------------------- docs must not go stale
 # Not a numbered check (it would have to count itself). The enumerated list in

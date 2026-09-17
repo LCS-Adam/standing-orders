@@ -230,6 +230,36 @@ augment_agent_rewrite() {
   ' "$1"
 }
 
+# merge_augment_settings <repo-root> <incoming> - merge the harness policy into
+# the repo's .augment/settings.json, creating it when absent.
+#
+# toolPermissions is ORDER-SENSITIVE: the vendor evaluates a policy top-down and
+# the first matching rule wins (aug_cli_permissions.md, "How Permissions Work").
+# So the harness rules are PREPENDED, never appended and never sorted. An
+# existing `allow` on `terminal` sitting above them would otherwise win and the
+# merge would read as successful while protecting nothing. Duplicates of the
+# harness rules are dropped from the tail; every other rule keeps its position.
+merge_augment_settings() {
+  local target="$1/.augment/settings.json" incoming="$2"
+  [ -f "$incoming" ] || return 0
+  need jq
+  if [ "$DRY" -eq 1 ]; then c_ok ".augment/settings.json merge (dry run)"; return; fi
+  if [ ! -f "$target" ]; then
+    mkdir -p "$(dirname "$target")"; cp "$incoming" "$target"
+    c_ok ".augment/settings.json (created)"; return
+  fi
+  jq -e . "$target" >/dev/null 2>&1 \
+    || die "$target is not valid JSON; fix it before merging (nothing was changed)"
+  cp "$target" "$target.bak-$(date +%Y%m%d%H%M%S)"
+  jq -s '
+    .[0] as $cur | .[1] as $new
+    | $cur * ($new | del(.toolPermissions))
+    | .toolPermissions = (($new.toolPermissions // [])
+                          + (($cur.toolPermissions // []) - ($new.toolPermissions // [])))
+  ' "$target" "$incoming" > "$target.tmp" && mv "$target.tmp" "$target"
+  c_ok ".augment/settings.json (merged, harness rules first, backup written)"
+}
+
 # augment_agents <destdir> - the whole set. Requires $STAGE and a loaded tier
 # binding. Returns the count it wrote on stdout.
 augment_agents() {
@@ -443,6 +473,12 @@ cmd_add_tool() {
       put_dir "$STAGE/out" "$root/.augment/agents"
       MANAGED=0
       c_info "  $n subagents written to .augment/agents/ (commit them: workspace scope is shared)"
+      # INSERTION POINT, runbook step 6: once the Auggie subagent-dispatch tool
+      # name is known, the template below also carries a hooks.PreToolUse entry
+      # pointing at hooks/require-agent-model.sh. It is absent rather than
+      # guessed: a matcher of ".*" denies every tool call and a wrong tool name
+      # matches nothing and passes silently.
+      merge_augment_settings "$root" "$HARNESS_ROOT/templates/project/.augment/settings.json"
       put "$HARNESS_ROOT/AGENTS.md" "$HOME/.augment/rules/harness-core.md" "~/.augment/rules/harness-core.md" ;;
     codex)
       put "$HARNESS_ROOT/AGENTS.md" "$HOME/.codex/AGENTS.md" "~/.codex/AGENTS.md" ;;

@@ -47,16 +47,17 @@ Scrubbing ~/projects/agent-harness
   PASS no dangling ~/.claude/rules references
   PASS every backticked slash command resolves to commands/, skills/, or the built-in allowlist
   PASS all 47 files harness install would ship are in the scanned set
-  PASS documented counts match (11 agents, 13 skills, 4 commands, 13 checks)
+  PASS documented counts match (11 agents, 13 skills, 4 commands, 14 checks)
   PASS docs/reference.md matches what scripts/gen-reference.sh generates
+  PASS all 7 Augment deny rules give the expected verdict on 23 commands
 
-OK all 13 checks passed
+OK all 14 checks passed
 ```
 
-The numbers in that output are not decoration. The second-to-last check reads every count asserted
-in the client-facing docs and fails the build when one of them stops matching the repo, which
-includes the numbers printed above. If you add a skill and this page still says thirteen, the gate
-goes red and tells you so.
+The numbers in that output are not decoration. The counts check reads every count asserted in the
+client-facing docs and fails the build when one of them stops matching the repo, which includes the
+numbers printed above. If you add a skill and this page still says thirteen, the gate goes red and
+tells you so.
 
 Exit code was 0. If a check fails, the script prints which one and why; it does not print a partial
 pass.

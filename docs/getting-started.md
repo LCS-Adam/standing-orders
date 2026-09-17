@@ -158,7 +158,7 @@ harness verify
 
 This runs `verify.sh`, the scrub gate. It exists because this framework is meant to be carried onto
 machines that are not yours, and a fail-open scrub looks exactly like a passing one. The gate runs
-thirteen checks and asserts, at the end, that it ran all thirteen checks, so a broken check fails loudly
+fourteen checks and asserts, at the end, that it ran all fourteen checks, so a broken check fails loudly
 instead of silently passing nothing:
 
 1. No absolute home paths in tracked files.
@@ -188,6 +188,12 @@ instead of silently passing nothing:
     file is derived, not written, so the gate re-derives it and compares byte for byte. A generator
     that is missing, that errors, or that emits nothing fails here too: an empty regeneration is
     not the same as an up-to-date file.
+14. The Augment tool-permission rules in `templates/project/.augment/settings.json` still give the
+    verdict they claim. Each deny pattern is run against a table of commands and checked: `git
+    merge main` is denied, `git merge-base` is allowed, a force push is denied, a push to `main` is
+    denied, a push to a feature branch is allowed. It proves the patterns are well formed and say
+    what the table says, not that Auggie's own regex engine agrees; that is settled on a machine
+    that has Auggie.
 
 Read the output top to bottom. Each line is `PASS` or `FAIL`. A `FAIL` line is followed by up to ten
 example matches so you can find and fix the problem without re-running with more verbosity.
