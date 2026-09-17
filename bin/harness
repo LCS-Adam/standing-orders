@@ -8,6 +8,9 @@ set -euo pipefail
 
 HARNESS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLAUDE_HOME="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+# Overridable so an offline test can point at a fixture. Nothing else sets it.
+# The default path is ABSENT from this repo on purpose - see load_models.
+AUGGIE_CONF="${HARNESS_AUGGIE_CONF:-$HARNESS_ROOT/config/models.auggie.conf}"
 STAGE=""
 FORCE=0
 DRY=0
@@ -21,8 +24,12 @@ need() { command -v "$1" >/dev/null 2>&1 || die "required tool not found: $1"; }
 
 # ---------------------------------------------------------------- tier binding
 
+# load_models [conf] - bind the four tiers from a conf file.
+# Defaults to the Claude Code binding, which is hand-written. Pass
+# config/models.auggie.conf for the Augment binding, which is DISCOVERED by
+# scripts/resolve-tier.sh --write-conf and is absent from this repo by design.
 load_models() {
-  local conf="$HARNESS_ROOT/config/models.conf"
+  local conf="${1:-$HARNESS_ROOT/config/models.conf}"
   [ -f "$conf" ] || die "missing $conf"
   TIER_FRONTIER_THINK=""; TIER_FRONTIER_DO=""; TIER_MID=""; TIER_SMALL=""
   # shellcheck disable=SC1090
@@ -38,19 +45,30 @@ load_models() {
     esac
   done < "$conf"
   for t in TIER_FRONTIER_THINK TIER_FRONTIER_DO TIER_MID TIER_SMALL; do
-    [ -n "${!t}" ] || die "$conf does not bind $t"
+    [ -n "${!t}" ] || die "$conf does not bind $t (the Augment conf is generated: scripts/resolve-tier.sh --write-conf --force, docs/augment-runbook.md step 5)"
   done
 }
 
 # Resolve {{TIER_*}} tokens. Executable config needs a literal model name;
 # a tier name means nothing to the resolver.
+# The values go in through the ENVIRONMENT, never interpolated by the shell
+# into the perl source. A model id is vendor data: a literal `$`, `@`, `/` or
+# backslash in one used to land inside the replacement half of s///, where it is
+# perl syntax rather than text, and the result was a mangled pin or a parse
+# error. On Augment the ids are DISCOVERED from the allowlist, so this repo does
+# not get to decide what characters they contain. $ENV{...} interpolates once
+# and what comes out is literal.
 resolve_tiers() {
-  perl -CSD -i -pe "
-    s/\\{\\{TIER_FRONTIER_THINK\\}\\}/$TIER_FRONTIER_THINK/g;
-    s/\\{\\{TIER_FRONTIER_DO\\}\\}/$TIER_FRONTIER_DO/g;
-    s/\\{\\{TIER_MID\\}\\}/$TIER_MID/g;
-    s/\\{\\{TIER_SMALL\\}\\}/$TIER_SMALL/g;
-  " "$@"
+  TIER_FRONTIER_THINK="$TIER_FRONTIER_THINK" \
+  TIER_FRONTIER_DO="$TIER_FRONTIER_DO" \
+  TIER_MID="$TIER_MID" \
+  TIER_SMALL="$TIER_SMALL" \
+  perl -CSD -i -pe '
+    s/\{\{TIER_FRONTIER_THINK\}\}/$ENV{TIER_FRONTIER_THINK}/g;
+    s/\{\{TIER_FRONTIER_DO\}\}/$ENV{TIER_FRONTIER_DO}/g;
+    s/\{\{TIER_MID\}\}/$ENV{TIER_MID}/g;
+    s/\{\{TIER_SMALL\}\}/$ENV{TIER_SMALL}/g;
+  ' "$@"
 }
 
 # ---------------------------------------------------------------- copy helpers
@@ -293,6 +311,16 @@ cmd_add_tool() {
   root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   case "$tool" in
     auggie)
+      # The Augment tier binding is DISCOVERED, not typed. resolve-tier.sh asks
+      # the vendor which models the company allowlist actually carries and
+      # writes the conf; a hand-typed id is a plausible string the CLI then
+      # rejects at dispatch time, which is the failure this refuses to ship.
+      [ -f "$AUGGIE_CONF" ] || die "no Augment tier binding at $AUGGIE_CONF
+  It is generated, never typed: run  scripts/resolve-tier.sh --write-conf
+  on a machine with auggie installed and logged in.
+  See docs/augment-runbook.md step 5."
+      load_models "$AUGGIE_CONF"
+      echo "  tiers: FRONTIER-THINK=$TIER_FRONTIER_THINK FRONTIER-DO=$TIER_FRONTIER_DO MID=$TIER_MID SMALL=$TIER_SMALL"
       put "$HARNESS_ROOT/AGENTS.md" "$HOME/.augment/rules/harness-core.md" "~/.augment/rules/harness-core.md" ;;
     codex)
       put "$HARNESS_ROOT/AGENTS.md" "$HOME/.codex/AGENTS.md" "~/.codex/AGENTS.md" ;;

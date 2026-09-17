@@ -139,7 +139,11 @@ binary=$( { shipped | xargs -0r perl -0777 -ne 'print "$ARGV (working tree)\n" i
 # make the SAME claim about the SAME surface. An exemption - "this file is out of
 # THIS check" - stays inside the check that owns it. See the gate-integrity
 # assertion below.
-FRAMEWORK_PROSE='^(agents|commands|hooks|rules|config|templates|skills)/|^(AGENTS|CLAUDE)\.md$'
+# plugins/ is a GENERATED copy of agents/, commands/, skills/ and AGENTS.md,
+# every one of which is framework prose at its source. Scanning the copy as a
+# client-facing doc would fail the glyph and count checks on bytes this gate
+# already passed once, and the fix would be to edit generated output.
+FRAMEWORK_PROSE='^(agents|commands|hooks|rules|config|templates|skills|plugins)/|^(AGENTS|CLAUDE)\.md$'
 CLIENT_DOCS=$(shipped_l '*.md' | grep -vE "$FRAMEWORK_PROSE")
 
 # ---------------------------------------------------------------- gate integrity
@@ -209,14 +213,22 @@ else pass "no absolute home paths"; fi
 # stay subject to every OTHER check, including paths - this
 # exemption is written out in full here rather than reusing check 1's, because
 # sharing one is how both of the last two leaks happened.
-# scripts/resolve-tier.sh is the fifth and last. It is the one file whose JOB is
+# scripts/resolve-tier.sh is the fifth. It is the one file whose JOB is
 # to classify a model by FAMILY, so the family patterns are its source code, and
 # its selftest fixture is a stub vendor allowlist whose entries carry the vendor
 # DISPLAY NAMES as test data. Weakening the family regex to dodge this check is
 # the one thing that must never happen here: a dropped family pattern is exactly
-# how a same-family reviewer gets through the gate Wave R exists to build.
-# One exact path, never a directory prefix.
-EXEMPT_VENDOR='^verify\.sh:|^adapters/README\.md|^docs/|^config/models\.conf|^scripts/resolve-tier\.sh:'
+# how a same-family reviewer gets through a gate that wants a different opinion.
+#
+# The last two are the Augment side, and neither exists in THIS checkout:
+# config/models.auggie.conf is written by scripts/resolve-tier.sh --write-conf
+# on the work machine, and plugins/ is written by `harness build-plugin` there.
+# Both are generated output whose whole content is literal model ids and copies
+# of files this gate already scans at their source. They are exempted here
+# rather than later so the work machine's first `./verify.sh` is green for a
+# real reason instead of red for a bookkeeping one.
+# Exact paths and one generated directory, never a broad prefix.
+EXEMPT_VENDOR='^verify\.sh:|^adapters/README\.md|^docs/|^config/models\.conf|^scripts/resolve-tier\.sh:|^config/models\.auggie\.conf:|^plugins/'
 # -w, not \b: git grep -E does not implement \b, so the index side of this scan
 # would have matched nothing and passed forever. Both engines implement -w and
 # both return the same hits on this repo.
