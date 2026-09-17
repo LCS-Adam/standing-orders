@@ -202,6 +202,7 @@ once; the groups below say when each one matters:
 | [Choosing the right mechanism](docs/choosing-your-tools.md) | Anyone unsure whether they need an instruction, a rule, a skill, a command, a hook, or a subagent. |
 | [Your first day](docs/first-day.md) | A new user who wants the first real session done for real, with actual output. |
 | [Running on Windows](docs/windows.md) | Anyone on Windows, and anyone who needs to know the model-pin gate is not reliably enforced there. |
+| [Windows gate investigation](docs/windows-gate-investigation.md) | Whoever takes on closing the Windows enforcement gap; a paste-ready brief for researching the fix. |
 | [Troubleshooting](docs/troubleshooting.md) | Anyone looking at a symptom right now who wants the one page that fixes it. |
 | [Operating process](docs/operating-process.md) | A user running their first real task after the first-day tour. |
 | [Managing the context window](docs/context-window-management.md) | Anyone whose sessions degrade over time and wants to know why. |

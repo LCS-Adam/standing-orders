@@ -42,6 +42,10 @@ session says so, and every dispatch is ungated. This matches an open upstream is
 `claude doctor` as part of setting a machine up. If autodetection fails, point at it explicitly with
 `CLAUDE_CODE_GIT_BASH_PATH`. Or use WSL 2 and skip the question.
 
+If you are the person fixing this rather than working around it, `docs/windows-gate-investigation.md`
+is the brief: the candidate fixes, what evidence would settle each, and the user instructions the
+answer has to produce.
+
 **What not to do.** Do not assume a green `harness verify` says anything about this. The gate checks
 the repository; it cannot see whether a hook fired in your session. Nothing in this repository can
 detect the failure, which is why it is written down here instead.

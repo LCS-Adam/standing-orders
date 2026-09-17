@@ -115,7 +115,8 @@ This is a platform limitation, not a configuration mistake, and it is not one th
 close: the hook cannot report a refusal it was never started to make. It matches an open upstream
 issue (anthropics/claude-code#90077).
 
-If your organization relies on that gate, standardise Windows engineers on WSL 2, or require Git for
+`docs/windows-gate-investigation.md` is the brief for closing this properly. Until then, if your
+organization relies on that gate, standardise Windows engineers on WSL 2, or require Git for
 Windows and verify it is detected. `docs/windows.md` has the detail. Do not read a green
 `harness verify` as evidence either way: the gate inspects this repository and cannot see whether a
 hook fired in someone's session.
