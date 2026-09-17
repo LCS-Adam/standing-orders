@@ -56,7 +56,7 @@ cp -R <path>/accessibility-audit ~/.claude/skills/
 ```
 
 It is available in your next session. On Windows, run that from Git Bash or WSL, not PowerShell;
-see `docs/windows.md` in the harness repository.
+see [`docs/windows.md`](../docs/windows.md) in the harness repository.
 
 **Copy the ones you will use, not all of them.** Every installed skill is offered to the assistant
 on every task, so a directory holding thousands of them makes it harder for the right one to

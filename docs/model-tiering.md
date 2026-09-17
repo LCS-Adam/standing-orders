@@ -6,7 +6,7 @@ explicit, stated choice. This document explains the four sizes, the two question
 decide which one a task gets, and the mechanics of how a size written in a plan or a
 prose file turns into a real model name at runtime.
 
-If you have not yet read `docs/choosing-your-tools.md`, the short version of what you
+If you have not yet read [`docs/choosing-your-tools.md`](choosing-your-tools.md), the short version of what you
 need here: a subagent is a delegated unit of work that runs in its own context and
 returns a result, and a hook is a script that runs unconditionally and can block an
 action outright, unlike an instruction the model merely reads.

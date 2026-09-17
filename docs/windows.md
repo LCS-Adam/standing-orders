@@ -42,7 +42,7 @@ session says so, and every dispatch is ungated. This matches an open upstream is
 `claude doctor` as part of setting a machine up. If autodetection fails, point at it explicitly with
 `CLAUDE_CODE_GIT_BASH_PATH`. Or use WSL 2 and skip the question.
 
-If you are the person fixing this rather than working around it, `docs/windows-gate-investigation.md`
+If you are the person fixing this rather than working around it, [`docs/windows-gate-investigation.md`](windows-gate-investigation.md)
 is the brief: the candidate fixes, what evidence would settle each, and the user instructions the
 answer has to produce.
 

@@ -119,7 +119,7 @@ passing, and precise wording of an earlier instruction can all get lossy or disa
 that summary. Anything that must survive with full fidelity, a commit SHA, an exact command, a
 specific decision and its reasoning, needs to be written to a durable file on disk before
 compaction happens, not left to survive as a memory of the conversation. That durable-file discipline
-is the subject of the companion document, `docs/handoff-and-resume.md`.
+is the subject of the companion document, [`docs/handoff-and-resume.md`](handoff-and-resume.md).
 
 ## Symptoms and fixes
 
@@ -149,7 +149,7 @@ timeline
 `CLAUDE.md` ("Skills, rules, and commands are three different mechanisms") states the rule this timeline follows: "`.claude/rules/*.md` load every session
 unless they carry `paths:` frontmatter, in which case they load only when Claude reads a matching
 file." Everything without `paths:` frontmatter is in the always-on cost column; everything with it
-sits idle until a file of the matching type gets read. `docs/writing-your-own.md`'s exercise 1
+sits idle until a file of the matching type gets read. [`docs/writing-your-own.md`](writing-your-own.md)'s exercise 1
 (the path-scoped rule exercise) is the way to prove this to yourself rather than take it on faith:
 write a `paths: ["**/*.sql"]` rule, ask what rules are in force before opening a `.sql` file, then
 open one and ask again.
@@ -164,7 +164,7 @@ compaction for one that runs with more headroom left to preserve detail.
 
 ## Watching it happen
 
-This document is about how context works and how to spend it. `docs/context-health.md` is about
+This document is about how context works and how to spend it. [`docs/context-health.md`](context-health.md) is about
 how to watch it: what published measurements actually say degrades as a window fills, the status
 line that shows you the number as you work, and what to do at each point. It also records which
 widely repeated claims have no source behind them, including the idea that there is a universal

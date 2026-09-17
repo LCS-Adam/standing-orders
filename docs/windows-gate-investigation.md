@@ -1,6 +1,6 @@
 # Investigation brief: the model-pin gate on Windows
 
-`docs/windows.md` and `docs/operating-boundaries.md` record a gap rather than fixing it. The
+[`docs/windows.md`](windows.md) and [`docs/operating-boundaries.md`](operating-boundaries.md) record a gap rather than fixing it. The
 model-pin hook does not reliably enforce on native Windows, this repository cannot close that on its
 own, and the honest disclosure is already in both places.
 
@@ -10,8 +10,8 @@ scratch file because the gap ships with the harness, and whoever picks it up sho
 reconstruct the question first.
 
 Nothing here has been researched or tested. It states what to find out and what evidence counts.
-When someone completes it, the findings belong in `docs/windows.md`, the disclosure in
-`docs/operating-boundaries.md` gets revised or removed, and this page can go.
+When someone completes it, the findings belong in [`docs/windows.md`](windows.md), the disclosure in
+[`docs/operating-boundaries.md`](operating-boundaries.md) gets revised or removed, and this page can go.
 
 ---
 

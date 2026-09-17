@@ -2,7 +2,7 @@
 
 Reader: the person closing out a build who needs to know what the harness gives them for each tail
 stage, what it does not, and what to do by hand where it does not. This document assumes you have
-read `docs/lifecycle.md` through the Execute stage; it picks up where that one hands over.
+read [`docs/lifecycle.md`](lifecycle.md) through the Execute stage; it picks up where that one hands over.
 
 ## Coverage, honestly
 
@@ -25,7 +25,7 @@ a human has to fill by hand.
 
 ## Review: the gate stack, and the one rule that keeps it honest
 
-`docs/autorun-hitl-heartbeat.md` covers the full per-wave gate stack. The one rule worth adding here
+[`docs/autorun-hitl-heartbeat.md`](autorun-hitl-heartbeat.md) covers the full per-wave gate stack. The one rule worth adding here
 is the step that turns a green review into a real one rather than a green review of the wrong tree.
 `skills/autorun-plan/SKILL.md`: "**Run 4.5 in the MAIN checkout, with the suite's REAL command
 (binding).**" And: "**Never substitute a nearby command for the suite's own** -- read its invocation
@@ -85,7 +85,7 @@ single wave's internals. No skill wires this up automatically; it is a manual di
 
 ## Fix iterations: close the class, and know when to stop
 
-See `docs/anti-patterns.md`, entry "Closing the instance instead of the class," for the failure this
+See [`docs/anti-patterns.md`](anti-patterns.md), entry "Closing the instance instead of the class," for the failure this
 guards against. A fix round's deliverable, from `skills/autorun-plan/SKILL.md`: "1. **the violated
 invariant, in ONE sentence;** 2. **the finite surface that invariant ranges over, enumerated as a
 table-driven test** ... 3. **a mutation manifest**." The stopping rule: "Stop when ALL THREE hold: 1.
@@ -122,7 +122,7 @@ A recommended checklist for the final pass, since no single skill states it end 
 4. Re-read the premises list written at finalize. Any premise that died mid-build means the phases
    it justified get reported as such, not silently kept.
 5. Write `AUTORUN-REPORT-{date}.md`, opening with the items that need operator attention.
-6. Run `/handoff`, and check it against the three-step rule in `docs/handoff-and-resume.md`.
+6. Run `/handoff`, and check it against the three-step rule in [`docs/handoff-and-resume.md`](handoff-and-resume.md).
 
 ## Deploy: a human gate by category
 

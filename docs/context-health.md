@@ -1,6 +1,6 @@
 # Watching the context window
 
-`docs/context-window-management.md` explains what the context window is and how to spend it well.
+[`docs/context-window-management.md`](context-window-management.md) explains what the context window is and how to spend it well.
 This document answers two narrower questions: what actually degrades as a window fills, according
 to published measurements rather than folklore, and how you watch it happen in your own session.
 
@@ -135,7 +135,7 @@ already have, and what it buys you.
 | `paths:` frontmatter on a rule | Loads the rule only when a matching file is read, instead of every session. One of the few things that genuinely reduces per-session context | `CLAUDE.md` ("Context discipline") |
 | A nested `subdir/CLAUDE.md` | Phase instructions stay out of the window until work reaches that phase | `CLAUDE.md` ("Context discipline"), pattern in `templates/phase/` |
 | Agent reports written to a file | A subagent's findings survive as bytes instead of as a long final message that has to re-enter the parent's window | `agents/exec-standard.md` ("Report to a FILE, not just as your final message"), ignored at `.gitignore:12` |
-| One worktree and one agent per workstream | Each agent reads only the files it owns, so no single window holds the whole build | `docs/writing-your-own.md` |
+| One worktree and one agent per workstream | Each agent reads only the files it owns, so no single window holds the whole build | [`docs/writing-your-own.md`](writing-your-own.md) |
 | The resume prompt rule | A handoff carries forward what a compaction would have dropped, in writing, and must name its own file so nothing below it is orphaned | `AGENTS.md` ("Security") |
 | `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` set to 85 | Compacts earlier, with more headroom, rather than at the last moment when there is more to lose | `config/settings.portable.json` |
 

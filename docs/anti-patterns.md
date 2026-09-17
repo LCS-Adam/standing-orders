@@ -18,7 +18,7 @@ detail existed just below.
 The user pastes only the block, never the document around it, so anything outside the block is
 invisible unless the block says to go read that file.
 
-**Where the rule lives.** `docs/handoff-and-resume.md`, the before/after where "the block names
+**Where the rule lives.** [`docs/handoff-and-resume.md`](handoff-and-resume.md), the before/after where "the block names
 four files but not the file it is sitting in", and `AGENTS.md`: "The pasted block must be
 self-sufficient, including a pointer to its own file."
 

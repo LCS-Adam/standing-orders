@@ -39,7 +39,7 @@ block the action. The model does not get a vote. This repo ships one lifecycle h
 `hooks/require-agent-model.sh`, and it is the only mechanism in the whole framework that
 is guaranteed to fire no matter what the model is thinking. (`hooks/` also holds
 `hooks/statusline.sh`, which draws the context-budget status line and gates nothing. See
-`docs/context-health.md`.)
+[`docs/context-health.md`](context-health.md).)
 
 **If something must happen every time, with no exceptions, it needs a hook.** Everything
 else in this document shapes behavior. Only a hook enforces it.
@@ -137,7 +137,7 @@ match. Thirteen skills currently ship in `skills/`:
 One more command belongs in that list and is not in the table, because it is not a harness
 skill: `/ponytail-review` cuts a diff back to the smallest thing that holds, and it comes from
 the ponytail plugin rather than from `skills/`. `config/upstream.conf` records it as a
-dependency and `docs/upstream-sources.md` explains how it gets installed.
+dependency and [`docs/upstream-sources.md`](upstream-sources.md) explains how it gets installed.
 
 **When to reach for it.** A multi-step procedure that only applies some of the time and
 is complex enough to be worth writing down once rather than re-deriving every time. If

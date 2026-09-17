@@ -3,7 +3,7 @@
 This document is for an engineer who has run `harness init` on a repository and wants agents to
 maintain a corpus over time (runbooks, decision records, vendor notes, postmortems) without letting
 them corrupt it or leak it. A second reader is the security reviewer who has already read
-`docs/operating-boundaries.md` and wants the vault-specific addendum: what a corpus adds to the
+[`docs/operating-boundaries.md`](operating-boundaries.md) and wants the vault-specific addendum: what a corpus adds to the
 leakage surface, and which controls close it.
 
 ## 1. What a vault is
@@ -165,7 +165,7 @@ layers, not one policy line: a file at the repo root stating the policy, a pre-p
 every push, and a gitignore that excludes every category of sensitive content. If the policy is ever
 relaxed, the remote must be a private repository on infrastructure the company controls. Whichever
 you choose, record the decision in `.project-state/PROJECT_STATE.md`, the way
-`docs/operating-boundaries.md` already asks you to record every leaves-the-machine decision.
+[`docs/operating-boundaries.md`](operating-boundaries.md) already asks you to record every leaves-the-machine decision.
 
 ## 6. The improvement process
 
@@ -306,11 +306,11 @@ Seven rules worth carrying into any librarian session, in the order they matter:
 | Piece | What it gives you |
 |---|---|
 | `templates/project/.project-state/` | The state-file shape to copy into a new corpus repository |
-| `docs/operating-boundaries.md` | What leaves the machine, where agent output lands, and the hard stops already enforced |
+| [`docs/operating-boundaries.md`](operating-boundaries.md) | What leaves the machine, where agent output lands, and the hard stops already enforced |
 | `verify.sh` | The scrub-gate pattern: fail closed, scan the shipped set, check more than one byte source |
 | `config/upstream.conf` | A reference for tracking a plugin dependency; do not vendor its contents |
 | `hooks/require-agent-model.sh` | The shape of a deny hook to copy for the corpus write-surface hook in section 5 |
 | `skills/external-llm-review/SKILL.md` | The pattern for sending one artifact by path to a read-only external reviewer |
 | `skills/autorun-plan/SKILL.md` | The per-wave gate stack to wire the record lint into |
 | `agents/plan-synthesizer.md` | The human-gate rule and the list of protections a plan may never weaken |
-| `docs/model-tiering.md` | The tier vocabulary this document uses for the mining pipeline: a small tier for candidate generation, a mid tier for per-group investigation, a frontier tier for synthesis and adversarial review |
+| [`docs/model-tiering.md`](model-tiering.md) | The tier vocabulary this document uses for the mining pipeline: a small tier for candidate generation, a mid tier for per-group investigation, a frontier tier for synthesis and adversarial review |

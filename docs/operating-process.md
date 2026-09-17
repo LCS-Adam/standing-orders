@@ -1,9 +1,9 @@
 # Operating process: running one real task through the harness
 
-This is the document to follow on your first real task after `docs/first-day.md` proved the parts
-work. It does not redefine terms `docs/glossary.md` already owns, or repeat the five-beat tour in
-`docs/first-day.md`, `docs/orientation.md`'s map, `docs/writing-your-own.md`'s authoring rules, the
-failure log in `docs/anti-patterns.md`, or the security list in `docs/operating-boundaries.md`. It
+This is the document to follow on your first real task after [`docs/first-day.md`](first-day.md) proved the parts
+work. It does not redefine terms [`docs/glossary.md`](glossary.md) already owns, or repeat the five-beat tour in
+[`docs/first-day.md`](first-day.md), [`docs/orientation.md`](orientation.md)'s map, [`docs/writing-your-own.md`](writing-your-own.md)'s authoring rules, the
+failure log in [`docs/anti-patterns.md`](anti-patterns.md), or the security list in [`docs/operating-boundaries.md`](operating-boundaries.md). It
 points at each of those instead of restating them. Read this fifth, right after `first-day.md`.
 
 Seven steps, in order. Everything after step 0 branches on the size you pick there.
@@ -82,7 +82,7 @@ For a bounded change or a large build, isolate each workstream in its own worktr
 git worktree add .worktrees/<name> -b <branch>
 ```
 
-(`docs/writing-your-own.md` ("output that was never meant to ship.")). Dispatch each workstream to a named execution agent this repo
+([`docs/writing-your-own.md`](writing-your-own.md) ("output that was never meant to ship.")). Dispatch each workstream to a named execution agent this repo
 actually ships. Run `ls agents/` before naming one; as of this writing that directory holds
 `adversary.md`, `autorun-plan-orchestrator.md`, `code-reviewer.md`,
 `data-eng-sa-orchestrator.md`, `data-eng-sa-reviewer.md`, `design-reviewer.md`, `exec-critical.md`,
@@ -100,11 +100,11 @@ If you are fanning out more than one workstream, put a `SWARM CONFIG` line befor
 naming which agent runs which workstream and on which branch, so the dispatch is auditable after
 the fact.
 
-Two more decisions belong here, and `docs/autorun-hitl-heartbeat.md` is the primary source for
+Two more decisions belong here, and [`docs/autorun-hitl-heartbeat.md`](autorun-hitl-heartbeat.md) is the primary source for
 choosing between them:
 
 - An approved **simple** plan that a human is actively watching: the shipped `heartbeat` skill is
-  enough, typically armed with the host's built-in `/loop` (`docs/autorun-hitl-heartbeat.md`'s
+  enough, typically armed with the host's built-in `/loop` ([`docs/autorun-hitl-heartbeat.md`](autorun-hitl-heartbeat.md)'s
   HEARTBEAT section).
 - An approved **multi-wave** plan meant to run unattended, needing per-wave review gates, state
   tracking, and HITL reduction: skill `autorun-plan`, invoked as `/autorun-plan`
@@ -122,7 +122,7 @@ that worktree.
 The review stack, in order, is the same for every size once there is a diff to review: run the test
 command the plan named, then the `adversary` agent, then `/ponytail-review`, then re-run the tests, then
 merge. `/ponytail-review` is not shipped by this repo: it comes from an upstream plugin that
-`harness upstream` clones and your tool installs, per `docs/upstream-sources.md`. If it is not
+`harness upstream` clones and your tool installs, per [`docs/upstream-sources.md`](upstream-sources.md). If it is not
 installed, say so in the review record and do the quality pass by hand. Do not skip `adversary` to
 compensate. Then
 merge.
@@ -162,12 +162,12 @@ decision, write a handoff.
 
 Command: `/handoff` (`commands/handoff.md`).
 Artifact: a resume prompt whose first block is copy-pasteable on its own, per `AGENTS.md`'s
-"Session handoff" section and `docs/project-management.md`'s state-file table.
+"Session handoff" section and [`docs/project-management.md`](project-management.md)'s state-file table.
 Lands: `.project-state/SESSION_HANDOFF.md`, with any prior version archived to
 `.project-state/handoffs/<timestamp>.md` rather than overwritten (`commands/handoff.md`,
-`docs/project-management.md` ("`.project-state/` as shipped in the template")).
+[`docs/project-management.md`](project-management.md) ("`.project-state/` as shipped in the template")).
 Done when: the pasted block alone, with no other file open, names the handoff file itself as the
-first thing to read, per the failure `docs/anti-patterns.md` records first under "The orphaned
+first thing to read, per the failure [`docs/anti-patterns.md`](anti-patterns.md) records first under "The orphaned
 resume block": a resume block that lists what to read next but omits itself orphans everything
 written below it, because the next session pastes only the block, never the document around it. A
 prose summary in chat is not a handoff; the state has to be on disk.
@@ -212,7 +212,7 @@ existing text output) would be caught by a test, and the change is mechanical: o
 in `main()`. That is a bounded change, not a small fix, because it touches output that other tests
 already depend on. This is a judgment call; the record of it is this paragraph, not a file.
 
-**Step 1: scope.** Skipped. `docs/operating-process.md` says a small fix skips this step, and this
+**Step 1: scope.** Skipped. [`docs/operating-process.md`](operating-process.md) says a small fix skips this step, and this
 worked example applies the same reasoning: the CLI is a single new file with no existing system to
 audit for dead surface.
 

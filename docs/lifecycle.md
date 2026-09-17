@@ -2,11 +2,11 @@
 
 ## Before you read this
 
-This document assumes you already know three things `docs/glossary.md` defines:
+This document assumes you already know three things [`docs/glossary.md`](glossary.md) defines:
 [`advisor`](glossary.md#advisor), the host's built-in
 [`Plan` subagent](glossary.md#the-host-built-in-subagent-types-plan-explore-general-purpose), and
 [the Workflow tool](glossary.md#the-workflow-tool). It also assumes you have already read
-`docs/first-day.md` and `docs/operating-process.md`.
+[`docs/first-day.md`](first-day.md) and [`docs/operating-process.md`](operating-process.md).
 
 This article also describes an optional external second-opinion review step. That step requires
 one of several third-party CLIs (`skills/external-llm-review/SKILL.md` names codex, cursor-agent,
@@ -15,10 +15,10 @@ that step does not apply to you, and the gate is the rest of the stack: the test
 `adversary` agent, `/ponytail-review`, re-running the tests, and merging. Do not treat the external
 review step as required; it is a strengthening step, not a floor.
 
-`docs/operating-process.md` runs one task through seven steps, once. This document is for a
+[`docs/operating-process.md`](operating-process.md) runs one task through seven steps, once. This document is for a
 different shape of work: a build that gets planned, improved over several review rounds, frozen,
 executed in waves by many agents, and then finished, with a human at specific, named boundaries.
-If your work is one task from a clear starting point, read `docs/operating-process.md` instead.
+If your work is one task from a clear starting point, read [`docs/operating-process.md`](operating-process.md) instead.
 If it is a build that will run unattended for hours or span multiple sessions, this is the map.
 
 ## The map
@@ -60,7 +60,7 @@ Stage by stage, the mechanism and the artifact that crosses to the next stage:
 | Orchestrate | the plan's Workflow-vs-Agent verdict; a worktree per stream; named `exec-*` agents; `hooks/require-agent-model.sh` | branches with exclusive file ownership; a SWARM CONFIG line |
 | Execute | `autorun-plan` skill via `autorun-plan-orchestrator` (unattended, gated) or `heartbeat` skill (watched, already-approved) | commits per branch, `AUTORUN-STATE-<slug>.md` or `HEARTBEAT-STATE-<slug>.md` |
 | Review | the per-wave gate stack (tests, `adversary`, `/ponytail-review`, optional external fold-back, re-test, merge) | a merged wave |
-| QA | machine-checkable done-when per phase; the full suite run in the main checkout | green in the main checkout (see `docs/finishing-a-build.md`) |
+| QA | machine-checkable done-when per phase; the full suite run in the main checkout | green in the main checkout (see [`docs/finishing-a-build.md`](finishing-a-build.md)) |
 | Red team | `adversary` on the integrated diff; `verify-unexecuted` for scripts that cannot run at build time | severity-ranked findings, written to a file under `runtime/` |
 | Fix iterations | class closure, stopping by class, guarantee-vs-claim (all in `skills/autorun-plan/SKILL.md`) | closure artifacts and a mutation manifest |
 | Final review and deploy | `code-reviewer` against the plan; `.project-state/AUTORUN-REPORT-<date>.md`; `/handoff`; deploy is a human gate by category | the report, the resume prompt, a deploy decision handed to a person |
@@ -89,14 +89,14 @@ already made and recorded. Four pieces of evidence:
 
 The principle underneath all four: the plan is the only artifact guaranteed to survive a context
 clear or a session ending mid-build, so the effort spent making it correct is the only effort that
-compounds across the rest of the build. `docs/planning-large-builds.md` already states the file-on-disk
+compounds across the rest of the build. [`docs/planning-large-builds.md`](planning-large-builds.md) already states the file-on-disk
 version of this ("The plan has to be a file on disk, written before any code changes, because the
 file is the only thing guaranteed to still exist when the next session picks up the work.") -- see
 that document for the mechanics of writing one; this is why it is worth the cost.
 
 ## How the FRONTIER-THINK synthesis planner works
 
-`docs/planning-large-builds.md` covers what `plan-synthesizer` is. This section covers what it
+[`docs/planning-large-builds.md`](planning-large-builds.md) covers what `plan-synthesizer` is. This section covers what it
 consumes, what it emits part by part, and which harness feature each part binds to.
 
 What it consumes. `agents/plan-synthesizer.md`: "You are handed a body of already-gathered material
@@ -124,10 +124,10 @@ The `.project-state/` files the pipeline writes, in order of appearance:
 | File | Written by | Source |
 |---|---|---|
 | `SCOPE-<system>.md` | the scope-audit step | `skills/scope-audit/SKILL.md`: "Write a durable scope file (e.g. `.project-state/SCOPE-<system>.md`)" |
-| the plan file | the plan or plan-synthesizer step | `docs/operating-process.md`: "a plan file under `.project-state/` for a swarm run merging plans" |
-| `AUTORUN-STATE-<mission-slug>.md` or `HEARTBEAT-STATE-<mission-slug>.md` | the executor, every meaningful step | see `docs/autorun-hitl-heartbeat.md` |
-| `AUTORUN-REPORT-{date}.md` | close-out | see `docs/finishing-a-build.md` |
-| `SESSION_HANDOFF.md` | any stage boundary that needs a handoff | `docs/handoff-and-resume.md` |
+| the plan file | the plan or plan-synthesizer step | [`docs/operating-process.md`](operating-process.md): "a plan file under `.project-state/` for a swarm run merging plans" |
+| `AUTORUN-STATE-<mission-slug>.md` or `HEARTBEAT-STATE-<mission-slug>.md` | the executor, every meaningful step | see [`docs/autorun-hitl-heartbeat.md`](autorun-hitl-heartbeat.md) |
+| `AUTORUN-REPORT-{date}.md` | close-out | see [`docs/finishing-a-build.md`](finishing-a-build.md) |
+| `SESSION_HANDOFF.md` | any stage boundary that needs a handoff | [`docs/handoff-and-resume.md`](handoff-and-resume.md) |
 | `ERRORS.md` rows | whatever broke | project convention |
 
 And the handoff discipline is not only a close-out step; it applies at every stage boundary in this
@@ -232,18 +232,18 @@ No existing doc covers this seam either. As a checklist:
 5. Write the premises list. `skills/deep-plan-swarm/SKILL.md`: "state, in one line each, the
    **premises** the plan rests on (what must be true for this work to be needed). Premises rot;
    naming them makes later falsification detectable instead of invisible."
-6. Choose the executor with the decision table in `docs/autorun-hitl-heartbeat.md`.
+6. Choose the executor with the decision table in [`docs/autorun-hitl-heartbeat.md`](autorun-hitl-heartbeat.md).
 7. Lay out `phases/` from `templates/phase/` when the build spans sessions; the nested pattern keeps
-   context small (`docs/planning-large-builds.md`).
+   context small ([`docs/planning-large-builds.md`](planning-large-builds.md)).
 8. Freeze any shared contract first. `agents/plan-synthesizer.md`: "The shared contract/interface
    lands FIRST and ALONE, then fan out."
 
 ## Orchestrate: dispatching the waves
 
-Mostly a cross-reference to `docs/planning-large-builds.md` and `docs/model-tiering.md`. The
+Mostly a cross-reference to [`docs/planning-large-builds.md`](planning-large-builds.md) and [`docs/model-tiering.md`](model-tiering.md). The
 substance this document adds is the dispatcher's contract and the resolution order:
 
-- Every `exec-*` brief carries three things. `docs/writing-your-own.md`: "Whoever dispatches an
+- Every `exec-*` brief carries three things. [`docs/writing-your-own.md`](writing-your-own.md): "Whoever dispatches an
   `exec-*` agent must supply all three in the brief: which files, which worktree, and where to
   write the report." The report path goes under `runtime/`, which is gitignored.
 - Definition resolution order. `skills/autorun-plan/SKILL.md`: "Resolve agent definition in order:
@@ -252,16 +252,16 @@ substance this document adds is the dispatcher's contract and the resolution ord
 - The hook is the floor underneath all of this. `hooks/require-agent-model.sh`: "Denies Agent/Task
   spawns that would silently inherit the parent session's model: the call must either pass an
   explicit `model` parameter, or name a subagent_type whose definition file pins `model:`."
-  `docs/model-tiering.md` covers what the hook cannot see.
-- A SWARM CONFIG line goes out before any fan-out (`docs/operating-process.md`; the term is defined
-  in `docs/glossary.md`).
+  [`docs/model-tiering.md`](model-tiering.md) covers what the hook cannot see.
+- A SWARM CONFIG line goes out before any fan-out ([`docs/operating-process.md`](operating-process.md); the term is defined
+  in [`docs/glossary.md`](glossary.md)).
 - Every child writes its report to a file before finishing. `skills/autorun-plan/SKILL.md`: "**EVERY
   child writes its report to a FILE before finishing (binding).**" And the trap next to it: "**A
   report is done when the AGENT reports done -- NEVER when the file looks big enough (binding).**"
 
 ## Execute: minimal HITL, and why the rest is safe to automate
 
-`docs/autorun-hitl-heartbeat.md` covers the mechanism in depth. What this section adds is the
+[`docs/autorun-hitl-heartbeat.md`](autorun-hitl-heartbeat.md) covers the mechanism in depth. What this section adds is the
 reconciliation of two human-in-the-loop vocabularies the harness carries, so a reader does not meet
 a third one partway through a build. Both exist today:
 
@@ -290,9 +290,9 @@ Why the rest is genuinely safe to automate, each with its source:
   truth the plan marks read-only."
 
 The one execution-time reason to stop and re-plan rather than push through is a premise dying
-mid-run; see `docs/anti-patterns.md`, entry "The premise that died mid-run."
+mid-run; see [`docs/anti-patterns.md`](anti-patterns.md), entry "The premise that died mid-run."
 
 ## Where this doc hands over
 
 Review, QA, red team, fix iterations, final review, and deploy are covered in
-`docs/finishing-a-build.md`.
+[`docs/finishing-a-build.md`](finishing-a-build.md).

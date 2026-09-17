@@ -53,6 +53,6 @@ you the files and the discipline of writing to them by hand.
   (Idea, Scaffolding, In-progress, Testing, Production-ready, Active production, Maintenance,
   Archived) is what a resuming session or a `global-status` summary trusts first.
 - Treat `SESSION_HANDOFF.md` as the load-bearing document at the end of any session that changed
-  files or made a decision. Read `docs/handoff-and-resume.md` for what makes a handoff actually
+  files or made a decision. Read [`docs/handoff-and-resume.md`](handoff-and-resume.md) for what makes a handoff actually
   sufficient: the short version is that it must be self-contained, including a pointer to itself,
   because the next session pastes only the handoff, never the whole repository.

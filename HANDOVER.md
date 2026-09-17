@@ -17,7 +17,7 @@ Clone before install. `install` deploys the upstream skills that `config/upstrea
 `install=`, and it can only deploy what is already on disk.
 
 Then read `README.md` and follow its reading map. A new engineer's first week is laid out at the end
-of `docs/first-day.md`, and `docs/scenarios.md` shows the harness running end to end on five
+of [`docs/first-day.md`](docs/first-day.md), and [`docs/scenarios.md`](docs/scenarios.md) shows the harness running end to end on five
 differently shaped projects, including one where the right call is not to use it.
 
 ## What is verified, and what is not
@@ -29,19 +29,19 @@ to catch.
 
 **Verified only against vendor documentation.** Everything on the Augment side. Auggie has never
 been installed on the machine this was built on, so every Augment claim in `adapters/README.md`,
-`docs/augment-context.md` and `docs/augment-runbook.md` carries a label saying it came from a
-documentation capture dated 2026-09-16, or says NOT FOUND. `docs/augment-runbook.md` is the
+[`docs/augment-context.md`](docs/augment-context.md) and [`docs/augment-runbook.md`](docs/augment-runbook.md) carries a label saying it came from a
+documentation capture dated 2026-09-16, or says NOT FOUND. [`docs/augment-runbook.md`](docs/augment-runbook.md) is the
 procedure that turns those into verified claims, and it names which cell of the status table each
 step flips. Run it on a machine that has Auggie before trusting that half.
 
 **Not built at all, and stated where it matters.** There is no deploy skill, no QA skill, no
 whole-build red-team agent, and no CI mode that validates git index blobs rather than the working
-tree. `docs/finishing-a-build.md` opens with a has and does-not-have table per stage rather than
+tree. [`docs/finishing-a-build.md`](docs/finishing-a-build.md) opens with a has and does-not-have table per stage rather than
 implying coverage the harness does not have.
 
 ## Two things a reviewer should read before adopting it
 
-`docs/operating-boundaries.md` is written for the person who has to approve this. Two disclosures in
+[`docs/operating-boundaries.md`](docs/operating-boundaries.md) is written for the person who has to approve this. Two disclosures in
 it matter more than the rest.
 
 The optional external-review step hands a third-party CLI, and the cloud model behind it, read

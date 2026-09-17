@@ -18,7 +18,7 @@ security hard stops as tool-permission rules, and needs only its subagent defini
 are committable YAML bundles applied with `auggie cloud`. Every Augment claim in this repository
 comes from the vendor's documentation as of 2026-09-16 and none of it has been run against a live
 Auggie yet. `adapters/README.md` states what each tool consumes and marks each claim;
-`docs/augment-runbook.md` is the procedure that turns those claims into verified ones.
+[`docs/augment-runbook.md`](docs/augment-runbook.md) is the procedure that turns those claims into verified ones.
 
 Most agent setups accumulate as a pile of machine-specific config that cannot leave the laptop it
 grew on. This one is built to be moved, shared, and forked.
@@ -41,11 +41,11 @@ so they stay current and stay the author's.
 
 An entry marked `install=` in that file is then deployed by `install`, and that is running
 third-party code this repository's gate does not scan. The gate prints the count every run, and
-`docs/operating-boundaries.md` explains the trade and how to switch it off. Entries with no
+[`docs/operating-boundaries.md`](docs/operating-boundaries.md) explains the trade and how to switch it off. Entries with no
 `install=` are reference material only: point your coding tool at `.upstream/` and it reads the
-source and installs what it needs in its own format. See `docs/upstream-sources.md`.
+source and installs what it needs in its own format. See [`docs/upstream-sources.md`](docs/upstream-sources.md).
 
-**On Windows**, run all of this in Git Bash or WSL 2, not PowerShell. `docs/windows.md` covers the
+**On Windows**, run all of this in Git Bash or WSL 2, not PowerShell. [`docs/windows.md`](docs/windows.md) covers the
 setup and one thing you should read before relying on the model-pin gate there.
 
 Put `bin/` on your `PATH`, then in any repository you want the project layer in:
@@ -167,7 +167,7 @@ and the tool-permission rules, and `harness build-plugin --tool auggie` packages
 installable plugin. Intent reads `AGENTS.md` and `CLAUDE.md` plus a `skills/` directory. Codex,
 Cursor, Gemini CLI, Copilot, and Windsurf read `AGENTS.md`. COSMOS Experts are YAML bundles you can
 commit and apply with `auggie cloud`, alongside a conversational Advisor path that is fileless.
-`adapters/README.md` has the details per tool, and `docs/augment-runbook.md` is the procedure for
+`adapters/README.md` has the details per tool, and [`docs/augment-runbook.md`](docs/augment-runbook.md) is the procedure for
 standing the Augment side up on a machine that has Auggie.
 
 ## The scrub gate

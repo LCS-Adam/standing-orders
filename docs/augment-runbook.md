@@ -44,7 +44,7 @@ harness upstream
 
 That clones every repository in `config/upstream.conf` into `.upstream/`, gitignored. It does not
 install anything. Once Auggie is running (step 8), hand it the instruction block in
-`docs/upstream-sources.md`: it reads each cloned repo as its author wrote it and installs what the
+[`docs/upstream-sources.md`](upstream-sources.md): it reads each cloned repo as its author wrote it and installs what the
 harness needs in Auggie's own format, rather than taking a conversion this repo guessed at. Record
 what it installed, and anything it had to change to make it load, in the answers table.
 
@@ -311,7 +311,7 @@ source. Record which repository you chose.
 
 ## Step 11: capture the first-day outputs
 
-`docs/first-day.md` ends with an Auggie section carrying five fenced placeholders, each reading
+[`docs/first-day.md`](first-day.md) ends with an Auggie section carrying five fenced placeholders, each reading
 exactly `<captured on the work machine: runbook step 11>`. Run the five commands that section
 names, one at a time, and paste the real output over each placeholder. Shorten your home directory
 to `~` and change nothing else. Truncated or tidied output is worse than none, because a reader
@@ -376,7 +376,7 @@ Fill this in as you go. One row per step, and a real answer rather than "done".
 |---|---|---|---|---|
 | 1 | Auggie installed and logged in | `auggie --version` | | |
 | 1 | Upstream repos cloned | `harness upstream` | | |
-| 8 | What Auggie installed from `.upstream/`, and what it changed | the instruction in `docs/upstream-sources.md` | | |
+| 8 | What Auggie installed from `.upstream/`, and what it changed | the instruction in [`docs/upstream-sources.md`](upstream-sources.md) | | |
 | 2 | Is headless mode licensed | `auggie --print --quiet --max-turns 1 "reply PING"` | | |
 | 3 | Is `auggie cloud` available | `auggie cloud --help` | | |
 | 4 | Which rules files are read | `auggie rules list` | | |

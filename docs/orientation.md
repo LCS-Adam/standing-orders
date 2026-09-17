@@ -2,7 +2,7 @@
 
 This is the starting point if you have never used an AI coding agent before. It defines
 the vocabulary the rest of this repo's docs assume, then shows what `agent-harness`
-specifically adds on top of that vocabulary. Read it once before `docs/getting-started.md`.
+specifically adds on top of that vocabulary. Read it once before [`docs/getting-started.md`](getting-started.md).
 
 ## What a session is
 
@@ -35,7 +35,7 @@ cost is the same either way. Second, the model's adherence to any single instruc
 measurably drops as the total volume of context grows, so a session that has loaded
 3,000 lines of standing instructions has less attention left for your actual question
 than one that loaded 200. Full detail, including what to do about both, lives in
-`docs/context-window-management.md`.
+[`docs/context-window-management.md`](context-window-management.md).
 
 ## What a tool call is
 
@@ -62,7 +62,7 @@ you want a decision, a plan, or a piece of state to survive one of these, it has
 written to a file before the moment it happens, not summarized after. This is also why
 this repo has a firm rule that recommending or performing a clear, a compact, or a new
 session without producing a copy-pasteable resume prompt is not a complete handoff. See
-`docs/handoff-and-resume.md` for the mechanics.
+[`docs/handoff-and-resume.md`](handoff-and-resume.md) for the mechanics.
 
 ## What this harness adds
 
@@ -82,7 +82,7 @@ The distinction that matters most among these: an instruction file, a rule, and 
 are all text the model reads and can, under enough pressure, drift from. A hook is a
 script that runs regardless of what the model is thinking, and its exit code can block
 an action outright. If a rule must hold with no exceptions, it needs a hook, not a
-paragraph. `docs/choosing-your-tools.md` walks through all six mechanisms (it also
+paragraph. [`docs/choosing-your-tools.md`](choosing-your-tools.md) walks through all six mechanisms (it also
 covers subagents) in the same order, with worked examples from this repo.
 
 ## What loads at session start versus on demand

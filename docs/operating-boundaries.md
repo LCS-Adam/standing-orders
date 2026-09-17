@@ -56,7 +56,7 @@ before running either integration.
 | Location | What it holds | Recommendation |
 |---|---|---|
 | `runtime/` | Every `exec-*` agent's verification report, defaulted there in each agent's own file (`.gitignore:8-9`). | Ignore, do not commit. `.gitignore:9-11` explains why: an unignored report lands in the shipped set and check 1 then scans the absolute worktree paths an agent naturally writes there, failing the packaging gate on output that was never meant to ship. |
-| `.project-state/` | Planning and handoff state: `PROJECT_STATE.md`, `NEXT_STEPS.md`, `ERRORS.md`, `SESSION_HANDOFF.md` and its `handoffs/` archive, `DEPENDENCIES.md`, `CLEANUP.md`, `SKILL_CANDIDATES.md` (`docs/project-management.md` ("`.project-state/` as shipped in the template")). | Commit. This directory is designed to be the durable, cross-session record git history does not give you: "intent, next steps, blockers, and decisions" (`docs/project-management.md` ("How this differs from git history")). Treat it like any other tracked doc: review its content for anything sensitive before it ships, same as code. |
+| `.project-state/` | Planning and handoff state: `PROJECT_STATE.md`, `NEXT_STEPS.md`, `ERRORS.md`, `SESSION_HANDOFF.md` and its `handoffs/` archive, `DEPENDENCIES.md`, `CLEANUP.md`, `SKILL_CANDIDATES.md` ([`docs/project-management.md`](project-management.md) ("`.project-state/` as shipped in the template")). | Commit. This directory is designed to be the durable, cross-session record git history does not give you: "intent, next steps, blockers, and decisions" ([`docs/project-management.md`](project-management.md) ("How this differs from git history")). Treat it like any other tracked doc: review its content for anything sensitive before it ships, same as code. |
 | `active/` | Artifact directories mandated by the optional workspace-brain module (`README.md`: the quickstart's `harness add workspace-brain` line, and the scope note that the brain "mandates writing `active/` artifact directories"). Not present unless that module was added. | Project-scope by design (`README.md`: "brain is project scope on purpose") so it does not appear in every repo you touch; if the module is added, decide per-project whether its contents are safe to commit or belong in `.gitignore`, the same review you would give any new tracked directory. |
 
 ## Who approves a permission-bypass flag
@@ -115,9 +115,9 @@ This is a platform limitation, not a configuration mistake, and it is not one th
 close: the hook cannot report a refusal it was never started to make. It matches an open upstream
 issue (anthropics/claude-code#90077).
 
-`docs/windows-gate-investigation.md` is the brief for closing this properly. Until then, if your
+[`docs/windows-gate-investigation.md`](windows-gate-investigation.md) is the brief for closing this properly. Until then, if your
 organization relies on that gate, standardise Windows engineers on WSL 2, or require Git for
-Windows and verify it is detected. `docs/windows.md` has the detail. Do not read a green
+Windows and verify it is detected. [`docs/windows.md`](windows.md) has the detail. Do not read a green
 `harness verify` as evidence either way: the gate inspects this repository and cannot see whether a
 hook fired in someone's session.
 

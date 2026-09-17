@@ -350,15 +350,15 @@ further, to a path a script verifies rather than an orchestrator.
 
 The `deep-plan-swarm` skill is the sibling worth knowing: it is a swarm over a codebase to produce a
 plan, where this pattern is a swarm over a corpus to produce sourced findings. Set the reader count,
-tier, and effort per tier before dispatch; `docs/glossary.md` defines that as a SWARM CONFIG.
+tier, and effort per tier before dispatch; [`docs/glossary.md`](glossary.md) defines that as a SWARM CONFIG.
 
 Every dispatch in every tier still gets an explicit tier, never an inherited one: SMALL for the
 readers, MID for the group investigators, FRONTIER-DO for the cross-cutting audit, FRONTIER-THINK
-for the synthesis. See `docs/model-tiering.md` for how a tier name in a plan resolves to a real
-model at runtime, and `docs/choosing-your-tools.md` for why only a subagent's final answer, never
-its internal work, ever lands in the calling context. `docs/context-window-management.md` covers the
+for the synthesis. See [`docs/model-tiering.md`](model-tiering.md) for how a tier name in a plan resolves to a real
+model at runtime, and [`docs/choosing-your-tools.md`](choosing-your-tools.md) for why only a subagent's final answer, never
+its internal work, ever lands in the calling context. [`docs/context-window-management.md`](context-window-management.md) covers the
 orchestrator-side cost of running every join and check yourself even when children return almost
-nothing. `docs/planning-large-builds.md` covers scoping the corpus before you build any of this.
-`docs/anti-patterns.md` already covers the failure mode of a backgrounded agent going idle before
+nothing. [`docs/planning-large-builds.md`](planning-large-builds.md) covers scoping the corpus before you build any of this.
+[`docs/anti-patterns.md`](anti-patterns.md) already covers the failure mode of a backgrounded agent going idle before
 its report is written; write every tier's output to disk before it finishes, the same rule applies
 here at every layer.

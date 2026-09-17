@@ -10,7 +10,7 @@ This document covers the three shapes the harness uses for that, in rising cost:
 (blind independent views), chatroom (roles that argue and concede), and cross-model review (a
 different model family attacking the result). It also says when each one is theater.
 
-This document assumes you have read `docs/operating-process.md` and `docs/model-tiering.md`.
+This document assumes you have read [`docs/operating-process.md`](operating-process.md) and [`docs/model-tiering.md`](model-tiering.md).
 
 ## Three shapes, one question
 
@@ -54,7 +54,7 @@ Configuration follows the template's default of five workers for normal tasks, u
 high-variance strategy work, recorded with the `SWARM CONFIG` line from
 `templates/project/context/multi-agent-inline.md`: `count=N model=<m> effort=<e>
 est_cost_tier=<low|medium|high>`. MID-tier workers are normal for this. Go up to FRONTIER-DO when
-the question is the kind `docs/model-tiering.md` already sends up: irreversible, outward-facing,
+the question is the kind [`docs/model-tiering.md`](model-tiering.md) already sends up: irreversible, outward-facing,
 or a silent-wrong-answer cost that a test would not catch.
 
 Synthesis sorts everything into consensus (majority agreement), divergences (meaningful
@@ -134,7 +134,7 @@ Report location: `active/chatroom/<run-id>.md`, with per-role files beside it in
 ## Cross-model review: a different family attacks the result
 
 This section is short on purpose. For mechanics, read `skills/external-llm-review/SKILL.md`
-directly and see `docs/planning-large-builds.md` for where it sits in the gate stack.
+directly and see [`docs/planning-large-builds.md`](planning-large-builds.md) for where it sits in the gate stack.
 
 The reason to reach for a different vendor at all: "A different model family catches defects
 Claude review misses. A Claude reviewer is NEVER a substitute." Same-family reviewers tend to
@@ -287,7 +287,7 @@ decision too, not only an answer to this one.
 ## Worked example 3: a post-incident review (chatroom, lens roles) -- constructed
 
 This example is constructed for this document. No post-incident chatroom of this shape exists on
-disk. It is built on a failure this repo already records in `docs/anti-patterns.md`: a reviewer
+disk. It is built on a failure this repo already records in [`docs/anti-patterns.md`](anti-patterns.md): a reviewer
 wrapped in a timeout that does not exist on macOS produced a tiny file and exit 0, and a size
 check read that as a terse clean review.
 
@@ -344,7 +344,7 @@ The test that decides it: could the outcome actually change the decision? If not
 - All-agree is a signal, not a success: if every role or worker lands in the same place
   immediately, the question may be underdefined, and the fix is to revisit the question, not to
   declare consensus.
-- This is a tier-up decision, and `docs/model-tiering.md` already asks the question that governs
+- This is a tier-up decision, and [`docs/model-tiering.md`](model-tiering.md) already asks the question that governs
   it: justify the extra cost by what a silent wrong answer costs here, never by habit.
 - If the task has enumerable slices, you want a fan-out swarm, not a debate; running a chatroom
   over work that could have been split is the expensive way to do the wrong kind of task.
@@ -363,4 +363,4 @@ it produces a generalizable rule, that rule gets appended separately. The run-id
 The moderator reads each per-role file back from disk rather than carrying it forward in context,
 which is what makes a chatroom report auditable after the fact instead of a paraphrase of a
 conversation nobody can re-read. If the panel outlives the session that started it, see
-`docs/handoff-and-resume.md` for what the next session needs to pick it back up.
+[`docs/handoff-and-resume.md`](handoff-and-resume.md) for what the next session needs to pick it back up.

@@ -1,6 +1,6 @@
 # Context in Augment
 
-`docs/context-health.md` covers watching a context window in Claude Code. Augment works differently
+[`docs/context-health.md`](context-health.md) covers watching a context window in Claude Code. Augment works differently
 enough that the same advice does not transfer, and the difference is worth understanding before you
 carry habits across.
 

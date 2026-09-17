@@ -99,7 +99,7 @@ This writes:
   `core.symlinks` is off, so the import is the safer default. Note that `@` is Claude-only: every
   other tool reads `AGENTS.md` directly, which is why that file is self-contained rather than a set
   of imports itself.
-- `.project-state/`: the tracking files covered in `docs/project-management.md`
+- `.project-state/`: the tracking files covered in [`docs/project-management.md`](project-management.md)
 
 Then add modules as you need them:
 
@@ -140,7 +140,7 @@ directory straight from the repo with no adapter needed.
 
 `auggie` does more than write a pointer file, because Augment supports most of this harness. What
 follows comes from Augment's documentation as of 2026-09-16 and has not been run against a live
-Auggie; `docs/augment-runbook.md` is how it gets checked. It
+Auggie; [`docs/augment-runbook.md`](augment-runbook.md) is how it gets checked. It
 writes three things: `.augment/agents/`, generated from `agents/` because Auggie's subagent
 frontmatter is a different schema; the security hard stops as `toolPermissions` deny rules in
 `.augment/settings.json`; and `AGENTS.md` into `~/.augment/rules/` for workspaces that are not this
@@ -157,7 +157,7 @@ scripts/resolve-tier.sh --write-conf
 Augment's model allowlist is administered per company and an admin can change it without notifying
 users, so the binding is discovered by asking the CLI which models the account actually has rather
 than typed from memory. That command needs `auggie` installed and logged in. `harness build-plugin --tool auggie` then packages the whole set as an
-installable plugin. `docs/augment-runbook.md` walks all of it, in order, on a machine that has
+installable plugin. [`docs/augment-runbook.md`](augment-runbook.md) walks all of it, in order, on a machine that has
 Auggie.
 
 `cosmos` has two paths: a conversational Advisor that edits no files, and `auggie cloud`, which
@@ -175,7 +175,7 @@ See `adapters/README.md` for the full table of what each tool reads at project a
 ## If you are on Windows
 
 Run everything in this document in Git Bash or WSL 2. The installer, the gate and the hooks are
-bash and there is no PowerShell equivalent. `docs/windows.md` has the setup, the prerequisites Git
+bash and there is no PowerShell equivalent. [`docs/windows.md`](windows.md) has the setup, the prerequisites Git
 Bash does not ship, and a disclosure about the model-pin hook that matters before you rely on it.
 
 ## Pulling in the upstream sources
@@ -192,11 +192,11 @@ scrub gate does not scan them.
 What happens next depends on one field. An entry marked `install=` in `config/upstream.conf` names
 skills that `harness install --user` deploys from the clone, which means running third-party code
 this gate never inspected. That is a deliberate choice, recorded in a file someone reviewed, and the
-gate prints the count on every run. `docs/operating-boundaries.md` covers what it means and how to
+gate prints the count on every run. [`docs/operating-boundaries.md`](operating-boundaries.md) covers what it means and how to
 turn it off.
 
 For an entry with no `install=`, nothing is deployed automatically, because the right shape depends
-on which tool you are running. Hand your coding tool the instruction in `docs/upstream-sources.md`
+on which tool you are running. Hand your coding tool the instruction in [`docs/upstream-sources.md`](upstream-sources.md)
 and it reads the author's source and installs what it needs in its own format.
 
 Skipping this step is fine to start with. The harness works without it; you just get the pinned
@@ -236,7 +236,7 @@ instead of silently passing nothing:
 12. Every count asserted in the client-facing docs matches the repo. A number in prose that nothing
     checks drifts the moment anything is added, and a tutorial that miscounts the thing it is
     teaching you to run is worse than no tutorial.
-13. `docs/reference.md` still matches what `scripts/gen-reference.sh` generates from the repo. That
+13. [`docs/reference.md`](reference.md) still matches what `scripts/gen-reference.sh` generates from the repo. That
     file is derived, not written, so the gate re-derives it and compares byte for byte. A generator
     that is missing, that errors, or that emits nothing fails here too: an empty regeneration is
     not the same as an up-to-date file.
@@ -259,7 +259,7 @@ what you have staged.
 
 ## A first real task
 
-`docs/first-day.md` does this job: five beats, done for real, with the actual command
+[`docs/first-day.md`](first-day.md) does this job: five beats, done for real, with the actual command
 output pasted below each one, ending with a fix, a test, and a handoff. Read that
 document for the full walkthrough rather than a summary here.
 
@@ -274,6 +274,6 @@ document for the full walkthrough rather than a summary here.
 
 ## Where to go next
 
-`docs/choosing-your-tools.md` covers when to reach for a rule, a skill, a subagent, or a slash
-command. `docs/project-management.md` covers `.project-state/` and how session state survives a
+[`docs/choosing-your-tools.md`](choosing-your-tools.md) covers when to reach for a rule, a skill, a subagent, or a slash
+command. [`docs/project-management.md`](project-management.md) covers `.project-state/` and how session state survives a
 context clear.

@@ -260,11 +260,11 @@ asks you what file to read first instead of already knowing, the block was not s
 
 The five beats above were run on this machine. The five below were not: Auggie has never been
 installed here, so each output block is a placeholder reading
-`<captured on the work machine: runbook step 11>`, and `docs/augment-runbook.md` step 11 is the
+`<captured on the work machine: runbook step 11>`, and [`docs/augment-runbook.md`](augment-runbook.md) step 11 is the
 instruction to replace them with real output. Treat an unreplaced placeholder as a claim nobody has
 checked. Everything outside the output blocks comes from Augment's documentation as of 2026-09-16.
 
-Run `docs/augment-runbook.md` steps 1 to 9 before this section: step 5 discovers the model binding,
+Run [`docs/augment-runbook.md`](augment-runbook.md) steps 1 to 9 before this section: step 5 discovers the model binding,
 and `harness add --tool auggie` refuses to run without it.
 
 ### Install and log in

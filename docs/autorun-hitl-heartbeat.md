@@ -2,7 +2,7 @@
 
 ## Before you read this
 
-This document assumes you already know three things `docs/glossary.md` defines:
+This document assumes you already know three things [`docs/glossary.md`](glossary.md) defines:
 [`advisor`](glossary.md#advisor), the host's built-in
 [`Plan` subagent](glossary.md#the-host-built-in-subagent-types-plan-explore-general-purpose), and
 [the Workflow tool](glossary.md#the-workflow-tool). If your tool has no Workflow equivalent, the
