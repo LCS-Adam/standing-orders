@@ -171,6 +171,22 @@ What that means in practice:
 If your organization cannot accept unscanned third-party skills, remove the `install=` fields. The
 harness works without them; you lose the upstream skills and keep everything else.
 
+Which of those skills reach outside the machine is the part a reviewer needs, and it is uneven.
+Of everything `install=` deploys today, eleven are self-contained prompting skills: they read
+files, dispatch subagents, and write text, and none of them opens a socket, installs a package, or
+holds a credential. Two do not fit that description:
+
+| Skill | Project | What it does beyond prompting |
+|---|---|---|
+| `notebooklm` | notebooklm-py | Installs a PyPI package on first use, makes authenticated calls to Google's Gemini Notebook under the user's own account, and stores a master token that its own documentation calls "a durable full-account credential that survives password changes" under `~/.notebooklm/` at mode 0600, outside any repository. |
+| `graphify` | graphify | Installs the PyPI package `graphifyy` on first use, dispatches subagents that make metered model calls on every run, can fetch arbitrary URLs, can push to a Neo4j server, can start a local MCP server, and writes a `graphify-out/` tree into whatever folder it is pointed at. It also ships no repository-level LICENSE file; only its package metadata declares MIT. |
+
+The `AGENTS.md` hard stop on changing authentication or secrets applies to minting that
+notebooklm token. A person does it, on a dedicated account, not an agent session. Every entry is
+removable on its own: drop `install=*` from the line in `config/upstream.conf` and the next install
+retires it. [docs/upstream-skills.md](upstream-skills.md) describes all of them, including the one
+that is a persistent behavioural mode rather than a one-shot tool.
+
 ## Gate minimalism is a dial, not a default
 
 This harness ships with few human gates on purpose, and says so explicitly at the point where an

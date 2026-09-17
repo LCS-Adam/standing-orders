@@ -58,7 +58,9 @@ An entry marked `install=` in that file is then deployed by `install`, and that 
 third-party code this repository's gate does not scan. The gate prints the count every run, and
 [`docs/operating-boundaries.md`](docs/operating-boundaries.md) explains the trade and how to switch it off. Entries with no
 `install=` are reference material only: point your coding tool at `.upstream/` and it reads the
-source and installs what it needs in its own format. See [`docs/upstream-sources.md`](docs/upstream-sources.md).
+source and installs what it needs in its own format. See [`docs/upstream-sources.md`](docs/upstream-sources.md)
+for the policy and [`docs/upstream-skills.md`](docs/upstream-skills.md) for what each installed skill does, including
+the one that is a persistent mode and the two that reach the network.
 
 **On Windows**, run all of this in Git Bash or WSL 2, not PowerShell. [`docs/windows.md`](docs/windows.md) covers the
 setup and one thing you should read before relying on the model-pin gate there.
@@ -247,6 +249,7 @@ once; the groups below say when each one matters:
 | [Tracking work across sessions](docs/project-management.md) | A team keeping project state on disk across sessions and tools. |
 | [Building a private knowledge vault](docs/knowledge-vault.md) | A team that wants agents to maintain a corpus over time without letting them corrupt it or leak it. |
 | [Upstream sources](docs/upstream-sources.md) | Anyone wondering why another project's skills are cloned next to this repo rather than copied into it. |
+| [Upstream skills](docs/upstream-skills.md) | Anyone about to run the install and wanting to know what the third-party skills are, which one is a persistent mode, and which two reach the network. |
 | [Reference](docs/reference.md) | Anyone who wants the generated, authoritative list of every agent, skill, command, and config key. |
 
 ## Third-party content

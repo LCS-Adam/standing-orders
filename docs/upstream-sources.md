@@ -6,7 +6,10 @@ next to the repo, and lets your coding tool read the author's own source and dec
 it.
 
 This page is the policy, and the second half is written to be handed to a coding agent as an
-instruction.
+instruction. It does not describe the skills themselves. [docs/upstream-skills.md](upstream-skills.md)
+is the companion: what actually installs, what each skill does, and what an operator should know
+before running the install, starting with the one that is a persistent mode and the two that reach
+the network.
 
 ## Why a copy is the wrong move
 

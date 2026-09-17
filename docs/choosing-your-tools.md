@@ -154,7 +154,9 @@ match. Sixteen skills currently ship in `skills/`:
 One more command belongs in that list and is not in the table, because it is not a harness
 skill: `/ponytail-review` cuts a diff back to the smallest thing that holds, and it comes from
 the ponytail plugin rather than from `skills/`. `config/upstream.conf` records it as a
-dependency and [`docs/upstream-sources.md`](upstream-sources.md) explains how it gets installed.
+dependency, [`docs/upstream-sources.md`](upstream-sources.md) explains how it gets installed, and
+[`docs/upstream-skills.md`](upstream-skills.md) describes it alongside everything else the install
+brings in from other projects.
 
 **When to reach for it.** A multi-step procedure that only applies some of the time and
 is complex enough to be worth writing down once rather than re-deriving every time. If
