@@ -23,6 +23,19 @@ Auggie yet. `adapters/README.md` states what each tool consumes and marks each c
 Most agent setups accumulate as a pile of machine-specific config that cannot leave the laptop it
 grew on. This one is built to be moved, shared, and forked.
 
+## Contents
+
+- [Install](#install)
+- [What you get](#what-you-get)
+- [How the two scopes fit together](#how-the-two-scopes-fit-together)
+- [What is in it](#what-is-in-it)
+- [Two ideas worth knowing before you use it](#two-ideas-worth-knowing-before-you-use-it)
+- [Portability](#portability)
+- [The scrub gate](#the-scrub-gate)
+- [Documentation](#documentation)
+- [Third-party content](#third-party-content)
+- [License](#license)
+
 ## Install
 
 ```bash
@@ -187,12 +200,19 @@ planting each defect class into a scratch copy and confirming a non-zero exit.
 New to agentic coding? The table runs newcomer to specialist, but you do not need every row at
 once; the groups below say when each one matters:
 
-- **Day one:** Orientation, Glossary, Getting started, Choosing the right mechanism, Your first day.
-- **Your first week:** Operating process, Worked scenarios, the two context documents, Sizing the
-  model to the task, Handing off between sessions.
+- **Day one:** [Orientation](docs/orientation.md), [Glossary](docs/glossary.md),
+  [Getting started](docs/getting-started.md),
+  [Choosing the right mechanism](docs/choosing-your-tools.md),
+  [Your first day](docs/first-day.md).
+- **Your first week:** [Operating process](docs/operating-process.md),
+  [Worked scenarios](docs/scenarios.md), the two context documents
+  ([managing](docs/context-window-management.md) and [watching](docs/context-health.md)),
+  [Sizing the model to the task](docs/model-tiering.md),
+  [Handing off between sessions](docs/handoff-and-resume.md).
 - **When you need it:** everything else. Reach for a row when its "who it is for" describes you
   today.
-- **If you are reviewing this harness rather than using it:** Operating boundaries, then Reference.
+- **If you are reviewing this harness rather than using it:**
+  [Operating boundaries](docs/operating-boundaries.md), then [Reference](docs/reference.md).
 
 | Document | Who it is for |
 |---|---|
