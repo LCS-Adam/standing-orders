@@ -251,10 +251,13 @@ once; the groups below say when each one matters:
 ## Third-party content
 
 The `brainstorming`, `requesting-code-review`, `systematic-debugging` and
-`test-driven-development` skills are vendored from the Superpowers collection. See
-`skills/THIRD_PARTY.md` for
-provenance and for the license check to complete before distributing this repository publicly.
+`test-driven-development` skills are vendored from the Superpowers collection by Jesse Vincent,
+under the MIT License. `skills/grill-me/` comes from Joanium/Skills under the Apache License 2.0,
+with its frontmatter changed and that change stated in the file. `skills/THIRD_PARTY.md` carries
+the full provenance and the exact modifications; [LICENSE](LICENSE) reproduces both upstream
+notices.
 
 ## License
 
-Not yet chosen. Treat as all rights reserved until a license file is added.
+[MIT](LICENSE), copyright 2026 Adam Lindsey. The bundled third-party skills stay under their own
+licenses, reproduced in the same file.
