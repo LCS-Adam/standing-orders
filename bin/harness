@@ -99,9 +99,16 @@ put() {
     if cmp -s "$src" "$dest" 2>/dev/null; then c_skip "$label (identical)"; return; fi
     if [ "$MANAGED" -eq 1 ]; then
       [ "$DRY" -eq 1 ] && { c_ok "$label (would replace, dry run)"; return; }
-      cp "$dest" "$dest.bak-$(date +%Y%m%d%H%M%S)"
+      # The backup goes to the attic, not next to the live file. Dropping
+      # agents/foo.md.bak-<stamp> into ~/.claude/agents/ left one more file in
+      # a directory the tool scans on every launch, growing by one per replaced
+      # file per reinstall. MANAGED is only ever set during the user-scope
+      # install, so CLAUDE_HOME is the right root here.
+      local bdir="$CLAUDE_HOME/backups/harness-replaced-$(date +%Y%m%d)"
+      mkdir -p "$bdir"
+      cp "$dest" "$bdir/$(printf '%s' "${label//\//_}").$(date +%H%M%S)"
       cp "$src" "$dest"
-      c_ok "$label (replaced, previous copy kept as .bak)"
+      c_ok "$label (replaced, previous copy in backups/)"
       return
     fi
     c_skip "$label (exists, differs - use --force to replace)"
@@ -419,6 +426,12 @@ cmd_install() {
   stage_shipped skills
   stage_shipped commands
   stage_shipped hooks
+  # A skill is a DIRECTORY holding SKILL.md. A loose .md at the top of skills/
+  # is a context document, and installing one puts a file into ~/.claude/skills/
+  # that no tool can invoke and every tool has to skip. The harness was shipping
+  # its own skills/THIRD_PARTY.md that way. It stays in the repo, where it
+  # belongs next to what it documents, and stops being installed.
+  find "$STAGE/skills" -maxdepth 1 -type f -delete 2>/dev/null || true
   while IFS= read -r f; do resolve_tiers "$f"; done < <(find "$STAGE" -type f -name '*.md')
 
   if grep -rq '{{TIER_' "$STAGE" 2>/dev/null; then
