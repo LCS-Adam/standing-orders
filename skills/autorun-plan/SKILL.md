@@ -1,6 +1,6 @@
 ---
 name: autorun-plan
-description: Use when executing an approved multi-wave AUTORUN or overnight unattended plan; when running per-wave review gates with tests, adversary, `/simplify`, and external-LLM fold-back; when heartbeating, writing AUTORUN-STATE, parking a branch and continuing; or when minimizing HITL via auto-proceed-on-rule.
+description: Use when executing an approved multi-wave AUTORUN or overnight unattended plan; when running per-wave review gates with tests, adversary, `/simplify`, and an optional external-LLM fold-back; when heartbeating, writing AUTORUN-STATE, parking a branch and continuing; or when minimizing HITL via auto-proceed-on-rule.
 version: 0.1.0
 user-invocable: true
 argument-hint: "[path-to-mission-or-plan]"
@@ -13,7 +13,7 @@ Goal: **autonomous execution**. HITL only where the rule cannot be stated in adv
 action reaches a person outside the system, irreversible without tested rollback, or physically human.
 Parking is success. Guessing is failure.
 
-**REQUIRED SUB-SKILLS:** `external-llm-review` (step 4 of every code-producing wave).
+**CONDITIONAL SUB-SKILL:** `external-llm-review` (step 4 of every code-producing wave), IF a reviewer CLI is installed and authenticated. If none is, step 4 is skipped and the run says so in AUTORUN-STATE. It is a strengthening step, not a floor.
 **Heartbeat:** Claude Code's built-in `/loop` (self-paced).
 **Right-fit:** named agent definitions, never inherit. Hook
 `~/.claude/hooks/require-agent-model.sh` denies unpinned spawns; name a def and re-issue.
@@ -155,7 +155,7 @@ named Agents, gates in this session.
 Bake into EVERY code-producing wave's gate, in order: **(1) `<the test command the plan names>` green -> (2)
 `adversary` correctness review of the merged wave diff -> (3) **`/simplify`** on the wave
 diff (quality: reuse/simplification/altitude; it applies fixes; it does NOT hunt bugs and never
-replaces step 2) -> (4) external-LLM fold-back loop on the FINAL simplified diff (review -> apply
+replaces step 2) -> (4, only with a reviewer CLI) external-LLM fold-back loop on the FINAL simplified diff (review -> apply
 fixes -> re-review; **loop until a round returns no new CRITICAL/HIGH — NO ROUND CAP,
 per M3**) -> **(4.5) re-run `<the test command the plan names>` + the wave's phase-specific tests AFTER the last
 step-3/4 modification (steps 3 and 4 both apply fixes after step 1's only test run, waves land by
@@ -166,8 +166,16 @@ matters: never simplify code step 2 is about to rewrite; the external reviewer s
 Generalize the **test binary**: if the plan names a different command than `node test-all.mjs`,
 use that command in steps 1 and 4.5. The stack order does not change.
 
-Step 4 CLI/model: **REQUIRED SUB-SKILL** `external-llm-review`. The **plan** names the
-execution reviewer. Empty/narration output is a failed round.
+Step 4 CLI/model: sub-skill `external-llm-review`. The **plan** names the execution reviewer.
+Empty/narration output is a failed round.
+
+**Step 4 is conditional, and that is not a loophole.** It needs a third-party CLI from a different
+model family, which the operator may simply not have. Establish which one before the first wave,
+not at the gate. If none is available, record `external review: unavailable, <reason>` in
+AUTORUN-STATE once, skip step 4 in every wave, and go straight from 3 to 4.5. What is NOT allowed
+is skipping it silently, or letting an agent narrate a review it never ran: an invented external
+round is worse than an absent one, because the absence is visible and the invention is not.
+Steps 1, 2, 3 and 4.5 are the floor and never skip.
 
 Any fix in steps 3 or 4 that changes code **re-enters at step 2**.
 
