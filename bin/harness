@@ -496,6 +496,8 @@ cmd_add_tool() {
     cosmos)
       c_info "COSMOS has two configuration paths. This harness generates neither yet."
       echo "  1. Cosmos Advisor: describe the Expert you want in plain language, no files."
+      echo "     One worked prompt is committed, for the adversary reviewer:"
+      echo "       adapters/cosmos/adversary-advisor-prompt.md"
       echo "  2. auggie cloud: Experts are YAML bundles you CAN commit."
       echo "       auggie cloud expert init --name <n> -o <n>.yaml"
       echo "       auggie cloud expert validate -f <n>.yaml && auggie cloud expert apply -f <n>.yaml"
