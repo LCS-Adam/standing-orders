@@ -146,6 +146,124 @@ stage_shipped() {
   [ "$n" -gt 0 ] || die "nothing to install from $sub/ - is $HARNESS_ROOT a harness checkout?"
 }
 
+# ---------------------------------------------------------------- augment output
+#
+# Auggie's subagent frontmatter is a DIFFERENT schema from Claude Code's, so
+# .augment/agents/ is GENERATED from agents/, never symlinked or copied. Both
+# `harness add --tool auggie` (project scope) and `harness build-plugin` write
+# it, which is why the rewrite lives here once.
+#
+# Every claim this function encodes was verified in docs 2026-09-16 against
+# aug_cli_subagents.md in the offline snapshot, not against a running Auggie.
+#   - the field list (name, description, color, model, tools, disabled_tools)
+#   - `tools` is an allowlist, `disabled_tools` a denylist, and when BOTH are
+#     present `tools` is silently ignored. So exactly one is ever emitted.
+#   - the tool names used here are the ones that page documents for subagent
+#     frontmatter. aug_cli_permissions.md documents a DIFFERENT set for
+#     toolPermissions (read/edit/write/terminal) and calls these the legacy
+#     aliases of those. Whether the alias table also applies inside subagent
+#     frontmatter is NOT FOUND, so each surface gets the names its own page
+#     documents. Runbook step 8 is what settles it in practice.
+#
+# effort: and reasoning: are stripped unconditionally: they are not in the
+# documented field list, and every body already states its effort in words.
+
+# augment_agent_rewrite - one resolved agents/<name>.md on stdin, the Auggie
+# subagent on stdout. Dies loudly on anything it cannot map; a silently
+# unrestricted or unpinned agent is the failure this whole path exists to avoid.
+augment_agent_rewrite() {
+  perl -CSD -0777 -e '
+    my $src = shift;
+    local $/; my $in = <STDIN>;
+    my ($fm, $body) = $in =~ /\A---\n(.*?)\n---\n(.*)\z/s
+      or die "$src: no YAML frontmatter\n";
+    my %f;
+    for my $line (split /\n/, $fm) {
+      next if $line =~ /^\s*(#|$)/;
+      # Every value here is a single-line scalar. A folded or list value would
+      # be silently truncated to its first line, so it is an error instead.
+      my ($k, $v) = $line =~ /^([A-Za-z_][A-Za-z0-9_]*):[ \t]*(.*)$/
+        or die "$src: frontmatter line is not a single-line key: value -- $line\n";
+      $f{$k} = $v;
+    }
+    die "$src: no name:\n"  unless length($f{name}  // "");
+    die "$src: no model: -- an unpinned subagent inherits the CLI default\n"
+      unless length($f{model} // "");
+    die "$src: unresolved tier token in model: $f{model}\n" if $f{model} =~ /\{\{/;
+
+    my %map = (Read => "view", Grep => "codebase-retrieval", Glob => "codebase-retrieval",
+               Edit => "str-replace-editor", Write => "save-file", Bash => "launch-process",
+               WebFetch => "web-fetch", WebSearch => "web-search");
+    my @claude = grep { length } map { my $t = $_; $t =~ s/^\s+|\s+$//g; $t }
+                 split /,/, ($f{tools} // "");
+    my %have = map { $_ => 1 } @claude;
+    # Validate the WHOLE list before choosing a branch. Doing it inside the
+    # allowlist branch meant a tool with no mapping was silently dropped on any
+    # agent that happened to be read-only, and an unknown tool is exactly the
+    # case where staying quiet is wrong.
+    for my $t (@claude) {
+      next if $t eq "Agent" || $map{$t};
+      die "$src: no Auggie equivalent for tool \"$t\" -- add one to the map or drop it deliberately\n";
+    }
+
+    print "---\n";
+    print "name: $f{name}\n";
+    print "description: $f{description}\n" if length($f{description} // "");
+    print "model: $f{model}\n";
+    if ($have{Agent}) {
+      # The Agent tool in Claude Code has no documented Auggie equivalent. An
+      # allowlist that simply omitted it would leave this agent unable to
+      # dispatch anything, and nothing would say so, so this one carries no
+      # restriction at all until the dispatch tool is named (runbook step 6).
+      print "# no tool restriction: Agent has no documented Auggie equivalent (runbook step 6)\n";
+    } elsif (!$have{Edit} && !$have{Write}) {
+      # Read-only by denylist, not allowlist: launch-process stays so the agent
+      # can still run git and the test suite, which is how it reads evidence.
+      print "disabled_tools: str-replace-editor, save-file, remove-files\n";
+    } else {
+      my (@out, %seen);
+      push @out, $map{$_} for grep { !$seen{$map{$_}}++ } @claude;
+      die "$src: tools: is empty after mapping\n" unless @out;
+      print "tools: ", join(", ", @out), "\n";
+    }
+    print "---\n", $body;
+  ' "$1"
+}
+
+# augment_agents <destdir> - the whole set. Requires $STAGE and a loaded tier
+# binding. Returns the count it wrote on stdout.
+augment_agents() {
+  local dest="$1" f name n=0
+  for f in "$STAGE"/agents/*.md; do
+    [ -e "$f" ] || die "no staged agents to convert"
+    name="$(basename "$f")"
+    mkdir -p "$dest"
+    augment_agent_rewrite "agents/$name" < "$f" > "$dest/$name" \
+      || die "could not convert agents/$name"
+    n=$((n+1))
+  done
+  printf '%s\n' "$n"
+}
+
+# stage_agents_for_auggie - stage agents/ and bind the tokens to the Augment
+# tier ids. Sets $STAGE.
+stage_agents_for_auggie() {
+  need perl
+  [ -f "$AUGGIE_CONF" ] || die "no Augment tier binding at $AUGGIE_CONF
+  It is generated, never typed: run  scripts/resolve-tier.sh --write-conf
+  on a machine with auggie installed and logged in.
+  See docs/augment-runbook.md step 5."
+  load_models "$AUGGIE_CONF"
+  STAGE="$(mktemp -d)"
+  trap 'rm -rf "${STAGE:-}"' EXIT
+  stage_shipped agents
+  while IFS= read -r f; do resolve_tiers "$f"; done < <(find "$STAGE/agents" -type f -name '*.md')
+  if grep -rq '{{TIER_' "$STAGE" 2>/dev/null; then
+    grep -rl '{{TIER_' "$STAGE" | sed "s#$STAGE#  #"
+    die "unresolved tier tokens above; $AUGGIE_CONF did not cover them"
+  fi
+}
+
 # ---------------------------------------------------------------- settings merge
 
 merge_settings() {
@@ -315,12 +433,16 @@ cmd_add_tool() {
       # the vendor which models the company allowlist actually carries and
       # writes the conf; a hand-typed id is a plausible string the CLI then
       # rejects at dispatch time, which is the failure this refuses to ship.
-      [ -f "$AUGGIE_CONF" ] || die "no Augment tier binding at $AUGGIE_CONF
-  It is generated, never typed: run  scripts/resolve-tier.sh --write-conf
-  on a machine with auggie installed and logged in.
-  See docs/augment-runbook.md step 5."
-      load_models "$AUGGIE_CONF"
+      stage_agents_for_auggie
       echo "  tiers: FRONTIER-THINK=$TIER_FRONTIER_THINK FRONTIER-DO=$TIER_FRONTIER_DO MID=$TIER_MID SMALL=$TIER_SMALL"
+      local n
+      n="$(augment_agents "$STAGE/out")"
+      # MANAGED: these are generated copies of agents/, not anyone's work, so a
+      # re-run after a re-bind replaces them and keeps the previous copy.
+      MANAGED=1
+      put_dir "$STAGE/out" "$root/.augment/agents"
+      MANAGED=0
+      c_info "  $n subagents written to .augment/agents/ (commit them: workspace scope is shared)"
       put "$HARNESS_ROOT/AGENTS.md" "$HOME/.augment/rules/harness-core.md" "~/.augment/rules/harness-core.md" ;;
     codex)
       put "$HARNESS_ROOT/AGENTS.md" "$HOME/.codex/AGENTS.md" "~/.codex/AGENTS.md" ;;
