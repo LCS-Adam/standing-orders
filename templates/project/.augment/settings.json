@@ -2,42 +2,42 @@
   "toolPermissions": [
     {
       "toolName": "terminal",
-      "shellInputRegex": "\\bgit\\s+merge(\\s|$)",
+      "shellInputRegex": "\\bgit\\b(\\s+(-[A-Za-z]|--[a-z-]+)(=\\S+)?(\\s+\\S+)?)*\\s+[\\\"']?merge[\\\"']?(\\s|$)",
       "permission": {
         "type": "deny"
       }
     },
     {
       "toolName": "terminal",
-      "shellInputRegex": "\\bgit\\s+push\\b.*(\\s--force|\\s-f(\\s|$)|\\s\\+)",
+      "shellInputRegex": "\\bgit\\b(\\s+(-[A-Za-z]|--[a-z-]+)(=\\S+)?(\\s+\\S+)?)*\\s+[\\\"']?push[\\\"']?\\b.*(\\s-{1,2}force|\\s-[A-Za-z]*f[A-Za-z]*(\\s|$)|\\s\\+)",
       "permission": {
         "type": "deny"
       }
     },
     {
       "toolName": "terminal",
-      "shellInputRegex": "\\bgit\\s+push\\b.*[\\s:/'\\\"](main|master)([\\s:'\\\"]|$)",
+      "shellInputRegex": "\\bgit\\b(\\s+(-[A-Za-z]|--[a-z-]+)(=\\S+)?(\\s+\\S+)?)*\\s+[\\\"']?push[\\\"']?\\b.*[\\s:/\\\"'](main|master)([\\s:\\\"']|$)",
       "permission": {
         "type": "deny"
       }
     },
     {
       "toolName": "terminal",
-      "shellInputRegex": "\\bgit\\s+push\\b.*(\\s--delete(\\s|$)|\\s-d(\\s|$)|\\s:)",
+      "shellInputRegex": "\\bgit\\b(\\s+(-[A-Za-z]|--[a-z-]+)(=\\S+)?(\\s+\\S+)?)*\\s+[\\\"']?push[\\\"']?\\b.*(\\s--delete(\\s|$)|\\s-[A-Za-z]*d[A-Za-z]*(\\s|$)|\\s:)",
       "permission": {
         "type": "deny"
       }
     },
     {
       "toolName": "terminal",
-      "shellInputRegex": "\\bgit\\s+reset\\b.*\\s--hard(\\s|$)",
+      "shellInputRegex": "\\bgit\\b(\\s+(-[A-Za-z]|--[a-z-]+)(=\\S+)?(\\s+\\S+)?)*\\s+[\\\"']?reset[\\\"']?\\b.*\\s--hard(\\s|$)",
       "permission": {
         "type": "deny"
       }
     },
     {
       "toolName": "terminal",
-      "shellInputRegex": "\\bgit\\s+branch\\b.*\\s-D(\\s|$)",
+      "shellInputRegex": "\\bgit\\b(\\s+(-[A-Za-z]|--[a-z-]+)(=\\S+)?(\\s+\\S+)?)*\\s+[\\\"']?branch[\\\"']?\\b.*\\s-[A-Za-z]*D[A-Za-z]*(\\s|$)",
       "permission": {
         "type": "deny"
       }

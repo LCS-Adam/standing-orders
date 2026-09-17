@@ -10,18 +10,29 @@ organizational decision this repository does not make for you.
 **External LLM review.** Skill `skills/external-llm-review/SKILL.md` is used "when a
 Claude-authored plan, wave diff, or design doc needs an independent non-Claude review" (line 3) by
 invoking a separate CLI (codex, cursor-agent, or gemini) backed by a different model provider. The
-artifact sent is scoped, not the whole repository: the phase table at lines 55-58 names it
-precisely, a PLAN file during planning or "wave's final simplified DIFF file" during execution, and
-line 60 states the contract: "Pass the artifact by path. You apply fixes; the reviewer stays
-read-only." In practice this means one file (a plan or a diff) is handed to a third-party CLI
-process, which may call out to its own cloud-hosted model; the reviewer never writes back to the
-repo, only produces a report.
+artifact NAMED is scoped: the phase table names it precisely, a PLAN file during planning or the
+"wave's final simplified DIFF file" during execution, and the contract reads "Pass the artifact by
+path. You apply fixes; the reviewer stays read-only."
+
+**The artifact named is not the limit of what is read.** The reviewer runs with the repository as
+its workspace and the skill instructs it to "Verify against live code (`path:line`)". Verifying a
+plan that references `src/auth.ts` means opening `src/auth.ts`. So the honest disclosure is that a
+third-party CLI, and the cloud model behind it, may read and transmit any file in the repository it
+judges relevant to the artifact. Treat this as giving an outside vendor read access to the
+repository for the duration of the review, not as handing over one file.
+
+If your organization needs a one-file guarantee, this step does not provide it. Run the reviewer
+against a temporary directory containing only the approved artifact, or do not run it at all: the
+gate stack works without it and the surrounding documentation treats it as optional throughout.
 
 Each reviewer runs with a read-only sandbox flag: codex with `--sandbox read-only` (line 65),
 cursor-agent with `--sandbox enabled` (line 81), gemini with a real read-only mode,
 `--approval-mode plan` (line 44). The model itself is never a Claude model (line 94 states
 "model | From the plan. Never `claude-*`."), so this is a deliberate hand-off of one artifact to
-an external vendor's inference endpoint, not a general repo upload.
+an external vendor's inference endpoint.
+
+Read-only sandboxing constrains WRITES. It does not constrain reads, and it is reads that leave the
+machine. A reviewer that cannot modify a file can still send its contents to the model.
 
 **Cosmos (Augment's cloud platform).** `adapters/README.md`, under "Tools with no repo surface",
 describes COSMOS as "Augment's cloud platform, where reusable agent templates called Experts run

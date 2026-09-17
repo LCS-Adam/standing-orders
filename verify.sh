@@ -717,10 +717,23 @@ fi
 # \b, \s, alternation, a character class, and (\s|$). Runbook step 8 is what
 # settles the live verdicts.
 #
-# CEILING, stated: a bare `git push` with main as the upstream is ALLOWED here,
-# because the branch name is not in the command string. So is
-# `git branch --delete --force`. These rules block what AGENTS.md already
-# forbids in the shapes people actually type; they are not a sandbox.
+# CEILING, and read this before trusting the PASS. A regex over raw shell text
+# is NOT a security boundary. It matches the string someone typed, and a shell
+# has unlimited ways to spell the same command. An external reviewer defeated
+# the first version of these rules with `git -C <path> push --force`, quoting
+# (`git "push"`), and combined short flags (`-fu`), and this check was green
+# over all of them because its table contained none of those shapes. Those
+# cases are pinned above now, but the lesson generalises: the table proves the
+# rules handle the shapes IN IT, and nothing more.
+#
+# Known and still allowed: a bare `git push` where main is the upstream, since
+# the branch is not in the command string; `git branch --delete --force`;
+# anything reached through an alias, a variable, a here-doc or a script; and
+# any spelling nobody has thought of yet.
+#
+# So treat these rules as a speed bump over the mistakes people actually type,
+# which is what AGENTS.md already forbids in prose. They are not a sandbox, and
+# a green line here is not a statement that the command cannot be run.
 TP_TEMPLATE='templates/project/.augment/settings.json'
 if [ -z "$(shipped_l "$TP_TEMPLATE")" ]; then
   fail "$TP_TEMPLATE is not in the shipped set - no permission rules were exercised, which is not the same as safe"
@@ -767,6 +780,26 @@ else
         [deny  => "git push origin main"],
         [deny  => "git push origin HEAD:main"],
         [deny  => "git push origin HEAD:refs/heads/main"],
+        # Every one of these was ALLOWED by the first version of these rules,
+        # and check 14 was green over them because its table had no global
+        # option, no quoting and no combined short flag. An external reviewer
+        # ran them against the production regexes and they all got through.
+        # `git -C` is used throughout this repository itself, so this was not
+        # an exotic shape.
+        [deny  => "git -C /work/repo push --force origin topic"],
+        [deny  => "git -C /work/repo push origin main"],
+        [deny  => "git -C /work/repo merge main"],
+        [deny  => "git -C /work/repo reset --hard HEAD~1"],
+        [deny  => "git -C /work/repo branch -D topic"],
+        [deny  => "git --git-dir=/w/.git --work-tree=/w push --force origin x"],
+        [deny  => "git -c user.name=x push origin main"],
+        [deny  => "git \"push\" --force origin topic"],
+        [deny  => "git push -fu origin topic"],
+        [deny  => "git push -uf origin topic"],
+        [deny  => "git branch -Dr topic"],
+        [allow => "git -C /work/repo status"],
+        [allow => "git -C /work/repo merge-base HEAD HEAD"],
+        [allow => "git -C /work/repo push origin feature"],
         [deny  => "git push origin refs/heads/main"],
         [deny  => "git push -u origin main"],
         [allow => "git push origin refs/heads/maintenance"],
@@ -797,7 +830,7 @@ else
       fail "Augment deny rules do not match their own table"
       printf '%s\n' "$tpbad" | head -10 | while IFS= read -r l; do show "$l"; done
     else
-      pass "all $(printf '%s\n' "$tpre" | wc -l | tr -d ' ') Augment deny rules give the expected verdict on 27 commands"
+      pass "all $(printf '%s\n' "$tpre" | wc -l | tr -d ' ') Augment deny rules give the expected verdict on 41 commands"
     fi
   fi
 fi

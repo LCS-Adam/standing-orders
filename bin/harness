@@ -38,6 +38,19 @@ die()    { printf '\033[31merror:\033[0m %s\n' "$1" >&2; exit 1; }
 
 need() { command -v "$1" >/dev/null 2>&1 || die "required tool not found: $1"; }
 
+# Anything that becomes a path component on the way to `rm` gets checked here.
+# Three such values are not ours: a skill name read from an upstream author's
+# frontmatter, a filename read from a generated manifest that is committed to a
+# consumer's repo, and a clone name from config. A `../` in any of them turns a
+# cleanup into a delete somewhere else. Refuse rather than sanitise: a quietly
+# rewritten name puts the right content at the wrong path.
+safe_component() { # safe_component <value>
+  case "$1" in
+    ''|.|..|*/*|*'\'*|-*) return 1 ;;
+  esac
+  printf '%s' "$1" | grep -qE '^[A-Za-z0-9][A-Za-z0-9._-]*$'
+}
+
 # ---------------------------------------------------------------- tier binding
 
 # load_models [conf] - bind the four tiers from a conf file.
@@ -351,6 +364,8 @@ prune_generated() {
   [ -f "$dest/.harness-generated" ] || return 0
   while IFS= read -r name; do
     [ -n "$name" ] || continue
+    # The manifest is a file in someone else's repository by the time this runs.
+    safe_component "$name" || { c_skip "refusing unsafe name in .harness-generated: $name"; continue; }
     grep -qxF "$name" "$dest/.harness-generated" && continue
     [ -e "$dest/$name" ] || continue
     if [ "$DRY" -eq 1 ]; then c_skip "$name (would remove, no longer in agents/)"; continue; fi
@@ -504,6 +519,8 @@ stage_upstream_skills() {
       [ -n "$src" ] || continue
       sname="$(skill_name_of "$src")"
       [ -n "$sname" ] || { c_skip "$name: a SKILL.md has no name: in its frontmatter, skipped"; continue; }
+      safe_component "$sname" \
+        || { c_skip "$name: refusing skill name from upstream frontmatter: $sname"; continue; }
       case "$want" in
         '*') ;;
         *) case ",$want," in *",$sname,"*) ;; *) continue ;; esac ;;

@@ -44,6 +44,19 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+# A name from the manifest becomes a path under $DEST and then an argument to
+# `rm -rf`. `../production-cache` would reach outside .upstream/ and delete
+# something real. Nothing downstream re-checks it, so it is checked once, here,
+# and anything that is not a plain basename is refused rather than sanitised:
+# a silently rewritten name would clone the right repo into the wrong place.
+safe_name() { # safe_name <name>
+  case "$1" in
+    ''|.|..|*/*|*'\'*) return 1 ;;
+    -*) return 1 ;;
+  esac
+  printf '%s' "$1" | grep -qE '^[A-Za-z0-9][A-Za-z0-9._-]*$'
+}
+
 wanted() {
   [ "${#WANT[@]}" -eq 0 ] && return 0
   local w; for w in "${WANT[@]}"; do [ "$w" = "$1" ] && return 0; done
@@ -54,6 +67,7 @@ fail=0 seen=0
 while read -r name url ref _rest; do
   case "${name:-}" in ''|\#*) continue ;; esac
   [ -n "${url:-}" ] && [ -n "${ref:-}" ] || { note "skipping malformed entry: $name"; fail=1; continue; }
+  safe_name "$name" || { note "refusing unsafe entry name: $name"; fail=1; continue; }
   wanted "$name" || continue
   seen=$((seen+1))
 
