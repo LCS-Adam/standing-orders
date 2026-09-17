@@ -189,9 +189,13 @@ New to agentic coding? Read them in this order, newcomer to specialist.
 | [Handing off between sessions](docs/handoff-and-resume.md) | Anyone closing a session that another session must resume. |
 | [Anti-patterns](docs/anti-patterns.md) | Anyone who wants to learn from failures this repo already recorded. |
 | [Operating boundaries](docs/operating-boundaries.md) | A security reviewer or an engineer's employer asking what this harness actually does. |
+| [Getting more than one answer](docs/deliberation.md) | Anyone facing a contested design decision, a go/no-go, or a research synthesis where one model's first answer is not enough. |
+| [The full lifecycle](docs/lifecycle.md) | Anyone who wants the whole path, idea to deploy, on one page before diving into any single stage. |
 | [Planning and executing a large build](docs/planning-large-builds.md) | Someone scoping a multi-day or multi-phase change. |
 | [Autonomous execution](docs/autorun-hitl-heartbeat.md) | Someone running an unattended, multi-hour build. |
+| [Finishing a build](docs/finishing-a-build.md) | Anyone closing out a build and wondering what the harness covers for review, QA, red team and deploy, and what it does not. |
 | [Tracking work across sessions](docs/project-management.md) | A team keeping project state on disk across sessions and tools. |
+| [Building a private knowledge vault](docs/knowledge-vault.md) | A team that wants agents to maintain a corpus over time without letting them corrupt it or leak it. |
 | [Upstream sources](docs/upstream-sources.md) | Anyone wondering why another project's skills are cloned next to this repo rather than copied into it. |
 | [Reference](docs/reference.md) | Anyone who wants the generated, authoritative list of every agent, skill, command, and config key. |
 

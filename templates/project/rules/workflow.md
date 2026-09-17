@@ -76,8 +76,8 @@ Do not use for: small scoped edits, low-risk reversible refactors, tasks the rep
 | Task shape | Primary mode | Secondary mode | Main output |
 |---|---|---|---|
 | ambiguous build | reverse prompting + contract | chatroom or direct | approved contract |
-| strategy / ranking | consensus | direct synthesis | consensus_report.md |
-| architecture / tradeoff | chatroom | direct synthesis | chatroom_report.md |
+| strategy / ranking | consensus | direct synthesis | active/consensus/<run-id>.md |
+| architecture / tradeoff | chatroom | direct synthesis | active/chatroom/<run-id>.md |
 | narrow implementation | direct execution | verification | code + tests + summary |
 | wide separable build / code-change | `multi-agent-worktree` (git worktrees) | direct + verification | merged artifact set |
 | parallel research / audit / multi-slice review | `multi-agent-inline` (Agent tool) | direct synthesis | per-agent verbatim files + synthesis report |

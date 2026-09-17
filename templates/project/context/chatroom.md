@@ -85,7 +85,9 @@ Unresolved Risks:
 - [risk]
 ```
 
-Write to `active/chatroom/chatroom_report.md`.
+Write to `active/chatroom/<run-id>.md`, where the run id is dated and slugged, for example
+`2026-06-18_queue-vs-cron.md`. A fixed filename cannot hold two runs, and the second one silently
+overwrites the first.
 
 ## Edge Cases
 - if all roles immediately agree, the problem may be underdefined — revisit the question
