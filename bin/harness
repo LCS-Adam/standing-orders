@@ -505,6 +505,97 @@ cmd_add_tool() {
   esac
 }
 
+# ---------------------------------------------------------------- build-plugin
+
+# An Auggie plugin is a GENERATED tree, not the repo served over HTTP. The
+# reason is the tier tokens: agents/, commands/ and one skill ship with
+# {{TIER_*}} in them (verify.sh check 3 requires it), and the literal that
+# replaces a token is different per tool. A marketplace serves repository files
+# verbatim, so the plugin has to be built, committed, and rebuilt when the
+# binding moves. docs/augment-runbook.md step 5b names the three triggers.
+#
+# Layout from aug_cli_plugins.md, "Marketplace Structure", verified in docs
+# 2026-09-16. hooks/hooks.json is deliberately ABSENT until the hook's
+# insertion points are filled (runbook step 6); see hooks/require-agent-model.sh.
+cmd_build_plugin() {
+  local tool="" out="" a
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --tool)  shift; tool="${1:-}" ;;
+      --stage) shift; out="${1:-}" ;;
+      *) die "usage: harness build-plugin --tool auggie [--stage <dir>]" ;;
+    esac
+    shift
+  done
+  [ "$tool" = "auggie" ] || die "usage: harness build-plugin --tool auggie [--stage <dir>]"
+  need perl; need jq
+  git -C "$HARNESS_ROOT" rev-parse --git-dir >/dev/null 2>&1 \
+    || die "$HARNESS_ROOT is not a git checkout; a plugin ships only what the gate can scan"
+  out="${out:-$HARNESS_ROOT}"
+  [ -d "$out" ] || die "--stage directory does not exist: $out"
+
+  stage_agents_for_auggie
+  stage_shipped skills
+  stage_shipped commands
+  while IFS= read -r a; do resolve_tiers "$a"; done \
+    < <(find "$STAGE/skills" "$STAGE/commands" -type f -name '*.md')
+  if grep -rq '{{TIER_' "$STAGE" 2>/dev/null; then
+    grep -rl '{{TIER_' "$STAGE" | sed "s#$STAGE#  #"
+    die "unresolved tier tokens above; $AUGGIE_CONF did not cover them"
+  fi
+
+  local P="$out/plugins/agent-harness-auggie"
+  # Regeneration, not a merge: a deleted agent has to disappear from the built
+  # tree or check 13 reports a difference forever. Guarded by the exact
+  # basename, because this is the one rm -rf in the installer.
+  case "$P" in
+    */plugins/agent-harness-auggie) [ "$DRY" -eq 1 ] || rm -rf "$P" ;;
+    *) die "refusing to remove an unexpected path: $P" ;;
+  esac
+  if [ "$DRY" -eq 1 ]; then c_ok "plugins/agent-harness-auggie (dry run)"; return; fi
+
+  mkdir -p "$P/.augment-plugin" "$P/rules" "$out/.augment-plugin"
+  local n; n="$(augment_agents "$P/agents")"
+  cp -R "$STAGE/skills"   "$P/skills"
+  cp -R "$STAGE/commands" "$P/commands"
+  cp "$HARNESS_ROOT/AGENTS.md" "$P/rules/harness-core.md"
+
+  # The version is a CONSTANT, not the commit. It was the commit for one
+  # iteration and that is a trap: verify.sh check 13 rebuilds this tree and
+  # compares it byte for byte with what is committed, so a version carrying the
+  # SHA would differ on every commit after the build and the check would be red
+  # permanently. Provenance is what the git history of plugins/ is for. Bump
+  # this by hand when the plugin's shape changes; the vendor doc's example is
+  # semver and whether anything validates the field is NOT FOUND.
+  local ver="0.1.0"
+
+  jq -n --arg v "$ver" '{
+    name: "agent-harness-auggie",
+    description: "The agent-harness operating framework for Auggie: subagents, skills, commands and the core rules.",
+    version: $v,
+    keywords: ["agents", "skills", "workflow"]
+  }' > "$P/.augment-plugin/plugin.json"
+
+  jq -n --arg v "$ver" '{
+    name: "agent-harness",
+    description: "Plugins generated from the agent-harness repository.",
+    version: $v,
+    plugins: [{
+      name: "agent-harness-auggie",
+      description: "The agent-harness operating framework for Auggie.",
+      version: $v,
+      source: "./plugins/agent-harness-auggie",
+      category: "productivity",
+      tags: ["agents", "skills", "workflow"]
+    }]
+  }' > "$out/.augment-plugin/marketplace.json"
+
+  c_ok "plugins/agent-harness-auggie ($n agents, $(find "$P/skills" -name SKILL.md | wc -l | tr -d ' ') skills, $(find "$P/commands" -name '*.md' | wc -l | tr -d ' ') commands)"
+  c_ok ".augment-plugin/marketplace.json ($ver)"
+  [ "$out" = "$HARNESS_ROOT" ] && c_info "Commit both. They are generated: rebuild after a re-bind (docs/augment-runbook.md step 5b)."
+  return 0
+}
+
 # ---------------------------------------------------------------- misc
 
 cmd_verify() { exec "$HARNESS_ROOT/verify.sh" "$@"; }
@@ -517,6 +608,8 @@ harness - install this agent framework
   harness init                 scaffold project scope into the current repo
   harness add <module>         add one module to the current repo
   harness add --tool <name>    write another tool's pointer file
+  harness build-plugin --tool auggie
+                               generate plugins/ and the marketplace manifest
   harness verify               run the scrub gate
   harness help                 this
 
@@ -543,7 +636,8 @@ main() {
   done
   set -- ${args[@]+"${args[@]}"}
   case "${1:-help}" in
-    install) shift; cmd_install "$@" ;;
+    install)      shift; cmd_install "$@" ;;
+    build-plugin) shift; cmd_build_plugin "$@" ;;
     init)    shift; cmd_init "$@" ;;
     add)     shift; cmd_add "$@" ;;
     verify)  shift; cmd_verify "$@" ;;

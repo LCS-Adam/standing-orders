@@ -585,10 +585,48 @@ else
     fail "$GEN_DOC is stale - regenerate it with: $GEN_SCRIPT > $GEN_DOC"
     diff "$gentmp" "$GEN_DOC" 2>&1 | head -10 | while IFS= read -r l; do show "$l"; done
   else
-    pass "$GEN_DOC matches what $GEN_SCRIPT generates"
+    genok=1
   fi
 fi
 rm -f "$gentmp" "$generr"
+
+# The second generated artifact: plugins/ and .augment-plugin/marketplace.json,
+# written by `harness build-plugin --tool auggie`. Same claim, same check, so it
+# lives here rather than as a fifteenth: a derived tree nobody re-derives reads
+# as authoritative while it rots.
+#
+# It can only be rebuilt where the Augment tier binding exists, and that file is
+# generated on the work machine. On a machine without it the comparison is
+# SKIPPED and says so out loud in the check's own output, because a skip that
+# looks like a pass is the failure this gate is built around.
+plugmsg=""
+if [ -z "$(shipped_l 'config/models.auggie.conf')" ]; then
+  plugskip="plugins/ not compared: config/models.auggie.conf is unbound (docs/augment-runbook.md step 5)"
+  [ -z "$(shipped_l 'plugins/*')" ] || plugmsg="plugins/ is committed but cannot be re-derived here - $plugskip"
+else
+  plugskip=""
+  if [ -z "$(shipped_l 'plugins/*')" ]; then
+    plugmsg="the tier binding is bound but plugins/ is not committed - run: harness build-plugin --tool auggie"
+  else
+    plugtmp=$(mktemp -d) || gate_error "mktemp failed - check 13 cannot run"
+    if ! plugerr=$(bash bin/harness build-plugin --tool auggie --stage "$plugtmp" 2>&1); then
+      plugmsg="harness build-plugin failed - the comparison could not run: $(printf '%s' "$plugerr" | tail -1)"
+    elif ! diff -r "$plugtmp/plugins" plugins >/dev/null 2>&1; then
+      plugmsg="plugins/ is stale - rebuild it with: harness build-plugin --tool auggie"
+    elif ! diff -q "$plugtmp/.augment-plugin/marketplace.json" .augment-plugin/marketplace.json >/dev/null 2>&1; then
+      plugmsg=".augment-plugin/marketplace.json is stale - rebuild it with: harness build-plugin --tool auggie"
+    fi
+    rm -rf "$plugtmp"
+  fi
+fi
+
+if [ -n "$plugmsg" ]; then
+  fail "generated files are not current"
+  show "$plugmsg"
+elif [ "${genok:-0}" -eq 1 ]; then
+  pass "$GEN_DOC matches what $GEN_SCRIPT generates${plugskip:+; }${plugskip}"
+  [ -z "$plugskip" ] && show "plugins/ matches what harness build-plugin generates"
+fi
 
 # 14 ------------------------------------------------- Augment tool-permission rules
 # templates/project/.augment/settings.json denies the mechanical subset of the
