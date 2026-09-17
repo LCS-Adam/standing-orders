@@ -58,11 +58,11 @@ Scrubbing ~/projects/standing-orders
   PASS every backticked slash command resolves to commands/, skills/, or the built-in allowlist
   PASS every file harness install would ship from this repo is in the scanned set
          plus 91 file(s) from 13 upstream skill(s), which this gate does not scan (config/upstream.conf)
-  PASS documented counts match (11 agents, 16 skills, 4 commands, 14 checks)
+  PASS documented counts match (11 agents, 16 skills, 5 commands, 15 checks)
   PASS docs/reference.md matches what scripts/gen-reference.sh generates; plugins/ not compared: config/models.auggie.conf is unbound (docs/augment-runbook.md step 5)
   PASS all 7 Augment deny rules give the expected verdict on 41 commands
 
-OK all 14 checks passed
+OK all 15 checks passed
 ```
 
 Be precise about which numbers in that output the gate actually defends.

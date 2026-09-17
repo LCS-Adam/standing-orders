@@ -11,7 +11,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF="$ROOT/${BASH_SOURCE[0]##*/}"
 FAIL=0
 RAN=0
-EXPECTED_CHECKS=14
+EXPECTED_CHECKS=15
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -913,6 +913,64 @@ doclist=$(awk '/silently passing nothing:/,/^Read the output/' docs/getting-star
 if [ "$doclist" -gt 0 ] && [ "$doclist" -ne "$EXPECTED_CHECKS" ]; then
   printf '  \033[33mWARN\033[0m docs/getting-started.md enumerates %s checks, the gate runs %s\n' \
     "$doclist" "$EXPECTED_CHECKS"
+fi
+
+# 15 ------------------------------------------------- upstream installs carry a licence
+# `install=` in config/upstream.conf means this repo deploys somebody else's code
+# into a user's ~/.claude. Doing that without being able to say under what terms
+# is the one third-party problem no amount of reading their source fixes, so it
+# is asserted rather than trusted.
+#
+# Two grades of evidence, and the difference is reported rather than flattened.
+# A LICENSE file in the clone is the real thing. A licence declared only in a
+# package manifest (pyproject.toml, package.json) is weaker: it states intent
+# without shipping the grant, and it is what `graphify` currently has. That is
+# not a pass dressed as a fail, and it is not silence either; it prints, every
+# run, naming the project.
+#
+# CEILING, stated because a green line here is narrow: this proves a licence is
+# DECLARED, never that it is compatible with this repo's MIT, and never that the
+# code does what it says. The gate does not scan any upstream content; check 11
+# prints that surface every run and docs/upstream-skills.md describes it.
+licnames=""; licweak=""; licmissing=""; licunclonable=""
+if [ -f config/upstream.conf ]; then
+  while read -r upname upurl upref upspec; do
+    [ -n "${upname:-}" ] || continue
+    [ "${upname#\#}" = "$upname" ] || continue
+    [ "${upspec#install=}" != "${upspec:-}" ] || continue
+    if [ ! -d ".upstream/$upname" ]; then
+      licunclonable="$licunclonable $upname"; continue
+    fi
+    licnames="$licnames $upname"
+    # One [ -e ] per candidate. `ls A* B*` returns non-zero when EITHER glob
+    # misses, so it reported "no licence" for two projects that plainly had one.
+    lichit=0
+    for lf in ".upstream/$upname"/LICENSE* ".upstream/$upname"/COPYING* \
+              ".upstream/$upname"/LICENCE*; do
+      [ -e "$lf" ] && { lichit=1; break; }
+    done
+    if [ "$lichit" -eq 1 ]; then
+      continue
+    elif grep -qiE '^[[:space:]]*"?license"?[[:space:]]*[=:]' \
+           ".upstream/$upname/pyproject.toml" ".upstream/$upname/package.json" 2>/dev/null; then
+      licweak="$licweak $upname"
+    else
+      licmissing="$licmissing $upname"
+    fi
+  done < config/upstream.conf
+fi
+nlic=$(printf '%s' "$licnames" | wc -w | tr -d ' ')
+if [ ! -f config/upstream.conf ]; then
+  fail "config/upstream.conf is missing - no upstream licence was checked, which is not the same as clean"
+elif [ "$nlic" -eq 0 ] && [ -z "$licunclonable" ]; then
+  fail "no upstream entry marked install= - the licence check scanned nothing, which is not the same as clean"
+elif [ -n "$licmissing" ]; then
+  fail "upstream installs with no licence evidence at all:$licmissing"
+  show "this repo deploys their code into ~/.claude; establish the terms or drop the install= field"
+else
+  pass "all $nlic upstream install(s) carry a licence"
+  [ -n "$licweak" ] && show "declared only in a package manifest, no LICENSE file:$licweak"
+  [ -n "$licunclonable" ] && show "not verified, clone absent (run harness upstream):$licunclonable"
 fi
 
 # ---------------------------------------------------- assert the gate ran

@@ -10,7 +10,7 @@ git clone <this-repo> ~/projects/standing-orders
 cd ~/projects/standing-orders
 ./bin/harness upstream           # clone the referenced repos into .upstream/
 ./bin/harness install --user     # deploy the core into ~/.claude
-./bin/harness verify             # the scrub gate, fourteen checks
+./bin/harness verify             # the scrub gate, fifteen checks
 ```
 
 Clone before install. `install` deploys the upstream skills that `config/upstream.conf` marks with
@@ -24,7 +24,7 @@ differently shaped projects, including one where the right call is not to use it
 
 **Verified by running it.** Everything on the Claude Code side: the installer, the scrub gate, the
 model-pin hook, the tier resolver's self-test, the upstream clone and install path. The gate exits 0
-at fourteen checks and each check has been shown to fail on a planted defect of the kind it claims
+at fifteen checks and each check has been shown to fail on a planted defect of the kind it claims
 to catch.
 
 **Verified only against vendor documentation.** Everything on the Augment side. Auggie has never

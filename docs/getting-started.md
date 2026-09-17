@@ -225,7 +225,7 @@ harness verify
 
 This runs `verify.sh`, the scrub gate. It exists because this framework is meant to be carried onto
 machines that are not yours, and a fail-open scrub looks exactly like a passing one. The gate runs
-fourteen checks and asserts, at the end, that it ran all fourteen checks, so a broken check fails loudly
+fifteen checks and asserts, at the end, that it ran all fifteen checks, so a broken check fails loudly
 instead of silently passing nothing:
 
 1. No absolute home paths in tracked files.
@@ -261,6 +261,10 @@ instead of silently passing nothing:
     denied, a push to a feature branch is allowed. It proves the patterns are well formed and say
     what the table says, not that Auggie's own regex engine agrees; that is settled on a machine
     that has Auggie.
+15. Every upstream marked `install=` in `config/upstream.conf` carries a licence, because
+    that field deploys somebody else's code into your `~/.claude`. A project whose licence is
+    declared only in a package manifest, with no licence file in the clone, is named in the
+    output every run rather than counted as clean.
 
 Read the output top to bottom. Each line is `PASS` or `FAIL`. A `FAIL` line is followed by up to ten
 example matches so you can find and fix the problem without re-running with more verbosity.

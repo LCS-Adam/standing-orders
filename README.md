@@ -110,7 +110,9 @@ Sixteen skills, invocable as `/<name>`: `autorun-plan`, `brainstorming`, `deep-p
 `readonly-healthcheck`, `repo-recon`, `requesting-code-review`, `scope-audit`,
 `systematic-debugging`, `test-driven-development`, `verify-unexecuted`, `version-drift-check`.
 
-Four slash commands: `/deep-plan`, `/handoff`, `/next-step`, `/phase-status`.
+Five slash commands: `/checkpoint`, `/deep-plan`, `/handoff`, `/next-step`, `/phase-status`.
+`/checkpoint` saves where the work stands at a mid-session save point; `/handoff` writes the
+self-sufficient resume prompt a later session starts from.
 
 ## How the two scopes fit together
 
@@ -143,7 +145,7 @@ not want those appearing inside every repo you touch.
 | `rules/` | Path-scoped rules that load only when relevant. |
 | `templates/` | Project scaffolding, the workspace brain, and the nested-phase pattern. |
 | `config/models.conf` | The single place tiers bind to real models. |
-| `verify.sh` | The scrub gate. Fourteen checks, fails the build rather than leaking. |
+| `verify.sh` | The scrub gate. Fifteen checks, fails the build rather than leaking. |
 
 ## Two ideas worth knowing before you use it
 

@@ -5,6 +5,21 @@ the agent knew a moment ago, which files it read, which decisions it made, which
 and reverted, is gone unless it was written to a file before that moment. This document covers how
 to write that file so the next session can actually pick up where the last one left off.
 
+## Checkpoint or handoff
+
+Both write state to `.project-state/`, and reaching for the wrong one costs you either detail or
+time. The test is who reads it next.
+
+| | `/checkpoint` | `/handoff` |
+|---|---|---|
+| When | A save point mid-session: a wave closed, a suite went green, before something risky | The session is ending, or a clear or compact is coming |
+| Who reads it | You, with the conversation still in front of you | A session that remembers nothing |
+| What it writes | An appended dated entry: done, in flight, next, verification | A self-sufficient resume prompt, archived rather than overwritten |
+| How often | Several times a session | Once, at the end |
+
+The rest of this document is about the second one, because that is the one with a failure mode
+worth a page.
+
 ## Why a handoff is needed at all
 
 The instinct is to type a paragraph summarizing what happened and trust that this is enough. It is

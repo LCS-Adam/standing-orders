@@ -188,6 +188,13 @@ template) that typing it out each time would be tedious or error-prone.
 **When not to.** Anything that should happen automatically without the user asking. A
 slash command only runs when someone types it.
 
+
+`/checkpoint` and `/handoff` look similar and are not. A checkpoint is a save point inside a
+session: it records what landed, what is half-finished, and the next action, and you run it
+several times a day. A handoff is written once, when the session is ending or about to be cleared,
+and its job is to be self-sufficient for a reader who was never here. Checkpoint assumes the
+reader is still you; handoff assumes it is not.
+
 ## 5. Hooks - the enforcement layer
 
 **What it is.** A shell script the harness runs at a fixed lifecycle point, wired

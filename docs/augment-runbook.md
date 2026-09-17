@@ -263,7 +263,7 @@ interactively and check three things:
 and out of band:
 
 ```bash
-auggie command list    # expect 4 slash commands
+auggie command list    # expect 5 slash commands
 ```
 
 If the skills do not appear, the claim that Auggie reads `.claude/skills/` directly is wrong and

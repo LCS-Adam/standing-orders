@@ -64,6 +64,7 @@ Files in `commands/`. The filename is the command.
 
 | Command | What it does |
 |---|---|
+| `/checkpoint` | Save a durable mark of where the work stands, mid-session, without writing a resume prompt |
 | `/deep-plan` | Local deep planning - advisor (shape) -> Plan subagent (FRONTIER-THINK, ULTRATHINK MAX EFFORT) -> advisor (critique). Always emits a multi-step EXECUTION plan carrying operator directives (HOW to execute: parallelize + worktree isolation + review gates), an explicit Workflow-vs-overkill judgment, and a per-phase model/effort matrix injected inline into every phase heading. Local substitute for cloud /ultraplan. |
 | `/handoff` | Write a self-sufficient resume prompt to .project-state/SESSION_HANDOFF.md before /clear |
 | `/next-step` | Find and present the next incomplete task from phases/ |
@@ -124,3 +125,4 @@ matches the number it expected.
 | 12 | documented counts |
 | 13 | generated files are current |
 | 14 | Augment tool-permission rules |
+| 15 | upstream installs carry a licence |
