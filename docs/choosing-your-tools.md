@@ -16,14 +16,13 @@ small and this is the one place it is explained together.
 conversation so far, and whatever files or instructions got loaded into it. It has a
 fixed size. Every file you load into it competes with your actual conversation for that
 space. A model that has to read 3,000 lines of standing instructions before it reads
-your question is a model that has less room left for your question, and research shows
-adherence actually drops as the always-on instruction set grows. This is why the harness
+your question is a model that has less room left for your question, and adherence
+measurably drops as the always-on instruction set grows. This is why the harness
 keeps its always-on core small and pushes everything else behind an on-demand mechanism.
 
 **Enforcement versus context.** Some of the six mechanisms below are text the model
 reads and is expected to follow. Some are code that runs regardless of what the model
-decides. That difference is the single most important thing in this document, so it
-gets its own section before the tour.
+decides. That difference gets its own section before the tour.
 
 ## The one distinction that matters most
 
@@ -36,9 +35,11 @@ adversarial input can drift from what an instruction says. Nothing forces it bac
 
 A hook is different. It is a real script that the harness runs at a fixed point (before
 a tool call, after one, at session start) and its exit code and output can outright
-block the action. The model does not get a vote. This repo has exactly one hook,
+block the action. The model does not get a vote. This repo ships one lifecycle hook,
 `hooks/require-agent-model.sh`, and it is the only mechanism in the whole framework that
-is guaranteed to fire no matter what the model is thinking.
+is guaranteed to fire no matter what the model is thinking. (`hooks/` also holds
+`hooks/statusline.sh`, which draws the context-budget status line and gates nothing. See
+`docs/context-health.md`.)
 
 **If something must happen every time, with no exceptions, it needs a hook.** Everything
 else in this document shapes behavior. Only a hook enforces it.
@@ -124,14 +125,19 @@ match. Thirteen skills currently ship in `skills/`:
 | `deep-plan-swarm` | Heavy multi-agent planning for large or high-stakes work |
 | `external-llm-review` | Getting an independent, non-Claude review of a plan or diff |
 | `heartbeat` | Keeping a simple approved plan running unattended, no review gates |
+| `grill-me` | Interrogating a plan or design until every open decision is resolved |
 | `readme-coauthoring` | Writing or rewriting a project README |
 | `repo-recon` | Read-only inventory of a repo or binary with file:line citations |
 | `requesting-code-review` | Dispatching a review subagent before proceeding |
 | `scope-audit` | Establishing what a system actually uses before planning changes to it |
-| `simplify` | Cutting a diff back to the smallest thing that holds, before it merges |
 | `systematic-debugging` | Four-phase root-cause debugging before attempting a fix |
 | `test-driven-development` | Writing the failing test before the implementation |
 | `verify-unexecuted` | Syntax and body-flow smoke checks for scripts that cannot run in the build environment |
+
+One more command belongs in that list and is not in the table, because it is not a harness
+skill: `/ponytail-review` cuts a diff back to the smallest thing that holds, and it comes from
+the ponytail plugin rather than from `skills/`. `config/upstream.conf` records it as a
+dependency and `docs/upstream-sources.md` explains how it gets installed.
 
 **When to reach for it.** A multi-step procedure that only applies some of the time and
 is complex enough to be worth writing down once rather than re-deriving every time. If

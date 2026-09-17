@@ -83,7 +83,7 @@ reconciliation decision). It returns ONE plan in the four-part shape (how-to-exe
 workflow-vs-overkill verdict → per-phase model/effort matrix injected inline → the phases) plus an
 AUTORUN mission and a verification section. It also bakes the **per-wave execution review stack**
 into every code-producing phase's gate per skill `autorun-plan` (tests → `adversary` →
-`/simplify` → external-LLM fold-back → re-test → merge). Name `planning_reviewer` and
+`/ponytail-review` → external-LLM fold-back → re-test → merge). Name `planning_reviewer` and
 `execution_reviewer` in the plan (CLI + model); if silent, planning review defaults to **codex**
 via skill `external-llm-review`. Print the plan verbatim under `## Plan (FRONTIER-THINK, ULTRATHINK)`;
 write it to the plan file.
@@ -112,11 +112,11 @@ stack (below), so approval-then-execution inherits both review layers again at b
 | Layer | When | Who | Catches |
 |---|---|---|---|
 | Claude adversarial | planning (advisor) + execution (`adversary`) | same family | logic, drift, hidden coupling |
-| `/simplify` | execution only (acts on a code diff) | Claude, quality-only | duplication, over-complexity, wrong altitude — NOT bugs |
+| `/ponytail-review` | execution only (acts on a code diff) | Claude, quality-only | duplication, over-complexity, wrong altitude — NOT bugs |
 | External LLM fold-back | planning (the plan) + execution (the diff) | plan-named CLI (default **codex** at planning time) | shared-blind-spot defects the above miss |
 
-`/simplify` is execution-only because it operates on changed code; a plan has none to simplify. The
-harness's job is to make the produced plan BAKE `/simplify` into every wave gate (the
+`/ponytail-review` is execution-only because it operates on changed code; a plan has none to simplify. The
+harness's job is to make the produced plan BAKE `/ponytail-review` into every wave gate (the
 `plan-synthesizer` agent does this), so it runs at build time in the right place: after
 correctness review, before the external review sees the final diff.
 
@@ -147,7 +147,7 @@ Therefore, in the produced plan:
 ## Do NOT
 - **Do not plan before the scope gate (0.5).** An investigation swarm run first will map dead surface
   beautifully and you will not notice for 32 review rounds.
-- Do not skip the external-LLM layer or substitute a Claude reviewer for it (see `external-llm-review`).
+- Do not substitute a Claude reviewer for the external-LLM layer (see `external-llm-review`). Where no reviewer CLI is installed the layer is SKIPPED and recorded as skipped, never replaced by a same-family pass.
 - Do not hand the planner 16 raw 180-line reports — synthesize to a registry first.
 - Do not let any spawned agent inherit a model; pin every one by name or explicit `model`.
 - Do not execute the plan from this skill — it ends at approval. Execution is

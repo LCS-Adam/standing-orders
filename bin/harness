@@ -8,9 +8,28 @@ set -euo pipefail
 
 HARNESS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLAUDE_HOME="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+# Overridable so an offline test can point at a fixture. Nothing else sets it.
+# The default path is ABSENT from this repo on purpose - see load_models.
+AUGGIE_CONF="${HARNESS_AUGGIE_CONF:-$HARNESS_ROOT/config/models.auggie.conf}"
+UPSTREAM_CONF="${HARNESS_UPSTREAM_CONF:-$HARNESS_ROOT/config/upstream.conf}"
+UPSTREAM_DIR="${HARNESS_UPSTREAM_DIR:-$HARNESS_ROOT/.upstream}"
 STAGE=""
 FORCE=0
 DRY=0
+
+# Every mktemp -d goes through here. Two code paths used to each set $STAGE and
+# each install their own EXIT trap, so the second silently orphaned the first
+# directory. One accumulator, one trap.
+# An ARRAY, not a space-joined string. `for _d in ${STAGES:-}` word-splits, so a
+# TMPDIR with a space in it turned one cleanup into two rm -rf calls on
+# truncated paths. BSD mktemp -d ignores TMPDIR so it never fired here; GNU
+# coreutils honours it, and this repo exists to be carried to other machines.
+STAGES=()
+new_stage() {
+  STAGE="$(mktemp -d)" || die "mktemp failed"
+  STAGES+=("$STAGE")
+  trap 'rm -rf ${STAGES[@]+"${STAGES[@]}"}' EXIT
+}
 
 c_ok()   { printf '  \033[32m+\033[0m %s\n' "$1"; }
 c_skip() { printf '  \033[33m=\033[0m %s\n' "$1"; }
@@ -19,10 +38,27 @@ die()    { printf '\033[31merror:\033[0m %s\n' "$1" >&2; exit 1; }
 
 need() { command -v "$1" >/dev/null 2>&1 || die "required tool not found: $1"; }
 
+# Anything that becomes a path component on the way to `rm` gets checked here.
+# Three such values are not ours: a skill name read from an upstream author's
+# frontmatter, a filename read from a generated manifest that is committed to a
+# consumer's repo, and a clone name from config. A `../` in any of them turns a
+# cleanup into a delete somewhere else. Refuse rather than sanitise: a quietly
+# rewritten name puts the right content at the wrong path.
+safe_component() { # safe_component <value>
+  case "$1" in
+    ''|.|..|*/*|*'\'*|-*) return 1 ;;
+  esac
+  printf '%s' "$1" | grep -qE '^[A-Za-z0-9][A-Za-z0-9._-]*$'
+}
+
 # ---------------------------------------------------------------- tier binding
 
+# load_models [conf] - bind the four tiers from a conf file.
+# Defaults to the Claude Code binding, which is hand-written. Pass
+# config/models.auggie.conf for the Augment binding, which is DISCOVERED by
+# scripts/resolve-tier.sh --write-conf and is absent from this repo by design.
 load_models() {
-  local conf="$HARNESS_ROOT/config/models.conf"
+  local conf="${1:-$HARNESS_ROOT/config/models.conf}"
   [ -f "$conf" ] || die "missing $conf"
   TIER_FRONTIER_THINK=""; TIER_FRONTIER_DO=""; TIER_MID=""; TIER_SMALL=""
   # shellcheck disable=SC1090
@@ -38,19 +74,30 @@ load_models() {
     esac
   done < "$conf"
   for t in TIER_FRONTIER_THINK TIER_FRONTIER_DO TIER_MID TIER_SMALL; do
-    [ -n "${!t}" ] || die "$conf does not bind $t"
+    [ -n "${!t}" ] || die "$conf does not bind $t (the Augment conf is generated: scripts/resolve-tier.sh --write-conf --force, docs/augment-runbook.md step 5)"
   done
 }
 
 # Resolve {{TIER_*}} tokens. Executable config needs a literal model name;
 # a tier name means nothing to the resolver.
+# The values go in through the ENVIRONMENT, never interpolated by the shell
+# into the perl source. A model id is vendor data: a literal `$`, `@`, `/` or
+# backslash in one used to land inside the replacement half of s///, where it is
+# perl syntax rather than text, and the result was a mangled pin or a parse
+# error. On Augment the ids are DISCOVERED from the allowlist, so this repo does
+# not get to decide what characters they contain. $ENV{...} interpolates once
+# and what comes out is literal.
 resolve_tiers() {
-  perl -CSD -i -pe "
-    s/\\{\\{TIER_FRONTIER_THINK\\}\\}/$TIER_FRONTIER_THINK/g;
-    s/\\{\\{TIER_FRONTIER_DO\\}\\}/$TIER_FRONTIER_DO/g;
-    s/\\{\\{TIER_MID\\}\\}/$TIER_MID/g;
-    s/\\{\\{TIER_SMALL\\}\\}/$TIER_SMALL/g;
-  " "$@"
+  TIER_FRONTIER_THINK="$TIER_FRONTIER_THINK" \
+  TIER_FRONTIER_DO="$TIER_FRONTIER_DO" \
+  TIER_MID="$TIER_MID" \
+  TIER_SMALL="$TIER_SMALL" \
+  perl -CSD -i -pe '
+    s/\{\{TIER_FRONTIER_THINK\}\}/$ENV{TIER_FRONTIER_THINK}/g;
+    s/\{\{TIER_FRONTIER_DO\}\}/$ENV{TIER_FRONTIER_DO}/g;
+    s/\{\{TIER_MID\}\}/$ENV{TIER_MID}/g;
+    s/\{\{TIER_SMALL\}\}/$ENV{TIER_SMALL}/g;
+  ' "$@"
 }
 
 # ---------------------------------------------------------------- copy helpers
@@ -71,9 +118,16 @@ put() {
     if cmp -s "$src" "$dest" 2>/dev/null; then c_skip "$label (identical)"; return; fi
     if [ "$MANAGED" -eq 1 ]; then
       [ "$DRY" -eq 1 ] && { c_ok "$label (would replace, dry run)"; return; }
-      cp "$dest" "$dest.bak-$(date +%Y%m%d%H%M%S)"
+      # The backup goes to the attic, not next to the live file. Dropping
+      # agents/foo.md.bak-<stamp> into ~/.claude/agents/ left one more file in
+      # a directory the tool scans on every launch, growing by one per replaced
+      # file per reinstall. MANAGED is only ever set during the user-scope
+      # install, so CLAUDE_HOME is the right root here.
+      local bdir="$CLAUDE_HOME/backups/harness-replaced-$(date +%Y%m%d)"
+      mkdir -p "$bdir"
+      cp "$dest" "$bdir/$(printf '%s' "${label//\//_}").$(date +%H%M%S)"
       cp "$src" "$dest"
-      c_ok "$label (replaced, previous copy kept as .bak)"
+      c_ok "$label (replaced, previous copy in backups/)"
       return
     fi
     c_skip "$label (exists, differs - use --force to replace)"
@@ -128,6 +182,216 @@ stage_shipped() {
   [ "$n" -gt 0 ] || die "nothing to install from $sub/ - is $HARNESS_ROOT a harness checkout?"
 }
 
+# ---------------------------------------------------------------- augment output
+#
+# Auggie's subagent frontmatter is a DIFFERENT schema from Claude Code's, so
+# .augment/agents/ is GENERATED from agents/, never symlinked or copied. Both
+# `harness add --tool auggie` (project scope) and `harness build-plugin` write
+# it, which is why the rewrite lives here once.
+#
+# Every claim this function encodes was verified in docs 2026-09-16 against
+# aug_cli_subagents.md in the offline snapshot, not against a running Auggie.
+#   - the field list (name, description, color, model, tools, disabled_tools)
+#   - `tools` is an allowlist, `disabled_tools` a denylist, and when BOTH are
+#     present `tools` is silently ignored. So exactly one is ever emitted.
+#   - the tool names used here are the ones that page documents for subagent
+#     frontmatter. aug_cli_permissions.md documents a DIFFERENT set for
+#     toolPermissions (read/edit/write/terminal) and calls these the legacy
+#     aliases of those. Whether the alias table also applies inside subagent
+#     frontmatter is NOT FOUND, so each surface gets the names its own page
+#     documents. Runbook step 8 is what settles it in practice.
+#
+# effort: and reasoning: are stripped unconditionally: they are not in the
+# documented field list, and every body already states its effort in words.
+
+# augment_agent_rewrite - one resolved agents/<name>.md on stdin, the Auggie
+# subagent on stdout. Dies loudly on anything it cannot map; a silently
+# unrestricted or unpinned agent is the failure this whole path exists to avoid.
+augment_agent_rewrite() {
+  perl -CSD -0777 -e '
+    my $src = shift;
+    local $/; my $in = <STDIN>;
+    my ($fm, $body) = $in =~ /\A---\n(.*?)\n---\n(.*)\z/s
+      or die "$src: no YAML frontmatter\n";
+    my %f;
+    for my $line (split /\n/, $fm) {
+      next if $line =~ /^\s*(#|$)/;
+      # Every value here is a single-line scalar. A folded or list value would
+      # be silently truncated to its first line, so it is an error instead.
+      my ($k, $v) = $line =~ /^([A-Za-z_][A-Za-z0-9_]*):[ \t]*(.*)$/
+        or die "$src: frontmatter line is not a single-line key: value -- $line\n";
+      $f{$k} = $v;
+    }
+    die "$src: no name:\n"  unless length($f{name}  // "");
+    die "$src: no model: -- an unpinned subagent inherits the CLI default\n"
+      unless length($f{model} // "");
+    die "$src: unresolved tier token in model: $f{model}\n" if $f{model} =~ /\{\{/;
+
+    my %map = (Read => "view", Grep => "codebase-retrieval", Glob => "codebase-retrieval",
+               Edit => "str-replace-editor", Write => "save-file", Bash => "launch-process",
+               WebFetch => "web-fetch", WebSearch => "web-search");
+    # A MISSING tools: line means every tool in Claude Code. Falling through to
+    # the read-only branch would have silently taken write access away from the
+    # next agent written without one. Every agent has one today; this refuses
+    # rather than guessing the day one does not.
+    die "$src: no tools: -- cannot tell all-tools from read-only, add one\n"
+      unless exists $f{tools} && length $f{tools};
+    my @claude = grep { length } map { my $t = $_; $t =~ s/^\s+|\s+$//g; $t }
+                 split /,/, $f{tools};
+    my %have = map { $_ => 1 } @claude;
+    # Validate the WHOLE list before choosing a branch. Doing it inside the
+    # allowlist branch meant a tool with no mapping was silently dropped on any
+    # agent that happened to be read-only, and an unknown tool is exactly the
+    # case where staying quiet is wrong.
+    for my $t (@claude) {
+      next if $t eq "Agent" || $map{$t};
+      die "$src: no Auggie equivalent for tool \"$t\" -- add one to the map or drop it deliberately\n";
+    }
+
+    print "---\n";
+    print "name: $f{name}\n";
+    print "description: $f{description}\n" if length($f{description} // "");
+    print "model: $f{model}\n";
+    if ($have{Agent}) {
+      # The Agent tool in Claude Code has no documented Auggie equivalent. An
+      # allowlist that simply omitted it would leave this agent unable to
+      # dispatch anything, and nothing would say so, so this one carries no
+      # restriction at all until the dispatch tool is named (runbook step 6).
+      print "# no tool restriction: Agent has no documented Auggie equivalent (runbook step 6)\n";
+    } elsif (!$have{Edit} && !$have{Write}) {
+      # Read-only by denylist, not allowlist: launch-process stays so the agent
+      # can still run git and the test suite, which is how it reads evidence.
+      print "disabled_tools: str-replace-editor, save-file, remove-files\n";
+    } else {
+      my (@out, %seen);
+      push @out, $map{$_} for grep { !$seen{$map{$_}}++ } @claude;
+      die "$src: tools: is empty after mapping\n" unless @out;
+      print "tools: ", join(", ", @out), "\n";
+    }
+    print "---\n", $body;
+  ' "$1"
+}
+
+# merge_augment_settings <repo-root> <incoming> - merge the harness policy into
+# the repo's .augment/settings.json, creating it when absent.
+#
+# toolPermissions is ORDER-SENSITIVE: the vendor evaluates a policy top-down and
+# the first matching rule wins (aug_cli_permissions.md, "How Permissions Work").
+# So the harness rules are PREPENDED, never appended and never sorted. An
+# existing `allow` on `terminal` sitting above them would otherwise win and the
+# merge would read as successful while protecting nothing. Duplicates of the
+# harness rules are dropped from the tail; every other rule keeps its position.
+merge_augment_settings() {
+  local target="$1/.augment/settings.json" incoming="$2"
+  [ -f "$incoming" ] || return 0
+  need jq
+  if [ "$DRY" -eq 1 ]; then c_ok ".augment/settings.json merge (dry run)"; return; fi
+  if [ ! -f "$target" ]; then
+    mkdir -p "$(dirname "$target")"; cp "$incoming" "$target"
+    c_ok ".augment/settings.json (created)"; return
+  fi
+  # Shape, not just syntax. `jq -e .` accepts `[]` and it accepts a
+  # toolPermissions that is an object; both then blow up inside the merge
+  # below, where the failure used to be invisible.
+  jq -e 'type == "object" and ((.toolPermissions // []) | type == "array")' "$target" >/dev/null 2>&1 \
+    || die "$target must be a JSON object whose toolPermissions, if present, is an array; fix it before merging (nothing was changed)"
+  # OUTSIDE the repo. This file can carry webhook URLs, which the vendor doc
+  # warns never to commit, and the runbook's own commit step is `git add -A`.
+  # A .bak beside it in a consumer repo with no matching ignore rule is one
+  # careless commit away from being published.
+  local bak; bak="$(mktemp -t augment-settings-backup)" || die "mktemp failed"
+  cp "$target" "$bak"
+  # `jq ... && mv` put jq to the LEFT of a && , where set -e does not fire on
+  # its failure. The merge could fail, the mv be skipped, the file be left
+  # untouched, and the success line below still print. That is a security
+  # control reporting itself installed while installing nothing, which is the
+  # exact shape the ordering logic above exists to prevent.
+  # `*` deep-merges objects but REPLACES arrays with the right-hand side. That is
+  # fine while toolPermissions is the only array, and stops being fine at runbook
+  # step 6, which adds hooks.PreToolUse to the template and then tells you to
+  # re-run this command: a user's own PreToolUse hooks would be replaced by the
+  # harness's one entry. Every array the harness writes is merged by name, using
+  # the same prepend-and-dedupe shape as toolPermissions.
+  if ! jq -s '
+    def fold($mine; $theirs): $mine + ($theirs - $mine);
+    .[0] as $cur | .[1] as $new
+    | $cur * ($new | del(.toolPermissions) | del(.hooks))
+    | .toolPermissions = fold($new.toolPermissions // []; $cur.toolPermissions // [])
+    | if ($new.hooks // {}) == {} and ($cur.hooks // {}) == {} then . else
+        .hooks = reduce (($new.hooks // {}) | to_entries[]) as $e
+          (($cur.hooks // {}); .[$e.key] = fold($e.value; (.[$e.key] // [])))
+      end
+  ' "$target" "$incoming" > "$target.tmp"; then
+    rm -f "$target.tmp"
+    die "could not merge $target (nothing was changed; your file is unmodified and a copy is at $bak)"
+  fi
+  mv "$target.tmp" "$target" || die "could not replace $target (a copy is at $bak)"
+  c_ok ".augment/settings.json (merged, harness rules first; previous copy at $bak)"
+}
+
+# augment_agents <destdir> - the whole set. Requires $STAGE and a loaded tier
+# binding. Writes a .harness-generated manifest beside the files listing what it
+# produced, and returns the count on stdout.
+augment_agents() {
+  local dest="$1" f name n=0 now=""
+  mkdir -p "$dest"
+  for f in "$STAGE"/agents/*.md; do
+    [ -e "$f" ] || die "no staged agents to convert"
+    name="$(basename "$f")"
+    augment_agent_rewrite "agents/$name" < "$f" > "$dest/$name" \
+      || die "could not convert agents/$name"
+    now="$now$name"$'\n'
+    n=$((n+1))
+  done
+  printf '%s' "$now" > "$dest/.harness-generated"
+  printf '%s\n' "$n"
+}
+
+# prune_generated <real-dest> <old-manifest-contents> - remove what a previous
+# run generated and this one did not.
+#
+# Without this, renaming or deleting an agent left the old file in a consumer's
+# .augment/agents/ forever, still pinned to whatever model id was current when
+# it was written, in a directory the runbook tells you to commit and share. Same
+# defect the user-scope install had, one directory over.
+#
+# Manifest-driven, like the install: only a name a previous run RECORDED is ever
+# removed, so a hand-written subagent is never touched. It runs after the copy,
+# so a failed generation cannot delete an agent it never replaced.
+prune_generated() {
+  local dest="$1" prev="$2" name
+  [ -n "$prev" ] || return 0
+  [ -f "$dest/.harness-generated" ] || return 0
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    # The manifest is a file in someone else's repository by the time this runs.
+    safe_component "$name" || { c_skip "refusing unsafe name in .harness-generated: $name"; continue; }
+    grep -qxF "$name" "$dest/.harness-generated" && continue
+    [ -e "$dest/$name" ] || continue
+    if [ "$DRY" -eq 1 ]; then c_skip "$name (would remove, no longer in agents/)"; continue; fi
+    rm -f "$dest/$name" || die "could not remove $dest/$name; it is stale and still active"
+    c_ok "$name (removed, no longer in agents/)"
+  done <<< "$prev"
+}
+
+# stage_agents_for_auggie - stage agents/ and bind the tokens to the Augment
+# tier ids. Sets $STAGE.
+stage_agents_for_auggie() {
+  need perl
+  [ -f "$AUGGIE_CONF" ] || die "no Augment tier binding at $AUGGIE_CONF
+  It is generated, never typed: run  scripts/resolve-tier.sh --write-conf
+  on a machine with auggie installed and logged in.
+  See docs/augment-runbook.md step 5."
+  load_models "$AUGGIE_CONF"
+  new_stage
+  stage_shipped agents
+  while IFS= read -r f; do resolve_tiers "$f"; done < <(find "$STAGE/agents" -type f -name '*.md')
+  if grep -rq '{{TIER_' "$STAGE" 2>/dev/null; then
+    grep -rl '{{TIER_' "$STAGE" | sed "s#$STAGE#  #"
+    die "unresolved tier tokens above; $AUGGIE_CONF did not cover them"
+  fi
+}
+
 # ---------------------------------------------------------------- settings merge
 
 merge_settings() {
@@ -141,18 +405,176 @@ merge_settings() {
     mkdir -p "$CLAUDE_HOME"; cp "$incoming" "$target"; c_ok "settings.json (created)"; return
   fi
 
-  cp "$target" "$target.bak-$(date +%Y%m%d%H%M%S)"
+  local bak="$target.bak-$(date +%Y%m%d%H%M%S)"
+  cp "$target" "$bak"
   # Objects merge. Hook ARRAYS append, deduplicated, so an existing hook on the
   # same event is never clobbered.
-  jq -s '
+  # Checked, not `jq ... && mv`. jq to the left of a && is not covered by
+  # set -e, so a malformed existing settings.json used to leave the file alone,
+  # print "merged", and exit 0, with the model-pin hook never installed. Same
+  # defect as the Augment merge below, found in the same review.
+  jq -e 'type == "object"' "$target" >/dev/null 2>&1 \
+    || die "$target is not a JSON object; fix it before installing (nothing was changed, a copy is at $bak)"
+  if ! jq -s '
     def merge_hooks($a; $b):
       reduce ($b | to_entries[]) as $e
         ($a; .[$e.key] = ((.[$e.key] // []) + $e.value | unique));
     .[0] as $cur | .[1] as $new
     | $cur * ($new | del(.hooks))
     | .hooks = merge_hooks($cur.hooks // {}; $new.hooks // {})
-  ' "$target" "$incoming" > "$target.tmp" && mv "$target.tmp" "$target"
+  ' "$target" "$incoming" > "$target.tmp"; then
+    rm -f "$target.tmp"
+    die "could not merge $target (nothing was changed, a copy is at $bak)"
+  fi
+  mv "$target.tmp" "$target" || die "could not replace $target (a copy is at $bak)"
   c_ok "settings.json (merged, backup written)"
+}
+
+# ------------------------------------------------------------ retiring old files
+#
+# put() adds and replaces. It never removed, so every rename left the OLD file
+# installed and live: after the agents were renamed for their job instead of
+# their model, a machine carried both names for the same agent, and a plan
+# written against either one "worked". A roster the installer cannot shrink is
+# a roster that only ever grows.
+#
+# So the installer records what it put there. On the next run, anything in the
+# previous manifest that this run did not ship is retired: MOVED, not deleted,
+# into a timestamped directory, and reported line by line. Files the harness
+# never installed are untouched, which is what keeps a hand-written agent or a
+# skill from another source safe.
+MANIFEST="$CLAUDE_HOME/.harness-manifest"
+
+# The pre-manifest past lives in config/retired.conf, as data rather than a
+# string in this file: the old filenames carry literal model names, and a
+# literal model name belongs in a config file the gate exempts by exact path,
+# never in prose or code. Retiring one a user wrote by hand is recoverable (it
+# is moved, and reported); leaving a stale duplicate of a renamed agent is not,
+# because nothing ever says which one a dispatch hit.
+RETIRED_CONF="$HARNESS_ROOT/config/retired.conf"
+legacy_managed() {
+  [ -f "$RETIRED_CONF" ] || return 0
+  sed -e 's/#.*//' -e 's/[[:space:]]//g' "$RETIRED_CONF" | grep -v '^$' || true
+}
+
+# retire_missing <file-listing-what-this-run-shipped>
+retire_missing() {
+  local now="$1" rel f dest n=0
+  local stamp; stamp="$(date +%Y%m%d%H%M%S)"
+  local attic="$CLAUDE_HOME/backups/harness-retired-$stamp"
+  {
+    [ -f "$MANIFEST" ] && cat "$MANIFEST"
+    [ -f "$MANIFEST" ] || legacy_managed
+  } | sort -u | while IFS= read -r rel; do
+    [ -n "$rel" ] || continue
+    grep -qxF "$rel" "$now" && continue
+    f="$CLAUDE_HOME/$rel"
+    [ -e "$f" ] || continue
+    if [ "$DRY" -eq 1 ]; then c_skip "$rel (would retire)"; continue; fi
+    dest="$attic/$(printf '%s' "$rel" | tr '/' '_')"
+    mkdir -p "$attic"
+    # Fatal, and deliberately so. If this mv fails and the run continues, the
+    # new manifest is written WITHOUT this path, so the harness permanently
+    # forgets it owns a file that is still installed and still active. A hard
+    # stop leaves the old manifest in place and the next run tries again.
+    mv "$f" "$dest" || die "could not retire $rel; manifest left unchanged so the next run retries"
+    c_ok "$rel (retired to backups/harness-retired-$stamp)"
+    # A skill is a directory; drop it once its SKILL.md has gone.
+    rmdir "$(dirname "$f")" 2>/dev/null || true
+    n=$((n+1))
+  done
+  return 0
+}
+
+# ------------------------------------------------- upstream skills, into the stage
+#
+# config/upstream.conf may say `install=` for a clone, naming the skills the
+# harness wants from it. Those get staged alongside the harness's own, so they
+# flow through the same put_dir, the same manifest, and the same retirement:
+# drop the install= and the next install takes them back out again.
+#
+# NO NETWORK HERE. This only reads .upstream/, which `harness upstream` fills.
+# Keeping the clone and the install apart is deliberate: an install that
+# reaches the network fails differently on a locked-down machine, and the whole
+# point of the manifest is that refreshing is a decision someone makes.
+#
+# Two repo shapes, detected rather than declared. A root SKILL.md means the
+# repo IS one skill. A skills/<name>/SKILL.md tree means it ships several. The
+# frontmatter `name:` is what the skill is called, never the directory, because
+# the directory is the author's choice and the name is the contract.
+skill_name_of() { # skill_name_of <SKILL.md>
+  sed -n '1,/^---[[:space:]]*$/!d; s/^name:[[:space:]]*//p' "$1" 2>/dev/null | head -1 \
+    | tr -d '"'"'"'' | tr -d '[:space:]'
+}
+
+stage_upstream_skills() {
+  [ -f "$UPSTREAM_CONF" ] || return 0
+  local name url ref spec want src dest sname n=0
+  while read -r name url ref spec; do
+    case "${name:-}" in ''|\#*) continue ;; esac
+    case "${spec:-}" in install=*) want="${spec#install=}" ;; *) continue ;; esac
+    [ -n "$want" ] || continue
+    local root="$UPSTREAM_DIR/$name"
+    if [ ! -d "$root" ]; then
+      c_skip "upstream $name not cloned, skipping its skills (run: harness upstream)"
+      continue
+    fi
+    # Collect candidate SKILL.md paths for this clone.
+    # -iname, not -name. One upstream ships `skill.md` in lower case, which a
+    # case-insensitive filesystem hides and a Linux checkout does not: the skill
+    # simply would not be found there. It is copied out as SKILL.md below, so
+    # whatever the author called it, what gets installed is the canonical name.
+    local found=""
+    while IFS= read -r f; do found="$found${found:+$'\n'}$f"; done \
+      < <(find "$root" -maxdepth 1 -iname 'SKILL.md' 2>/dev/null | sort)
+    if [ -d "$root/skills" ]; then
+      while IFS= read -r f; do found="$found${found:+$'\n'}$f"; done \
+        < <(find "$root/skills" -mindepth 2 -maxdepth 2 -iname 'SKILL.md' 2>/dev/null | sort)
+    fi
+    [ -n "$found" ] || { c_skip "upstream $name ships no SKILL.md"; continue; }
+    while IFS= read -r src; do
+      [ -n "$src" ] || continue
+      sname="$(skill_name_of "$src")"
+      [ -n "$sname" ] || { c_skip "$name: a SKILL.md has no name: in its frontmatter, skipped"; continue; }
+      safe_component "$sname" \
+        || { c_skip "$name: refusing skill name from upstream frontmatter: $sname"; continue; }
+      case "$want" in
+        '*') ;;
+        *) case ",$want," in *",$sname,"*) ;; *) continue ;; esac ;;
+      esac
+      dest="$STAGE/skills/$sname"
+      if [ -d "$dest" ]; then
+        c_info "  $sname: upstream $name overrides the harness copy"
+        rm -rf "$dest"
+      fi
+      mkdir -p "$dest"
+      # The whole skill directory, so references/ and scripts/ come too. A root
+      # SKILL.md brings only itself plus sibling support dirs that a skill uses.
+      if [ "$(dirname "$src")" = "$root" ]; then
+        cp "$src" "$dest/SKILL.md"
+        local d
+        for d in references scripts assets; do
+          [ -d "$root/$d" ] && cp -R "$root/$d" "$dest/$d"
+        done
+      else
+        cp -R "$(dirname "$src")/." "$dest/"
+        # Normalise the case, via a temp name. A plain `[ -f SKILL.md ] || mv`
+        # is a no-op on a case-insensitive filesystem, which means the file
+        # keeps the author's lower-case name here and only gets renamed on
+        # Linux. Two machines installing the same clone would then hold
+        # different bytes on disk, and only one of them would work.
+        local base; base="$(basename "$src")"
+        if [ "$base" != "SKILL.md" ]; then
+          mv "$dest/$base" "$dest/.skill.tmp.$$" && mv "$dest/.skill.tmp.$$" "$dest/SKILL.md"
+        fi
+      fi
+      # Named on its own line so the gate can tell repo content from upstream
+      # content. verify.sh check 11 reads these.
+      c_ok "upstream-skill: $sname (from $name)"
+      n=$((n+1))
+    done <<< "$found"
+  done < "$UPSTREAM_CONF"
+  [ "$n" -eq 0 ] || c_ok "$n skill(s) staged from .upstream/ (config/upstream.conf install=)"
 }
 
 # ---------------------------------------------------------------- install --user
@@ -175,12 +597,21 @@ cmd_install() {
   # rules/ deliberately does not, because it documents the token syntax.
   # Everything bound for ~/.claude goes through stage_shipped, so the set of
   # files that can reach it is the set the gate scans.
-  STAGE="$(mktemp -d)"
-  trap 'rm -rf "${STAGE:-}"' EXIT
+  new_stage
   stage_shipped agents
   stage_shipped skills
   stage_shipped commands
   stage_shipped hooks
+  # A skill is a DIRECTORY holding SKILL.md. A loose .md at the top of skills/
+  # is a context document, and installing one puts a file into ~/.claude/skills/
+  # that no tool can invoke and every tool has to skip. The harness was shipping
+  # its own skills/THIRD_PARTY.md that way. It stays in the repo, where it
+  # belongs next to what it documents, and stops being installed.
+  find "$STAGE/skills" -maxdepth 1 -type f -delete 2>/dev/null || true
+  # Upstream skills join the stage BEFORE token resolution and before anything
+  # is copied, so they are indistinguishable from the harness's own downstream:
+  # same resolution, same manifest, same retirement.
+  stage_upstream_skills
   while IFS= read -r f; do resolve_tiers "$f"; done < <(find "$STAGE" -type f -name '*.md')
 
   if grep -rq '{{TIER_' "$STAGE" 2>/dev/null; then
@@ -211,6 +642,20 @@ cmd_install() {
 
   MANAGED=0
   merge_settings
+
+  # What this run shipped, as paths relative to CLAUDE_HOME. Written AFTER the
+  # copies succeed, so a half-finished install does not record files it never
+  # made, and used first to retire whatever the last run shipped and this one
+  # does not.
+  local now; now="$(mktemp)"
+  ( cd "$STAGE" && find agents skills commands hooks -type f 2>/dev/null ) > "$now"
+  printf 'rules/00-harness-core.md\nrules/10-claude-specifics.md\nrules/shell-portability.md\n' >> "$now"
+  retire_missing "$now"
+  if [ "$DRY" -eq 0 ]; then
+    sort -u "$now" > "$MANIFEST"
+  fi
+  rm -f "$now"
+
   echo
   c_info "Done. Run 'harness verify' to check the result."
 }
@@ -259,8 +704,7 @@ cmd_add() {
   local T="$HARNESS_ROOT/templates/project"
   if grep -rq '{{TIER_' "$T" 2>/dev/null; then
     load_models
-    STAGE="$(mktemp -d)"
-    trap 'rm -rf "${STAGE:-}"' EXIT
+    new_stage
     cp -R "$T" "$STAGE/project"
     while IFS= read -r f; do resolve_tiers "$f"; done < <(find "$STAGE/project" -type f -name '*.md')
     T="$STAGE/project"
@@ -293,6 +737,29 @@ cmd_add_tool() {
   root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   case "$tool" in
     auggie)
+      # The Augment tier binding is DISCOVERED, not typed. resolve-tier.sh asks
+      # the vendor which models the company allowlist actually carries and
+      # writes the conf; a hand-typed id is a plausible string the CLI then
+      # rejects at dispatch time, which is the failure this refuses to ship.
+      stage_agents_for_auggie
+      echo "  tiers: FRONTIER-THINK=$TIER_FRONTIER_THINK FRONTIER-DO=$TIER_FRONTIER_DO MID=$TIER_MID SMALL=$TIER_SMALL"
+      local n prevman=""
+      [ -f "$root/.augment/agents/.harness-generated" ] \
+        && prevman="$(cat "$root/.augment/agents/.harness-generated")"
+      n="$(augment_agents "$STAGE/out")"
+      # MANAGED: these are generated copies of agents/, not anyone's work, so a
+      # re-run after a re-bind replaces them and keeps the previous copy.
+      MANAGED=1
+      put_dir "$STAGE/out" "$root/.augment/agents"
+      MANAGED=0
+      prune_generated "$root/.augment/agents" "$prevman"
+      c_info "  $n subagents written to .augment/agents/ (commit them: workspace scope is shared)"
+      # INSERTION POINT, runbook step 6: once the Auggie subagent-dispatch tool
+      # name is known, the template below also carries a hooks.PreToolUse entry
+      # pointing at hooks/require-agent-model.sh. It is absent rather than
+      # guessed: a matcher of ".*" denies every tool call and a wrong tool name
+      # matches nothing and passes silently.
+      merge_augment_settings "$root" "$HARNESS_ROOT/templates/project/.augment/settings.json"
       put "$HARNESS_ROOT/AGENTS.md" "$HOME/.augment/rules/harness-core.md" "~/.augment/rules/harness-core.md" ;;
     codex)
       put "$HARNESS_ROOT/AGENTS.md" "$HOME/.codex/AGENTS.md" "~/.codex/AGENTS.md" ;;
@@ -310,6 +777,8 @@ cmd_add_tool() {
     cosmos)
       c_info "COSMOS has two configuration paths. This harness generates neither yet."
       echo "  1. Cosmos Advisor: describe the Expert you want in plain language, no files."
+      echo "     One worked prompt is committed, for the adversary reviewer:"
+      echo "       adapters/cosmos/adversary-advisor-prompt.md"
       echo "  2. auggie cloud: Experts are YAML bundles you CAN commit."
       echo "       auggie cloud expert init --name <n> -o <n>.yaml"
       echo "       auggie cloud expert validate -f <n>.yaml && auggie cloud expert apply -f <n>.yaml"
@@ -319,9 +788,129 @@ cmd_add_tool() {
   esac
 }
 
+# ---------------------------------------------------------------- build-plugin
+
+# An Auggie plugin is a GENERATED tree, not the repo served over HTTP. The
+# reason is the tier tokens: agents/, commands/ and one skill ship with
+# {{TIER_*}} in them (verify.sh check 3 requires it), and the literal that
+# replaces a token is different per tool. A marketplace serves repository files
+# verbatim, so the plugin has to be built, committed, and rebuilt when the
+# binding moves. docs/augment-runbook.md step 5b names the three triggers.
+#
+# Layout from aug_cli_plugins.md, "Marketplace Structure", verified in docs
+# 2026-09-16. hooks/hooks.json is deliberately ABSENT until the hook's
+# insertion points are filled (runbook step 6); see hooks/require-agent-model.sh.
+cmd_build_plugin() {
+  local tool="" out="" a
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --tool)  shift; tool="${1:-}" ;;
+      --stage) shift; out="${1:-}" ;;
+      *) die "usage: harness build-plugin --tool auggie [--stage <dir>]" ;;
+    esac
+    shift
+  done
+  [ "$tool" = "auggie" ] || die "usage: harness build-plugin --tool auggie [--stage <dir>]"
+  need perl; need jq
+  git -C "$HARNESS_ROOT" rev-parse --git-dir >/dev/null 2>&1 \
+    || die "$HARNESS_ROOT is not a git checkout; a plugin ships only what the gate can scan"
+  out="${out:-$HARNESS_ROOT}"
+  [ -d "$out" ] || die "--stage directory does not exist: $out"
+
+  stage_agents_for_auggie
+  stage_shipped skills
+  stage_shipped commands
+  while IFS= read -r a; do resolve_tiers "$a"; done \
+    < <(find "$STAGE/skills" "$STAGE/commands" -type f -name '*.md')
+  if grep -rq '{{TIER_' "$STAGE" 2>/dev/null; then
+    grep -rl '{{TIER_' "$STAGE" | sed "s#$STAGE#  #"
+    die "unresolved tier tokens above; $AUGGIE_CONF did not cover them"
+  fi
+
+  local final="$out/plugins/agent-harness-auggie"
+  if [ "$DRY" -eq 1 ]; then c_ok "plugins/agent-harness-auggie (dry run)"; return; fi
+
+  # Build into the staging area, then swap. Building in place meant a mid-build
+  # die - an agent with an unmappable tool is enough - left the committed tree
+  # half deleted. The gate would catch that, but it should not have to.
+  local P="$STAGE/out/plugins/agent-harness-auggie"
+  mkdir -p "$P/.augment-plugin" "$P/rules" "$STAGE/out/.augment-plugin"
+  local n; n="$(augment_agents "$P/agents")"
+  # The manifest is a prune aid for a live .augment/agents/, not something to
+  # publish inside a plugin nobody prunes.
+  rm -f "$P/agents/.harness-generated"
+  cp -R "$STAGE/skills"   "$P/skills"
+  cp -R "$STAGE/commands" "$P/commands"
+  cp "$HARNESS_ROOT/AGENTS.md" "$P/rules/harness-core.md"
+
+  # The version is a CONSTANT, not the commit. It was the commit for one
+  # iteration and that is a trap: verify.sh check 13 rebuilds this tree and
+  # compares it byte for byte with what is committed, so a version carrying the
+  # SHA would differ on every commit after the build and the check would be red
+  # permanently. Provenance is what the git history of plugins/ is for. Bump
+  # this by hand when the plugin's shape changes; the vendor doc's example is
+  # semver and whether anything validates the field is NOT FOUND.
+  local ver="0.1.0"
+
+  jq -n --arg v "$ver" '{
+    name: "agent-harness-auggie",
+    description: "The agent-harness operating framework for Auggie: subagents, skills, commands and the core rules.",
+    version: $v,
+    keywords: ["agents", "skills", "workflow"]
+  }' > "$P/.augment-plugin/plugin.json"
+
+  jq -n --arg v "$ver" '{
+    name: "agent-harness",
+    description: "Plugins generated from the agent-harness repository.",
+    version: $v,
+    plugins: [{
+      name: "agent-harness-auggie",
+      description: "The agent-harness operating framework for Auggie.",
+      version: $v,
+      source: "./plugins/agent-harness-auggie",
+      category: "productivity",
+      tags: ["agents", "skills", "workflow"]
+    }]
+  }' > "$STAGE/out/.augment-plugin/marketplace.json"
+
+  # Swap. Only now does anything under $out change. The guard is on the exact
+  # basename, because this is the one rm -rf in the installer.
+  case "$final" in
+    */plugins/agent-harness-auggie) ;;
+    *) die "refusing to replace an unexpected path: $final" ;;
+  esac
+  mkdir -p "$out/plugins" "$out/.augment-plugin"
+  # Move the old tree ASIDE, put the new one in place, then drop the old one.
+  # `rm -rf` first left a window where a failing mkdir or mv had already deleted
+  # the committed tree, which is the failure the staging rewrite was supposed to
+  # have removed. The manifest is written before the old tree is discarded, so
+  # the pair is never left half new and half old.
+  local prev=""
+  if [ -e "$final" ]; then prev="$final.replacing-$$"; mv "$final" "$prev" || die "could not set aside $final"; fi
+  if ! mv "$P" "$final"; then
+    [ -z "$prev" ] || mv "$prev" "$final"
+    die "could not move the built tree into $final (nothing changed)"
+  fi
+  if ! mv "$STAGE/out/.augment-plugin/marketplace.json" "$out/.augment-plugin/marketplace.json"; then
+    rm -rf "$final"
+    [ -z "$prev" ] || mv "$prev" "$final"
+    die "could not write $out/.augment-plugin/marketplace.json (nothing changed)"
+  fi
+  [ -z "$prev" ] || rm -rf "$prev"
+
+  c_ok "plugins/agent-harness-auggie ($n agents, $(find "$final/skills" -name SKILL.md | wc -l | tr -d ' ') skills, $(find "$final/commands" -name '*.md' | wc -l | tr -d ' ') commands)"
+  c_ok ".augment-plugin/marketplace.json ($ver)"
+  [ "$out" = "$HARNESS_ROOT" ] && c_info "Commit both. They are generated: rebuild after a re-bind (docs/augment-runbook.md step 5b)."
+  return 0
+}
+
 # ---------------------------------------------------------------- misc
 
 cmd_verify() { exec "$HARNESS_ROOT/verify.sh" "$@"; }
+
+# Upstream sources are CLONED, never vendored. See config/upstream.conf for why
+# and docs/upstream-sources.md for what a tool does with the result.
+cmd_upstream() { exec "$HARNESS_ROOT/scripts/sync-upstream.sh" "$@"; }
 
 cmd_help() {
   cat <<'EOF'
@@ -331,6 +920,10 @@ harness - install this agent framework
   harness init                 scaffold project scope into the current repo
   harness add <module>         add one module to the current repo
   harness add --tool <name>    write another tool's pointer file
+  harness build-plugin --tool auggie
+                               generate plugins/ and the marketplace manifest
+  harness upstream             clone/refresh the repos in config/upstream.conf
+                               into .upstream/, for your tool to read
   harness verify               run the scrub gate
   harness help                 this
 
@@ -342,6 +935,10 @@ Flags:    --force    replace existing files instead of skipping
 
 Tier bindings live in config/models.conf. That is the only file to edit when
 a machine has different model access.
+
+Skills, agents and commands that come from a GitHub repository are referenced in
+config/upstream.conf and cloned by `harness upstream`, not copied into this
+repo. Your coding tool reads the clone and installs what it needs.
 EOF
 }
 
@@ -357,10 +954,12 @@ main() {
   done
   set -- ${args[@]+"${args[@]}"}
   case "${1:-help}" in
-    install) shift; cmd_install "$@" ;;
+    install)      shift; cmd_install "$@" ;;
+    build-plugin) shift; cmd_build_plugin "$@" ;;
     init)    shift; cmd_init "$@" ;;
     add)     shift; cmd_add "$@" ;;
-    verify)  shift; cmd_verify "$@" ;;
+    verify)   shift; cmd_verify "$@" ;;
+    upstream) shift; cmd_upstream "$@" ;;
     help|-h|--help) cmd_help ;;
     *) die "unknown command: $1 (try: harness help)" ;;
   esac

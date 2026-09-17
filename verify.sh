@@ -11,7 +11,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF="$ROOT/${BASH_SOURCE[0]##*/}"
 FAIL=0
 RAN=0
-EXPECTED_CHECKS=13
+EXPECTED_CHECKS=14
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -93,10 +93,24 @@ NSHIPPED=$(shipped_l 2>/dev/null | wc -l | tr -d ' ')
 # not this one: any unstaged edit to any tracked file is a divergence, so that
 # gate would fail on the ordinary pre-commit state.
 #
-# CEILING, stated because it is real and chosen: checks 3, 4, 5, 6, 8, 12 and 13
-# read the working tree only. A staged-but-not-checked-out divergence can hand a
-# colleague a stale count or a SKILL.md missing its frontmatter. It cannot hand
-# them a leak, because every check that looks for one reads both sources.
+# CEILING, stated because it is real and chosen. Checks 3, 4, 5, 6, 8, 9, 10, 12,
+# 13 and 14 read the WORKING TREE only. An external reviewer pointed out the
+# original version of this list named seven of them and missed 9, 10 and 14, so
+# the ceiling itself understated the gap.
+#
+# What that allows, concretely: stage a broken file, restore the good working
+# copy without staging the restore, and the gate passes on bytes that are not
+# the bytes being committed. `git add CLAUDE.md` with the import removed, then
+# `git restore CLAUDE.md`, and check 5 certifies a file the next clone will not
+# receive.
+#
+# It cannot hand anyone a LEAK: checks 1, 2 and 7, the three that hunt for one,
+# read both byte sources. The gap is correctness and consistency, not exposure.
+#
+# NOT BUILT, and worth knowing before this gate is used as a merge criterion: a
+# branch or CI mode that validates index blobs for every check. Until that
+# exists, run the gate on a clean tree and read a green result as a statement
+# about your working tree.
 cached() { git ls-files -z --cached -- "$@"; }
 
 # scan <exempt-ere> <extra-grep-flags> <pattern> - grep both byte sources.
@@ -139,7 +153,13 @@ binary=$( { shipped | xargs -0r perl -0777 -ne 'print "$ARGV (working tree)\n" i
 # make the SAME claim about the SAME surface. An exemption - "this file is out of
 # THIS check" - stays inside the check that owns it. See the gate-integrity
 # assertion below.
-FRAMEWORK_PROSE='^(agents|commands|hooks|rules|config|templates|skills)/|^(AGENTS|CLAUDE)\.md$'
+# plugins/agent-harness-auggie/ is a GENERATED copy of agents/, commands/,
+# skills/ and AGENTS.md, every one of which is framework prose at its source.
+# Scanning the copy as a client-facing doc fails the glyph and count checks on
+# bytes this gate already passed once, and the only way to make it green again
+# would be to edit generated output. `.augment/` was listed here too and is
+# gitignored instead, so it never reaches this set at all.
+FRAMEWORK_PROSE='^(agents|commands|hooks|rules|config|templates|skills)/|^(AGENTS|CLAUDE)\.md$|^plugins/agent-harness-auggie/'
 CLIENT_DOCS=$(shipped_l '*.md' | grep -vE "$FRAMEWORK_PROSE")
 
 # ---------------------------------------------------------------- gate integrity
@@ -209,14 +229,35 @@ else pass "no absolute home paths"; fi
 # stay subject to every OTHER check, including paths - this
 # exemption is written out in full here rather than reusing check 1's, because
 # sharing one is how both of the last two leaks happened.
-# scripts/resolve-tier.sh is the fifth and last. It is the one file whose JOB is
+# scripts/resolve-tier.sh is the fifth. It is the one file whose JOB is
 # to classify a model by FAMILY, so the family patterns are its source code, and
 # its selftest fixture is a stub vendor allowlist whose entries carry the vendor
 # DISPLAY NAMES as test data. Weakening the family regex to dodge this check is
 # the one thing that must never happen here: a dropped family pattern is exactly
-# how a same-family reviewer gets through the gate Wave R exists to build.
-# One exact path, never a directory prefix.
-EXEMPT_VENDOR='^verify\.sh:|^adapters/README\.md|^docs/|^config/models\.conf|^scripts/resolve-tier\.sh:'
+# how a same-family reviewer gets through a gate that wants a different opinion.
+#
+# The last two are the Augment side, and neither exists in THIS checkout.
+# config/models.auggie.conf is written by scripts/resolve-tier.sh --write-conf;
+# plugins/agent-harness-auggie/ by `harness build-plugin`. Both are GENERATED
+# and in both a literal model id is the payload rather than a leak: a
+# subagent's `model:` field is a binding, the same category as
+# config/models.conf, and the alternative is a subagent that inherits whatever
+# the CLI defaults to.
+#
+# An exemption has to be EARNED by something re-deriving the content. Check 13
+# rebuilds plugins/agent-harness-auggie/ and diffs it byte for byte, so that
+# one is earned. `.augment/agents/` was exempted here too and was not: nothing
+# compared it to agents/, and `harness add --tool auggie` writes into it
+# without pruning, so a hand-written file with four vendor literals passed
+# while the same bytes under skills/ failed. It is gitignored now instead
+# (.gitignore), which is the honest answer: in THIS repo .augment/ is local
+# scratch, and the distributable copy is the plugin tree.
+#
+# config/retired.conf is the sixth: a list of FILENAMES the harness once
+# installed at user scope, several of them named after the model they ran.
+# Retiring one needs its literal name, and a literal belongs in a config file
+# the gate exempts by exact path rather than in code or in prose.
+EXEMPT_VENDOR='^verify\.sh:|^adapters/README\.md|^docs/|^config/models\.conf|^scripts/resolve-tier\.sh:|^config/models\.auggie\.conf:|^config/retired\.conf:|^plugins/agent-harness-auggie/'
 # -w, not \b: git grep -E does not implement \b, so the index side of this scan
 # would have matched nothing and passed forever. Both engines implement -w and
 # both return the same hits on this repo.
@@ -247,6 +288,19 @@ scan_vs_disk() {
   done
 }
 
+# Frontmatter, or nothing. Checks 3 and 4 used to grep the WHOLE file for
+# `^model:` and `^name:`, so a file with a stray line before its opening `---`
+# passed both while the host, which requires the delimiter on line 1, saw no
+# frontmatter at all. A body example beginning `model:` satisfied check 3 the
+# same way. This prints the opening block and stays silent when there is not
+# one, so a structural break fails instead of being searched around.
+frontmatter() { # frontmatter <file>
+  awk 'NR==1 && $0!="---" {exit}
+       NR==1 {next}
+       /^---[[:space:]]*$/ {exit}
+       {print}' "$1" 2>/dev/null
+}
+
 # 3 -------------------------------------------------- every agent pins a tier
 # Guard is a COMPARISON against what is on disk, not a test for zero. A scan set
 # of 1 agent out of 11 reported PASS on almost nothing and printed a reassuring
@@ -257,7 +311,10 @@ elif [ -n "$unscanned" ]; then fail "agent definitions on disk that the scan set
 else
   missing=""
   for f in $scanned; do
-    grep -qE '^model:[[:space:]]*\{\{TIER_(FRONTIER_THINK|FRONTIER_DO|MID|SMALL)\}\}' "$f" 2>/dev/null || missing="$missing $f"
+    # Anchored at BOTH ends. `{{TIER_MID}}-typo` matched the old pattern and
+    # installed as a literal nobody offers.
+    frontmatter "$f" | grep -qE '^model:[[:space:]]*\{\{TIER_(FRONTIER_THINK|FRONTIER_DO|MID|SMALL)\}\}[[:space:]]*$' \
+      || missing="$missing $f"
   done
   if [ -n "$missing" ]; then fail "agent definitions missing a {{TIER_*}} model pin:$missing"
   else pass "all $n agent definitions pin a tier"; fi
@@ -270,8 +327,10 @@ elif [ -n "$unscanned" ]; then fail "SKILL.md files on disk that the scan set do
 else
   bad=""
   for f in $scanned; do
-    head -20 "$f" 2>/dev/null | grep -q '^name:' || bad="$bad $f(name)"
-    head -20 "$f" 2>/dev/null | grep -q '^description:' || bad="$bad $f(description)"
+    fm="$(frontmatter "$f")"
+    [ -n "$fm" ] || { bad="$bad $f(no frontmatter block)"; continue; }
+    printf '%s\n' "$fm" | grep -q '^name:' || bad="$bad $f(name)"
+    printf '%s\n' "$fm" | grep -q '^description:' || bad="$bad $f(description)"
   done
   if [ -n "$bad" ]; then fail "SKILL.md missing required frontmatter:$bad"
   else pass "all $n skills have name and description"; fi
@@ -292,12 +351,21 @@ if [ -z "$(shipped_l 'config/settings.portable.json')" ]; then
 elif [ ! -r config/settings.portable.json ]; then
   fail "config/settings.portable.json is not readable - the check did not run, which is not the same as safe"
 else
+# Parse FIRST. `jq ... 2>/dev/null || true` turned a parse failure into an empty
+# string, which then compared unequal to every unsafe value and passed. A
+# trailing comma in this file therefore read as "no unsafe defaults" while the
+# installer copied malformed JSON into ~/.claude, where the tool would ignore
+# the whole file including the model-pin hook.
+if ! jq -e 'type == "object"' config/settings.portable.json >/dev/null 2>&1; then
+  fail "config/settings.portable.json is not a JSON object - it cannot be checked, and an install would copy it anyway"
+else
 unsafe=$(grep -oE '"(skipDangerousModePermissionPrompt|skipAutoPermissionPrompt|dangerouslySkipPermissions)"' \
          config/settings.portable.json 2>/dev/null || true)
 acceptmode=$(jq -r '.permissions.defaultMode // empty' config/settings.portable.json 2>/dev/null || true)
 if [ -n "$unsafe" ] || [ "$acceptmode" = "acceptEdits" ] || [ "$acceptmode" = "bypassPermissions" ]; then
   fail "unsafe permission defaults in settings.portable.json: ${unsafe:-} ${acceptmode:-}"
 else pass "no permission-bypass defaults in shipped settings"; fi
+fi
 fi
 
 # 7 -------------------------------------------------- shell script portability
@@ -421,6 +489,43 @@ fi
 # repo's convention, so this catches what is written, not what could be.
 BUILTIN_SLASH="clear compact loop agents help model resume"
 NOT_A_COMMAND="tmp something notes-repo-recon"
+# A third category, and the only one that is neither this repo nor the host: a
+# command a PLUGIN provides. `/ponytail-review` is step 3 of the per-wave gate
+# stack and it is not a harness skill; the harness used to ship its own
+# `skills/simplify/`, which duplicated a command the host already provides
+# under that name. The plugin is recorded in config/upstream.conf, so the
+# reference is resolvable in the sense that matters: a reader can find out
+# where it comes from and install it. These resolve only when that plugin is
+# installed, which is exactly why they are listed separately from the host
+# built-ins rather than quietly added to them.
+# DERIVED from config/upstream.conf, not typed here. A hardcoded list claimed
+# these resolve "because the plugin is recorded in config/upstream.conf" while
+# never reading that file, so deleting the entry left every reference passing.
+# Now the allowance exists only while the dependency does: the names come from
+# the skills the manifest actually says to install, plus the clone's own skill
+# directories when it is present.
+PLUGIN_SLASH=""
+if [ -f config/upstream.conf ]; then
+  PLUGIN_SLASH=$(
+    while read -r upname upurl upref upspec; do
+      # No `case` here. bash 3.2, which is what /bin/bash is on macOS, cannot
+      # parse a one-line `case ... ;; esac` INSIDE a command substitution:
+      # `bash -n` accepts it and the script dies at runtime. rules/shell-portability.md
+      # is the standing rule this tripped over.
+      [ -n "${upname:-}" ] || continue
+      [ "${upname#\#}" = "$upname" ] || continue
+      spec="${upspec:-}"
+      [ "${spec#install=}" != "$spec" ] || continue
+      spec="${spec#install=}"
+      if [ "$spec" = '*' ]; then
+        [ -d ".upstream/$upname/skills" ] && ls -1 ".upstream/$upname/skills" 2>/dev/null
+        [ -f ".upstream/$upname/SKILL.md" ] && printf '%s\n' "$upname"
+      else
+        printf '%s\n' "$spec" | tr ',' '\n'
+      fi
+    done < config/upstream.conf | grep -v '^$' | sort -u | tr '\n' ' '
+  )
+fi
 # Trailing [^`]* so a command documented WITH ITS ARGUMENT is still seen. The old
 # matcher required the closing backtick right after the token, so `/deep-plan
 # rescope ...` - the normal way to document a command - was invisible.
@@ -433,7 +538,7 @@ while IFS= read -r tok; do
   [ -n "$tok" ] || continue
   seen=$((seen+1))
   printf '%s\n' "$defined" | grep -qxF "$tok" && continue
-  case " $BUILTIN_SLASH $NOT_A_COMMAND " in *" $tok "*) continue ;; esac
+  case " $BUILTIN_SLASH $NOT_A_COMMAND $PLUGIN_SLASH " in *" $tok "*) continue ;; esac
   dangling="$dangling $tok"
 done <<< "$tokens"
 ntokens=$(printf '%s\n' "$tokens" | grep -c . || true)
@@ -471,9 +576,36 @@ labels=$(printf '%s\n' "$instout" | sed $'s/\033\\[[0-9;]*m//g' \
          | sed -n -E 's#^  [+=] ((agents|skills|commands|hooks)/.+)$#\1#p' \
          | sed -E 's# \([^)]*\)$##' | sort -u)
 shipset=$(shipped_l 'agents' 'skills' 'commands' 'hooks')
+# Upstream skills are the ONE declared exception, and it is declared twice: once
+# in config/upstream.conf by whoever added the entry, and once by the installer,
+# which names each on an "upstream-skill:" line. They are another project's
+# files. This gate does not scan them and must not pretend to: holding someone
+# else's repo to this repo's style rules would fail on their first absolute path
+# and teach the reader to ignore the result.
+#
+# So the invariant is narrowed and stated rather than quietly widened. Nothing
+# from THIS repo reaches ~/.claude unscanned. Content from an upstream clone
+# does, by the operator's explicit choice, and the count is printed every run so
+# the size of that surface is never a surprise.
+upnames=$(printf '%s\n' "$instout" | sed $'s/\033\\[[0-9;]*m//g' \
+          | sed -n -E 's#^  \+ upstream-skill: ([^ ]+) .*$#\1#p' | sort -u)
+is_upstream() { # is_upstream <label>
+  local nm
+  [ -n "$upnames" ] || return 1
+  while IFS= read -r nm; do
+    [ -n "$nm" ] || continue
+    case "$1" in "skills/$nm/"*) return 0 ;; esac
+  done <<< "$upnames"
+  return 1
+}
 unscanned=$(printf '%s\n' "$labels" | grep -v '^$' | while IFS= read -r l; do
-              printf '%s\n' "$shipset" | grep -qxF "$l" || printf '%s\n' "$l"
+              printf '%s\n' "$shipset" | grep -qxF "$l" && continue
+              is_upstream "$l" && continue
+              printf '%s\n' "$l"
             done)
+upfiles=$(printf '%s\n' "$labels" | grep -v '^$' | while IFS= read -r l; do
+            is_upstream "$l" && printf '%s\n' "$l"
+          done | grep -c . || true)
 if [ "$instrc" -ne 0 ]; then
   fail "harness install --dry-run exited $instrc - the check could not run"
   printf '%s\n' "$instout" | tail -3 | while IFS= read -r l; do show "$l"; done
@@ -484,7 +616,13 @@ elif [ -n "$unscanned" ]; then
   fail "harness install would ship files this gate never scanned"
   printf '%s\n' "$unscanned" | head -10 | while IFS= read -r l; do show "$l"; done
 else
-  pass "all $(printf '%s\n' "$labels" | wc -l | tr -d ' ') files harness install would ship are in the scanned set"
+  nup=$(printf '%s\n' "$upnames" | grep -c . || true)
+  if [ "${nup:-0}" -gt 0 ]; then
+    pass "every file harness install would ship from this repo is in the scanned set"
+    show "plus ${upfiles:-0} file(s) from ${nup} upstream skill(s), which this gate does not scan (config/upstream.conf)"
+  else
+    pass "all $(printf '%s\n' "$labels" | wc -l | tr -d ' ') files harness install would ship are in the scanned set"
+  fi
 fi
 
 # 12 ------------------------------------------------- documented counts
@@ -560,23 +698,210 @@ GEN_SCRIPT="scripts/gen-reference.sh"
 GEN_DOC="docs/reference.md"
 gentmp=$(mktemp) || gate_error "mktemp failed - check 13 cannot run"
 generr=$(mktemp) || gate_error "mktemp failed - check 13 cannot run"
+genmsg=""; gendiff=""
 if [ -z "$(shipped_l "$GEN_SCRIPT")" ] || [ -z "$(shipped_l "$GEN_DOC")" ]; then
-  fail "$GEN_SCRIPT or $GEN_DOC is not in the shipped set - nothing was regenerated, which is not the same as current"
+  genmsg="$GEN_SCRIPT or $GEN_DOC is not in the shipped set - nothing was regenerated, which is not the same as current"
 else
   bash "$GEN_SCRIPT" >"$gentmp" 2>"$generr"; genrc=$?
   if [ "$genrc" -ne 0 ]; then
-    fail "$GEN_SCRIPT exited $genrc - the check could not run"
-    tail -3 "$generr" | while IFS= read -r l; do show "$l"; done
+    genmsg="$GEN_SCRIPT exited $genrc - the check could not run"
+    gendiff="$(tail -3 "$generr")"
   elif [ ! -s "$gentmp" ]; then
-    fail "$GEN_SCRIPT produced no output - an empty regeneration is not the same as an up-to-date file"
+    genmsg="$GEN_SCRIPT produced no output - an empty regeneration is not the same as an up-to-date file"
   elif ! diff -q "$gentmp" "$GEN_DOC" >/dev/null 2>&1; then
-    fail "$GEN_DOC is stale - regenerate it with: $GEN_SCRIPT > $GEN_DOC"
-    diff "$gentmp" "$GEN_DOC" 2>&1 | head -10 | while IFS= read -r l; do show "$l"; done
-  else
-    pass "$GEN_DOC matches what $GEN_SCRIPT generates"
+    genmsg="$GEN_DOC is stale - regenerate it with: $GEN_SCRIPT > $GEN_DOC"
+    gendiff="$(diff "$gentmp" "$GEN_DOC" 2>&1 | head -10)"
   fi
 fi
 rm -f "$gentmp" "$generr"
+
+# The second generated artifact: plugins/ and .augment-plugin/marketplace.json,
+# written by `harness build-plugin --tool auggie`. Same claim, same check, so it
+# lives here rather than as a fifteenth: a derived tree nobody re-derives reads
+# as authoritative while it rots.
+#
+# It can only be rebuilt where the Augment tier binding exists, and that file is
+# generated on the work machine. On a machine without it the comparison is
+# SKIPPED and says so out loud in the check's own output, because a skip that
+# looks like a pass is the failure this gate is built around.
+# The build writes TWO things and they are only meaningful together: the plugin
+# tree, and the marketplace manifest whose `source` points at it. Testing only
+# plugins/ left a seventh path green - manifest committed, tree absent - where
+# `auggie plugin marketplace add` lists a plugin that cannot install.
+plugmsg=""
+plugtree="$(shipped_l 'plugins/*')"
+plugman="$(shipped_l '.augment-plugin/*')"
+plughave=""
+if [ -n "$plugtree" ] || [ -n "$plugman" ]; then plughave=1; fi
+if [ -n "$plughave" ] && { [ -z "$plugtree" ] || [ -z "$plugman" ]; }; then
+  plugmsg="half of the generated Auggie output is committed: plugins/ $([ -n "$plugtree" ] && echo present || echo ABSENT), .augment-plugin/ $([ -n "$plugman" ] && echo present || echo ABSENT) - the manifest points at the tree, so one without the other cannot install"
+elif [ -z "$(shipped_l 'config/models.auggie.conf')" ]; then
+  plugskip="plugins/ not compared: config/models.auggie.conf is unbound (docs/augment-runbook.md step 5)"
+  [ -z "$plughave" ] || plugmsg="plugins/ is committed but cannot be re-derived here - $plugskip"
+else
+  plugskip=""
+  if [ -z "$plughave" ]; then
+    plugmsg="the tier binding is bound but plugins/ is not committed - run: harness build-plugin --tool auggie"
+  else
+    plugtmp=$(mktemp -d) || gate_error "mktemp failed - check 13 cannot run"
+    if ! plugerr=$(bash bin/harness build-plugin --tool auggie --stage "$plugtmp" 2>&1); then
+      plugmsg="harness build-plugin failed - the comparison could not run: $(printf '%s' "$plugerr" | tail -1)"
+    elif ! diff -r "$plugtmp/plugins" plugins >/dev/null 2>&1; then
+      plugmsg="plugins/ is stale - rebuild it with: harness build-plugin --tool auggie"
+    elif ! diff -q "$plugtmp/.augment-plugin/marketplace.json" .augment-plugin/marketplace.json >/dev/null 2>&1; then
+      plugmsg=".augment-plugin/marketplace.json is stale - rebuild it with: harness build-plugin --tool auggie"
+    fi
+    rm -rf "$plugtmp"
+  fi
+fi
+
+# ONE verdict for the whole check. Both halves could fail - a rebind makes both
+# artifacts stale at once, which is exactly step 5b - and each called fail,
+# which incremented RAN twice and ended the run with
+# "GATE ERROR ran 15 of 14 checks - the gate itself is broken". That message is
+# this gate's reserved signal for a check that did not run. Spending it on
+# ordinary staleness teaches the reader to discount it.
+if [ -n "${genmsg:-}" ] || [ -n "$plugmsg" ]; then
+  fail "generated files are not current"
+  [ -z "${genmsg:-}" ] || show "$genmsg"
+  [ -z "${gendiff:-}" ] || printf '%s\n' "$gendiff" | head -6 | while IFS= read -r l; do show "$l"; done
+  [ -z "$plugmsg" ] || show "$plugmsg"
+else
+  pass "$GEN_DOC matches what $GEN_SCRIPT generates${plugskip:+; }${plugskip}"
+  [ -z "$plugskip" ] && show "plugins/ matches what harness build-plugin generates"
+fi
+
+# 14 ------------------------------------------------- Augment tool-permission rules
+# templates/project/.augment/settings.json denies the mechanical subset of the
+# AGENTS.md security hard stops at Auggie's tool layer. A deny regex nobody
+# exercises is the fail-open shape this gate exists to refuse: it looks the same
+# whether it blocks a force push or nothing at all.
+#
+# WHAT THIS PROVES AND WHAT IT DOES NOT. It runs each rule's shellInputRegex
+# under perl against a table of commands and asserts the verdict. Auggie's own
+# regex engine is NOT FOUND in the docs snapshot, so this is evidence the
+# patterns are well formed and say what the table claims, not evidence that
+# Auggie agrees. Only the constructs every common engine shares are used:
+# \b, \s, alternation, a character class, and (\s|$). Runbook step 8 is what
+# settles the live verdicts.
+#
+# CEILING, and read this before trusting the PASS. A regex over raw shell text
+# is NOT a security boundary. It matches the string someone typed, and a shell
+# has unlimited ways to spell the same command. An external reviewer defeated
+# the first version of these rules with `git -C <path> push --force`, quoting
+# (`git "push"`), and combined short flags (`-fu`), and this check was green
+# over all of them because its table contained none of those shapes. Those
+# cases are pinned above now, but the lesson generalises: the table proves the
+# rules handle the shapes IN IT, and nothing more.
+#
+# Known and still allowed: a bare `git push` where main is the upstream, since
+# the branch is not in the command string; `git branch --delete --force`;
+# anything reached through an alias, a variable, a here-doc or a script; and
+# any spelling nobody has thought of yet.
+#
+# So treat these rules as a speed bump over the mistakes people actually type,
+# which is what AGENTS.md already forbids in prose. They are not a sandbox, and
+# a green line here is not a statement that the command cannot be run.
+TP_TEMPLATE='templates/project/.augment/settings.json'
+if [ -z "$(shipped_l "$TP_TEMPLATE")" ]; then
+  fail "$TP_TEMPLATE is not in the shipped set - no permission rules were exercised, which is not the same as safe"
+elif ! jq -e . "$TP_TEMPLATE" >/dev/null 2>&1; then
+  fail "$TP_TEMPLATE is not valid JSON - Auggie would load no rules at all"
+else
+  # REACHABILITY FIRST, then the patterns. Selecting on permission.type alone
+  # proved nothing about production: retarget every rule at a toolName that
+  # does not exist, or set eventType to tool-response so the check happens
+  # after the command has already run, and the table below still passed. The
+  # vendor is explicit that the shell is the single tool `terminal`, that rules
+  # are first-match-wins top-down, and that tool-response fires post-execution.
+  tpre=$(jq -r '.toolPermissions[]
+                | select(.toolName == "terminal"
+                         and (.eventType // "tool-call") == "tool-call"
+                         and (.permission | type) == "object"
+                         and .permission.type == "deny"
+                         and has("shellInputRegex"))
+                | .shellInputRegex' "$TP_TEMPLATE" 2>/dev/null)
+  # Every `terminal` rule must be one of those. The equality is what closes
+  # first-match-wins: a single allow, a bare-string permission the vendor drops
+  # at load time, or a post-execution rule sitting anywhere in the list makes
+  # the counts differ, and any of them can render the denies inert.
+  nterm=$(jq -r '[.toolPermissions[] | select(.toolName == "terminal")] | length' "$TP_TEMPLATE" 2>/dev/null)
+  ndeny=$(printf '%s\n' "$tpre" | grep -c . || true)
+  if [ -z "$tpre" ]; then
+    fail "$TP_TEMPLATE carries no reachable terminal deny rule - the table below would pass over nothing"
+  elif [ "${nterm:-0}" -ne "${ndeny:-0}" ]; then
+    fail "$TP_TEMPLATE has ${nterm:-0} terminal rules but only ${ndeny:-0} are reachable denies - first match wins, so the rest can make these inert"
+  else
+    # verdict<TAB>command. Every line is asserted; a row whose verdict is wrong
+    # names itself.
+    tpbad=$(printf '%s\n' "$tpre" | perl -CSD -e '
+      chomp(my @re = <STDIN>);
+      my @cases = (
+        [deny  => "git merge main"],
+        [deny  => "git merge origin/main --no-ff"],
+        [allow => "git merge-base HEAD HEAD"],
+        [allow => "git merge-base --is-ancestor a b"],
+        [deny  => "git push --force origin topic"],
+        [deny  => "git push --force-with-lease origin topic"],
+        [deny  => "git push -f origin topic"],
+        [deny  => "git push origin +topic"],
+        [deny  => "git push origin main"],
+        [deny  => "git push origin HEAD:main"],
+        [deny  => "git push origin HEAD:refs/heads/main"],
+        # Every one of these was ALLOWED by the first version of these rules,
+        # and check 14 was green over them because its table had no global
+        # option, no quoting and no combined short flag. An external reviewer
+        # ran them against the production regexes and they all got through.
+        # `git -C` is used throughout this repository itself, so this was not
+        # an exotic shape.
+        [deny  => "git -C /work/repo push --force origin topic"],
+        [deny  => "git -C /work/repo push origin main"],
+        [deny  => "git -C /work/repo merge main"],
+        [deny  => "git -C /work/repo reset --hard HEAD~1"],
+        [deny  => "git -C /work/repo branch -D topic"],
+        [deny  => "git --git-dir=/w/.git --work-tree=/w push --force origin x"],
+        [deny  => "git -c user.name=x push origin main"],
+        [deny  => "git \"push\" --force origin topic"],
+        [deny  => "git push -fu origin topic"],
+        [deny  => "git push -uf origin topic"],
+        [deny  => "git branch -Dr topic"],
+        [allow => "git -C /work/repo status"],
+        [allow => "git -C /work/repo merge-base HEAD HEAD"],
+        [allow => "git -C /work/repo push origin feature"],
+        [deny  => "git push origin refs/heads/main"],
+        [deny  => "git push -u origin main"],
+        [allow => "git push origin refs/heads/maintenance"],
+        [deny  => "git push origin master"],
+        [allow => "git push origin feature"],
+        [allow => "git push origin maintenance"],
+        [deny  => "git push --delete origin topic"],
+        [deny  => "git push origin :topic"],
+        [deny  => "git reset --hard HEAD~1"],
+        [allow => "git reset HEAD~1"],
+        [deny  => "git branch -D topic"],
+        [allow => "git branch -d topic"],
+        [allow => "git branch --list"],
+        [deny  => "claude -p --dangerously-skip-permissions do the thing"],
+        [allow => "git status"],
+        [allow => "npm test"],
+      );
+      for my $c (@cases) {
+        my ($want, $cmd) = @$c;
+        my @hit = grep { $cmd =~ /$_/ } @re;
+        my $got = @hit ? "deny" : "allow";
+        next if $got eq $want;
+        printf "%s: expected %s, got %s%s\n", $cmd, $want, $got,
+          @hit ? " (matched " . join(", ", @hit) . ")" : "";
+      }
+    ' 2>&1)
+    if [ -n "$tpbad" ]; then
+      fail "Augment deny rules do not match their own table"
+      printf '%s\n' "$tpbad" | head -10 | while IFS= read -r l; do show "$l"; done
+    else
+      pass "all $(printf '%s\n' "$tpre" | wc -l | tr -d ' ') Augment deny rules give the expected verdict on 41 commands"
+    fi
+  fi
+fi
 
 # ---------------------------------------------------- docs must not go stale
 # Not a numbered check (it would have to count itself). The enumerated list in

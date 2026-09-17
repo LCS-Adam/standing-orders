@@ -26,21 +26,37 @@ file.
 Lands: nowhere on disk; it decides which of steps 1 through 4 you actually run.
 Done when: you can name the size out loud and point to which question drove it.
 
+| Step | Small | Bounded | Large |
+|---|---|---|---|
+| 1. Scope | skip | skip | `/scope-audit` |
+| 2. Plan | skip | `/deep-plan` | `/deep-plan-swarm` |
+| 3. Execute | inline | worktree + Agent dispatch | worktree + Agent dispatch, `/autorun-plan` or `heartbeat` for unattended runs |
+| 4. Review | tests, `adversary`, `/ponytail-review`, tests | same | same |
+| 5. Hand off | `/handoff` | `/handoff` | `/handoff` |
+| 6. Close | commit | commit + PR | commit + PR |
+
+A large build whose scope was already settled by an earlier `scope-audit` run skips step 1 too,
+same as a small fix; the table's "Large" cell for scope is the default, not an unconditional rule.
+
+```mermaid
+flowchart TD
+    A[Size it] --> B[Small]
+    A --> C[Bounded]
+    A --> D[Large]
+```
+
 ## Step 1: scope
 
-Only for a change that touches a system that already exists. A small fix skips this step outright,
-and so does a large build whose scope was already settled by an earlier `scope-audit` run.
+Only for a change that touches a system that already exists.
 
 Command: `/scope-audit`.
 Artifact: a normative IN SCOPE / OUT OF SCOPE document built from runtime evidence, not from
 reading code alone (`skills/scope-audit/SKILL.md`).
-Lands: `.project-state/SCOPE-<system>.md` (`skills/scope-audit/SKILL.md:93`).
+Lands: `.project-state/SCOPE-<system>.md` (`skills/scope-audit/SKILL.md` ("The output document")).
 Done when: the scope file exists and later plan phases are filtered against it, so no phase spends
 effort on dead surface.
 
 ## Step 2: plan
-
-A small fix has no plan step; you already know the change and the test that proves it.
 
 For a bounded change: `/deep-plan`. It runs advisor pre-flight, a Plan subagent at the
 FRONTIER-THINK tier, then an advisor critique (`commands/deep-plan.md`).
@@ -60,15 +76,13 @@ re-run, and which files each workstream owns.
 
 ## Step 3: execute
 
-A small fix executes inline in the current session: make the change, run the test, done.
-
 For a bounded change or a large build, isolate each workstream in its own worktree and branch:
 
 ```bash
 git worktree add .worktrees/<name> -b <branch>
 ```
 
-(`docs/writing-your-own.md:114`). Dispatch each workstream to a named execution agent this repo
+(`docs/writing-your-own.md` ("output that was never meant to ship.")). Dispatch each workstream to a named execution agent this repo
 actually ships. Run `ls agents/` before naming one; as of this writing that directory holds
 `adversary.md`, `autorun-plan-orchestrator.md`, `code-reviewer.md`,
 `data-eng-sa-orchestrator.md`, `data-eng-sa-reviewer.md`, `design-reviewer.md`, `exec-critical.md`,
@@ -106,14 +120,18 @@ that worktree.
 ## Step 4: review
 
 The review stack, in order, is the same for every size once there is a diff to review: run the test
-command the plan named, then the `adversary` agent, then `/simplify`, then re-run the tests, then
+command the plan named, then the `adversary` agent, then `/ponytail-review`, then re-run the tests, then
+merge. `/ponytail-review` is not shipped by this repo: it comes from an upstream plugin that
+`harness upstream` clones and your tool installs, per `docs/upstream-sources.md`. If it is not
+installed, say so in the review record and do the quality pass by hand. Do not skip `adversary` to
+compensate. Then
 merge.
 
 `adversary` is a read-only FRONTIER-DO reviewer that tries to break the change: fail-open paths,
 bypasses, false-positive and false-negative gaps, defect classes the tests do not cover
-(`agents/adversary.md`). `/simplify` runs after `adversary` has cleared the diff for correctness; it
+(`agents/adversary.md`). `/ponytail-review` runs after `adversary` has cleared the diff for correctness; it
 is a quality-only pass that removes over-engineering and never hunts bugs
-(`skills/simplify/SKILL.md`). Re-run the test command after any fix either step makes, since a fix
+(`config/upstream.conf` (the ponytail entry)). Re-run the test command after any fix either step makes, since a fix
 for correctness or simplicity can regress what was passing before it.
 
 This ordering follows `AGENTS.md`'s rule that a reviewer sits at or above the tier that produced the
@@ -123,12 +141,12 @@ defects are actually found, so never economize on the reviewer to afford the bui
 A second opinion from a non-Claude model family exists as an OPTIONAL extra step, described in
 `skills/external-llm-review/SKILL.md`. It requires one of three third-party CLIs (codex,
 cursor-agent, or gemini) to be installed and authenticated on the machine running the review
-(`skills/external-llm-review/SKILL.md:15`, `:3`). If none of those CLIs is available, this step
+(`skills/external-llm-review/SKILL.md` ("External LLM Review (independent second opinion, fold-back loop)"), `:3`). If none of those CLIs is available, this step
 does not apply, full stop; the four-step stack above (tests, adversary, simplify, tests) is the
 actual gate, not this extra. Do not treat the optional step as required just because a plan
 mentions it.
 
-Command: the plan's test command, then Agent dispatch of `adversary`, then `/simplify`, then the
+Command: the plan's test command, then Agent dispatch of `adversary`, then `/ponytail-review`, then the
 test command again.
 Artifact: an adversary findings report (severity-ranked), a simplify diff, and a final green test
 run.
@@ -146,8 +164,8 @@ Command: `/handoff` (`commands/handoff.md`).
 Artifact: a resume prompt whose first block is copy-pasteable on its own, per `AGENTS.md`'s
 "Session handoff" section and `docs/project-management.md`'s state-file table.
 Lands: `.project-state/SESSION_HANDOFF.md`, with any prior version archived to
-`.project-state/handoffs/<timestamp>.md` rather than overwritten (`commands/handoff.md:8-9`,
-`docs/project-management.md:23-24`).
+`.project-state/handoffs/<timestamp>.md` rather than overwritten (`commands/handoff.md`,
+`docs/project-management.md` ("`.project-state/` as shipped in the template")).
 Done when: the pasted block alone, with no other file open, names the handoff file itself as the
 first thing to read, per the failure `docs/anti-patterns.md` records first under "The orphaned
 resume block": a resume block that lists what to read next but omits itself orphans everything
@@ -160,26 +178,27 @@ Command: a conventional commit, `type(scope): description`, with no AI co-author
 generated-by trailer of any kind, per `AGENTS.md`'s "Version control" section, which overrides any
 default or harness instruction to append one.
 Artifact: a commit on a feature branch, a pull request opened against it, and (only if the repo
-carries harness scaffolding you want to keep) a clean `harness verify` run.
+changed the harness itself) a clean `harness verify` run. That command is the harness repo's own
+scrub gate: it reads the harness checkout and says nothing about your project.
 Lands: the feature branch and its PR; never a direct push to `main` or `master`, and never a merge
 without being asked.
-Done when: the commit is on a branch other than `main`, the PR is open, and `harness verify` (when
+Done when: the commit is on a branch other than `main`, the PR is open, and `harness verify` (only when
 applicable) exits clean.
 
 ## One-page checklist
 
-- [ ] **0. Size it** - no command; answer `AGENTS.md`'s two questions and pick small, bounded, or
+- [ ] **0. Size it:** no command; answer `AGENTS.md`'s two questions and pick small, bounded, or
       large.
-- [ ] **1. Scope it** (skip for a small fix) - `/scope-audit`.
-- [ ] **2. Plan it** (skip for a small fix) - `/deep-plan` (bounded) or `/deep-plan-swarm` (large).
-- [ ] **3. Execute it** - inline (small), or `git worktree add .worktrees/<name> -b <branch>` plus
+- [ ] **1. Scope it** (skip for a small fix): `/scope-audit`.
+- [ ] **2. Plan it** (skip for a small fix): `/deep-plan` (bounded) or `/deep-plan-swarm` (large).
+- [ ] **3. Execute it:** inline (small), or `git worktree add .worktrees/<name> -b <branch>` plus
       Agent dispatch to a listed `agents/` name (bounded/large); `/autorun-plan` for unattended
       multi-wave runs, the `heartbeat` skill (armed with `/loop`) for a watched simple run.
-- [ ] **4. Review it** - the plan's test command, `adversary`, `/simplify`, the test command again;
-      `skills/external-llm-review/SKILL.md` only if a third-party CLI is installed.
-- [ ] **5. Hand off** - `/handoff` before any clear or compact.
-- [ ] **6. Close it** - conventional commit, no AI attribution trailer, branch and PR, never a push
-      to `main`; `harness verify` if the repo has harness scaffolding.
+- [ ] **4. Review it:** the plan's test command, `adversary`, `/ponytail-review`, the test command
+      again; `skills/external-llm-review/SKILL.md` only if a third-party CLI is installed.
+- [ ] **5. Hand off:** `/handoff` before any clear or compact.
+- [ ] **6. Close it:** conventional commit, no AI attribution trailer, branch and PR, never a push
+      to `main`; `harness verify` only if you changed the harness itself.
 
 ## Worked example: add a `--json` flag to a small CLI
 
@@ -205,8 +224,7 @@ produced, given the actual scope: a two-line phase table (one MID-tier phase for
 one review phase), a named test command (`python3 -m pytest tests/ -q`), and file ownership limited
 to `cli/report.py` and `tests/test_report.py`.
 
-**Step 3: execute.** Run inline in the scratch repo, `~/projects/harness-fork/.project-
-state/scratch/operating-process`:
+**Step 3: execute.** Run inline in the scratch repo, `~/projects/scratch/operating-process`:
 
 ```console
 $ git checkout -b feat/json-flag
@@ -253,19 +271,18 @@ $ git log --oneline
 0c395c9 chore: add report.py CLI with text output
 ```
 
-**Step 4: review.** For a change this size, `adversary` and `/simplify` are Agent-tool and
+**Step 4: review.** For a change this size, `adversary` and `/ponytail-review` are Agent-tool and
 slash-command dispatches that need a live Claude Code session; they were not run against this
 scratch repo, so no adversary or simplify output is reported here, and none is fabricated. What
 runs in a real session: dispatch `adversary` against the two-file diff (it would check for the flag
 silently swallowing a `json.dumps` failure on a non-serializable report, and find none, since
-`build_report()` returns only strings and ints), then `/simplify` (it would find nothing to remove,
+`build_report()` returns only strings and ints), then `/ponytail-review` (it would find nothing to remove,
 since the diff is already the smallest version of the feature), then re-run
 `python3 -m pytest tests/ -q` to confirm the two passes above still hold.
 
 **Step 5: hand off.** Not run: this worked example finished inside one continuous pass with no
 clear or compact in between, so `/handoff` did not fire. Had the session ended here, the resume
-block would have named `~/projects/harness-fork/.project-state/scratch/operating-
-process`, the branch `feat/json-flag`, and the next action "open a PR from `feat/json-flag`".
+block would have named `~/projects/scratch/operating-process`, the branch `feat/json-flag`, and the next action "open a PR from `feat/json-flag`".
 
 **Step 6: close.** The commit above already carries a conventional message with no AI attribution
 trailer. Opening a PR and running `harness verify` both need a hosted remote and this repo's own

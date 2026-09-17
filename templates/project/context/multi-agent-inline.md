@@ -71,7 +71,7 @@ SWARM CONFIG: count=N model=<m> effort=<e> est_cost_tier=<low|medium|high>
 
 ## Run-id and paths
 
-**Run-id:** `YYYY-MM-DD_<short-slug>` — matches the canonical convention documented at `CLAUDE.md:71`. Same-day reruns disambiguate via slug suffix (`readme-review`, `readme-review-2`, `readme-review-3`).
+**Run-id:** `YYYY-MM-DD_<short-slug>` — matches the canonical convention, "Run-id format", in the project `CLAUDE.md`. Same-day reruns disambiguate via slug suffix (`readme-review`, `readme-review-2`, `readme-review-3`).
 
 **Output path:** `active/swarms/<run-id>/<NN>_<descriptor>.md`
 - `NN` is a 2-digit zero-padded sequence number (`01_…`, `02_…`).

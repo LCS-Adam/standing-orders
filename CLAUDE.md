@@ -53,8 +53,8 @@ consume more context and measurably reduce adherence. Push everything situationa
 path-scoped rule.
 
 This harness holds itself to that per-file rule and states the cost openly. At user scope it
-installs two unconditional files: `00-harness-core.md` (179 lines) and `10-claude-specifics.md`
-(69), so roughly 250 lines load in every session before your project adds anything. Each file is
+installs two unconditional files, `00-harness-core.md` and `10-claude-specifics.md`, so a few
+hundred lines load in every session before your project adds anything. Each file is
 under the limit, the combined total is not. That is a deliberate trade. The sections that could be
 made lazy are the ones you least want an agent to forget: the security hard stops, the handoff
 discipline, and the client-facing writing rules all have to be in force before the moment you would

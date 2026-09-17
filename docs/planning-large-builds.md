@@ -9,10 +9,10 @@ This document assumes you already know three things `docs/glossary.md` defines:
 answer to "Workflow or subagents" below is always subagents.
 
 This article also describes an optional external second-opinion review step. That step requires
-one of several third-party CLIs (`skills/external-llm-review/SKILL.md:15` names codex,
+one of several third-party CLIs (`skills/external-llm-review/SKILL.md` ("External LLM Review (independent second opinion, fold-back loop)") names codex,
 cursor-agent, and gemini) installed and authenticated on your machine. If you do not have one of
 those set up, that step does not apply to you, and the gate is the rest of the stack: the test
-command, the `adversary` agent, `/simplify`, re-running the tests, and merging. Do not treat the
+command, the `adversary` agent, `/ponytail-review`, re-running the tests, and merging. Do not treat the
 external review step as required; it is a strengthening step, not a floor.
 
 An agent session does not survive a large build. Context fills up, gets compacted, or the session
@@ -46,10 +46,10 @@ was alive, because that is not the question review answers.
 history file a feature writes only if it actually ran, a log directory with real logs in it rather
 than just a placeholder, a config file that has to exist before a feature can be configured at all.
 Absence of a feature's run-history artifact and its config file together is a stronger signal than
-either alone: it means the feature is not just idle, it is unconfigured and cannot currently run.
-The skill also traces reachability transitively (a file reached only through another orphaned file
-is itself an orphan) and checks whether a proposed guard is already enforced structurally before
-anyone writes a rule for it.
+either alone: it means the feature is unconfigured and cannot currently run, rather than merely
+idle. The skill also traces reachability transitively (a file reached only through another
+orphaned file is itself an orphan) and checks whether a proposed guard is already enforced
+structurally before anyone writes a rule for it.
 
 The output is a durable `IN SCOPE` / `OUT OF SCOPE` document, and the governing rule that comes out
 of it is short: a plan phase earns its place only if it touches something on the `IN SCOPE` list.
@@ -69,45 +69,39 @@ With scope established, the actual planning happens through `/deep-plan` for a s
 change, or the `deep-plan-swarm` skill for anything that spans many files or subsystems, where an
 unexamined planning error would be expensive.
 
-`/deep-plan` runs three steps. First, it calls the `advisor` tool with no arguments before any plan
-exists, so the advisor sees the raw request and can shape the framing: load-bearing constraints,
-missing context worth gathering, and one or two alternative framings worth considering. Second, it
-dispatches a `Plan` subagent at the FRONTIER-THINK tier with a directive that forces a specific
-four-part output: how to execute (parallel vs. sequential waves, worktree isolation per concurrent
-workstream, review gates), an explicit Workflow-tool-vs-plain-Agent-subagents verdict, a per-phase
-model and effort matrix, and the phases themselves with concrete file paths and verification steps.
-Third, it calls the advisor again, this time with the finished plan in the transcript, for a
-critique pass: risks the plan missed, whether the claimed parallel work is genuinely disjoint,
-whether the model sizing is sound.
+| Step | `/deep-plan` | `deep-plan-swarm` |
+|---|---|---|
+| Scope gate | already run above, once | runs its own scope gate before investigation fans out |
+| Advisor pre-flight | yes, on the raw request, before any plan exists | yes, same pre-flight, feeds the investigation framing too |
+| Investigation | none | read-only agents grouped by subject (plans and handoffs, scripts, tests and CI, config and assets, external artifacts) map the problem space first |
+| Synthesis | `Plan` subagent, FRONTIER-THINK tier | `plan-synthesizer` agent, FRONTIER-THINK tier, max effort, reconciling the investigation registry plus any prior plans being merged |
+| Critique | advisor, second pass, on the finished plan | same advisor critique, plus external-LLM review below |
+| External review | not part of the flow | `codex` (default), `cursor-agent`, or `gemini`, fold-back loop until no new CRITICAL/HIGH finding |
+| Output | four-part plan: execution shape, Workflow-vs-agents verdict, model/effort matrix, phases | same four-part shape, plus an AUTORUN mission section and a verification section |
 
-`deep-plan-swarm` is `/deep-plan`'s superset for larger scope. It adds two things `/deep-plan` does
-not have: an investigation phase before synthesis, and an independent non-Claude review after it.
+Investigation scales with scope: ten to twenty groups for a full audit, three to five for a
+targeted merge where investigation material already exists. Every swarm member cites an absolute
+path for every claim, classifies findings as superseded/stale, unexecuted, placeholder,
+load-bearing, or risky if moved, and marks low confidence explicitly; the raw reports get deduped
+into one registry before the synthesizer sees them, because swarm reports contain errors that need
+first-hand verification before anything gets built on them. The synthesizer is deliberately
+read-only (it may run `git log`, `grep`, or a read-only test runner to verify a claim, but never
+edits or commits) and decides disagreements with a stated reason rather than passing both through.
 
-The investigation phase fans out read-only agents grouped by subject (plans and handoffs, scripts,
-tests and CI, config and assets, external artifacts) to map the problem space before anyone tries
-to design a solution to it. Ten to twenty groups for a full audit, three to five for a targeted
-merge where investigation material already exists. Every swarm member gets the same output
-contract: classify findings as superseded/stale, unexecuted (planned but never built, checked
-against git log and grep rather than assumed), placeholder, load-bearing, or risky if moved; cite
-an absolute path for every claim; mark low confidence explicitly. The raw reports get synthesized
-into a single deduped registry before anyone hands them to the planner, because handing a planner
-sixteen raw 180-line reports defeats the point of having a synthesis step at all, and because swarm
-reports contain errors that need first-hand verification before anything gets built on them.
+```mermaid
+flowchart LR
+    A[Advisor pre-flight] --> B[Investigation swarm<br/>read-only, by subject]
+    B --> C[Deduped registry]
+    C --> D[plan-synthesizer<br/>FRONTIER-THINK, max effort]
+    D --> E[External-LLM review<br/>fold-back loop]
+    E -->|new CRITICAL/HIGH| D
+    E -->|clean| F[Approved plan]
+```
 
-That registry, plus the advisor's pre-flight framing and (when merging) the prior plans, goes to
-the `plan-synthesizer` agent, run at the FRONTIER-THINK tier at max effort. This agent is
-deliberately read-only: it may run non-mutating shell commands like `git log`, `grep`, or a
-read-only test runner to verify a claim it was handed, but it never edits or commits. Its job is
-reconciliation, not fresh investigation. Where two inputs disagree, it decides with a stated reason
-rather than emitting both and letting the reader choose. It returns one plan in the same four-part
-shape `/deep-plan` produces, plus an AUTORUN mission section and a verification section, as its
-final message; the orchestrator that dispatched it writes that text to disk.
-
-After synthesis, `deep-plan-swarm` runs the plan past `external-llm-review`: a genuinely different
-model family attacking the same document. The default reviewer at planning time is `codex`, used
-unless the plan or the operator names `cursor-agent` or `gemini` instead. This step is not
-optional and not interchangeable with another Claude-run advisor pass. The reasoning is in the next
-section.
+Where a reviewer CLI is available the external review step is not interchangeable with another
+Claude-run advisor pass, and where none is available the step is skipped and recorded as skipped
+rather than replaced by one. That is the distinction the note at the top of this article draws, and
+the reasoning is in the next section.
 
 ## Why a plan needs a review from outside its own model family
 
@@ -155,11 +149,11 @@ plainly as the harness ever states anything: a machine-checkable condition is a 
 it and exits non-zero if unmet. An autonomous loop is only worth wiring at all when the acceptance
 signal is machine-checkable, never model-self-reported.
 
-The reason this has to be true, and not just convenient, is that a model reporting "tests pass" is
-a claim, not a fact. Nothing stops that claim from being wrong: a test that never ran, a green
-result from the wrong tree, a check that measures something adjacent to the real requirement. A
-script that asserts and exits non-zero cannot make that mistake in the same way, because its output
-is a fact about the filesystem or the process, not a summary a model produced about its own work.
+This has to be true, not merely convenient: a model reporting "tests pass" is a claim, not a fact.
+Nothing stops that claim from being wrong: a test that never ran, a green result from the wrong
+tree, a check that measures something adjacent to the real requirement. A script that asserts and
+exits non-zero cannot make that mistake in the same way, because its output is a fact about the
+filesystem or the process, not a summary a model produced about its own work.
 The `autorun-plan` skill's execution rules carry this same principle forward at build time: a
 subagent's "tests pass" is treated as a claim, and the orchestrator re-runs the check itself before
 trusting it. If the acceptance criterion were self-reported instead of scripted, there would be

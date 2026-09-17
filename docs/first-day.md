@@ -42,28 +42,36 @@ Scrubbing ~/projects/agent-harness
   PASS all 13 skills have name and description
   PASS CLAUDE.md imports AGENTS.md on line 1
   PASS no permission-bypass defaults in shipped settings
-  PASS all 6 shell scripts use an absolute-path shebang
-  PASS no banned glyphs in client-facing docs (28 files)
+  PASS all 7 shell scripts use an absolute-path shebang
+  PASS no banned glyphs in client-facing docs (39 files)
   PASS no dangling ~/.claude/rules references
   PASS every backticked slash command resolves to commands/, skills/, or the built-in allowlist
-  PASS all 47 files harness install would ship are in the scanned set
-  PASS documented counts match (11 agents, 13 skills, 4 commands, 13 checks)
-  PASS docs/reference.md matches what scripts/gen-reference.sh generates
+  PASS every file harness install would ship from this repo is in the scanned set
+         plus 91 file(s) from 13 upstream skill(s), which this gate does not scan (config/upstream.conf)
+  PASS documented counts match (11 agents, 13 skills, 4 commands, 14 checks)
+  PASS docs/reference.md matches what scripts/gen-reference.sh generates; plugins/ not compared: config/models.auggie.conf is unbound (docs/augment-runbook.md step 5)
+  PASS all 7 Augment deny rules give the expected verdict on 41 commands
 
-OK all 13 checks passed
+OK all 14 checks passed
 ```
 
-The numbers in that output are not decoration. The second-to-last check reads every count asserted
-in the client-facing docs and fails the build when one of them stops matching the repo, which
-includes the numbers printed above. If you add a skill and this page still says thirteen, the gate
-goes red and tells you so.
+Be precise about which numbers in that output the gate actually defends.
+The counts check compares exactly four things against the repo: the agent definitions, the skills,
+the slash commands, and the number of checks the gate runs. Assert one of those four in any
+client-facing document and the build fails when it stops matching. Add a skill while this page
+still claims the old number and the gate goes red and tells you so.
+
+Every other number in the block above is a snapshot of one run, dated to the commit that pasted it.
+The file count and the command-table count are not compared by anything, so they can drift quietly,
+and they have done exactly that more than once. Re-paste the block rather than editing a number in
+place.
 
 Exit code was 0. If a check fails, the script prints which one and why; it does not print a partial
 pass.
 
 ## Beat 2: `harness init` in a fresh repo
 
-`cmd_init` in `bin/harness` (`bin/harness:220`) requires a git repository, then copies `AGENTS.md`
+`cmd_init` in `bin/harness` requires a git repository, then copies `AGENTS.md`
 into the repo root, writes a `CLAUDE.md` that only imports it (see `adapters/README.md` for why an
 import rather than a symlink), and copies the `.project-state/` template
 (`templates/project/.project-state`) in.
@@ -183,7 +191,7 @@ $ echo '{"tool_input":{"subagent_type":"exec-mechanical"}}' | bash hooks/require
 {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Right-fit model rule (operator hard rule): this Agent/Task spawn passes no explicit model and its agent definition pins none, so it would silently inherit the parent session's model. Re-issue the call with an explicit model sized to the task (tier bindings live in the harness repo config/models.conf), and set effort where the surface supports it. Do not disable this hook; pick a model."}}
 ```
 
-The emitting line is `hooks/require-agent-model.sh:25-27`, a `cat <<'EOF'` heredoc. The JSON has
+The emitting line is `hooks/require-agent-model.sh` ("expensive."), a `cat <<'EOF'` heredoc. The JSON has
 three fields:
 
 - `hookEventName`: which hook event fired (`PreToolUse`, the same event every gate in this harness
@@ -250,4 +258,101 @@ asks you what file to read first instead of already knowing, the block was not s
 
 ## Doing the same in Auggie
 
-This section is filled in once the Augment probes in `adapters/README.md` resolve.
+The five beats above were run on this machine. The five below were not: Auggie has never been
+installed here, so each output block is a placeholder reading
+`<captured on the work machine: runbook step 11>`, and `docs/augment-runbook.md` step 11 is the
+instruction to replace them with real output. Treat an unreplaced placeholder as a claim nobody has
+checked. Everything outside the output blocks comes from Augment's documentation as of 2026-09-16.
+
+Run `docs/augment-runbook.md` steps 1 to 9 before this section: step 5 discovers the model binding,
+and `harness add --tool auggie` refuses to run without it.
+
+### Install and log in
+
+```
+$ npm install -g @augmentcode/auggie
+$ auggie login
+<captured on the work machine: runbook step 11>
+```
+
+### Set the repo up
+
+`harness init` is the same command for both tools; it writes `AGENTS.md`, a `CLAUDE.md` that imports
+it, and the `.project-state/` scaffold. `harness add --tool auggie` is the Augment-specific half.
+
+```
+$ harness init
+$ harness add --tool auggie
+<captured on the work machine: runbook step 11>
+```
+
+Expect the second command to print the four bound model ids, then one line per generated subagent,
+then the settings merge. What it wrote:
+
+- `.augment/agents/`, the subagent set, generated because Auggie's frontmatter is a different schema
+- `.augment/settings.json`, the security hard stops as tool-permission deny rules
+- `~/.augment/rules/harness-core.md`, a copy of `AGENTS.md` for other workspaces
+
+Skills and slash commands need nothing at all. Auggie reads `.claude/skills/` and
+`.claude/commands/` directly.
+
+### The same prompt as beat 3
+
+Same scratch repo, same off-by-one, same instruction. `--print` runs one instruction and exits,
+which is the closest equivalent to `claude -p`:
+
+```
+$ auggie --print --model <TIER_SMALL literal from config/models.auggie.conf> "fix the off-by-one in count.py so test_count.py passes; do not touch the test"
+<captured on the work machine: runbook step 11>
+```
+
+Read the literal out of `config/models.auggie.conf` rather than copying one from anywhere. The
+Augment binding is discovered per account, so the id here is not the id in `config/models.conf`.
+
+### The handoff command
+
+Auggie reads `.claude/commands/`, so the handoff command works with no porting:
+
+```
+$ auggie
+> /handoff
+<captured on the work machine: runbook step 11>
+```
+
+### What the agent can see
+
+```
+$ auggie
+> what rules files are you reading, and which subagents and skills do you have
+<captured on the work machine: runbook step 11>
+```
+
+Expect both `CLAUDE.md` and `AGENTS.md`, 11 subagent definitions, and 13 skills sourced from
+`.claude/skills`.
+
+### Three differences worth knowing before you start
+
+1. **The `@AGENTS.md` import does nothing here.** It is Claude-only syntax. Auggie reads `AGENTS.md`
+   itself, as a separate rules file below `CLAUDE.md` in precedence, so nothing is lost; but if you
+   ever move content out of `AGENTS.md` and behind an import, Auggie stops seeing it.
+2. **Path-scoped rules have no equivalent.** A `.claude/rules/*.md` with a `paths:` header loads
+   only when Claude reads a matching file. The nearest Auggie mechanism is a workspace rule with
+   `type: agent_requested`, which the agent attaches when your `description` looks relevant. Close
+   in spirit, different trigger.
+3. **The model gate is not armed yet.** Under Claude Code, a hook refuses any subagent dispatch that
+   would silently inherit the parent model. Under Auggie the generator refuses to write an agent
+   with no resolved model, which covers everything this repo generates, but a hand-written
+   `.augment/agents/*.md` is not caught. Runbook step 6 is what arms it.
+
+## Your first week
+
+The five beats above are one sitting. The five days below spread the same material across real
+work, so each idea gets used before the next one lands.
+
+| Day | Do | Read | Self-check |
+|---|---|---|---|
+| 1 | Run beats 1 through 5 above, on your own machine, in a scratch repo | This document | `./verify.sh` exits clean in the harness checkout, and your scratch repo's `.project-state/SESSION_HANDOFF.md` exists with a resume block that names itself |
+| 2 | Pick a real one-line fix in a repo you actually work in and run it the way scenario 1 does: no plan, no worktree, no adversary | docs/scenarios.md, "Scenario 1: a one-line fix, and why the harness stays in its box" | The resulting diff touches exactly one file, and you can say out loud why that size did not call for `/deep-plan` or a worktree |
+| 3 | Pick a real bounded change (a few files, one clear boundary) and run it the way scenario 2 does: `/deep-plan`, one worktree, one `adversary` pass | docs/scenarios.md, "Scenario 2: a bounded feature across four files" | The adversary report exists on disk at the path you named in the dispatch brief, and every finding in it is either fixed or filed with a reason |
+| 4 | Work through writing-your-own exercises 1 through 3 yourself, in order | docs/writing-your-own.md, "Exercises" | Each exercise's own stated checkable answer holds for you: the path-scoped rule only shows up after a matching file is read, the unpinned dispatch is denied by name, and the two-line skill answers with exactly "hello there" |
+| 5 | End the day by running `/handoff`, then clear or start a fresh session and resume from nothing but the pasted block | commands/handoff.md; the resume block itself | The new session reads `.project-state/SESSION_HANDOFF.md` first, without you telling it to, because the block named its own file |

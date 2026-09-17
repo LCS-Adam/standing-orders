@@ -65,6 +65,38 @@ files it may touch, nothing else) and a worktree to work in in isolation. Whoeve
 `exec-*` agent must supply all three in the brief: which files, which worktree, and where to
 write the report.
 
+**You type the brief. You do not type the tool call.** This trips people up, so it is worth being
+blunt about it: `Agent(subagent_type: ...)` is the syntax your session uses internally. You never
+type it. You describe the job in prose, in your own message, and the session turns that into the
+call. The model-pin hook then checks it and refuses a spawn that would inherit your model.
+
+Here is a brief with the three required parts filled in. Paste something shaped like this:
+
+```text
+Dispatch exec-standard at the MID tier to add retry handling to the upload client.
+
+Files you own, and nothing else:
+  src/upload/client.ts
+  src/upload/client.test.ts
+
+Worktree: .worktrees/feat-upload-retry, branched from the current HEAD. Do not touch the main
+checkout.
+
+Write your report to runtime/verify/upload-retry-report.md before you finish, and return it as
+your final message too.
+
+Done when: the new test fails without your change and passes with it, and the existing suite is
+still green. Report the exact command you ran and its output.
+```
+
+Three parts, three failure modes. No file list and it edits something a sibling agent owns. No
+worktree and two agents fight over the same checkout. No report path and you get a summary in chat
+that disappears when the agent goes idle, which is the failure `agents/adversary.md` describes
+below.
+
+A brief for a read-only agent (`adversary`, `code-reviewer`, `design-reviewer`) drops the worktree
+and the file list, and adds what to attack and where the report goes.
+
 The report goes to a file, not just the final chat message, because of a failure mode
 `agents/adversary.md` names directly:
 
@@ -258,6 +290,18 @@ EOF
 `permissionDecision: "deny"` blocks the tool call; `permissionDecisionReason` is the message
 shown back to whoever tried to make it. Exiting 0 with no such output - the early-return path
 for a `fork` agent or an explicit `model` argument, shown above - lets the call proceed.
+
+## Marking a deliberate shortcut
+
+A simplification that cuts a real corner gets a `ponytail:` comment naming the ceiling and the
+upgrade path, so the next reader knows it was a decision rather than an oversight: `# ponytail:
+global lock, per-account locks if throughput matters`. Two already exist, one in
+`scripts/gen-reference.sh` about single-line YAML scalars and one in `scripts/resolve-tier.sh`
+about not re-checking the model list for drift.
+
+List them with `git grep -n 'ponytail:'`. That grep is the whole tooling; the convention is
+borrowed from a Claude Code plugin of the same name, but nothing in this repo depends on having it
+installed.
 
 ## Exercises
 

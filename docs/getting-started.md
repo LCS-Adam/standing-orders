@@ -51,7 +51,8 @@ hand. If you have personal instructions in `~/.claude/CLAUDE.md` today, they sur
 untouched, and the harness core loads alongside them.
 
 Everything the installer writes is additive. If a destination file already exists and is
-identical, the install reports it as a no-op. If it exists and differs, the install skips it and
+identical, the install reports it as a no-op. If it exists and differs, and the installer does not
+own it, the install skips it and
 tells you so, rather than overwriting silently. Nothing is replaced unless you pass `--force`.
 
 `install --user` also merges `config/settings.portable.json` into `~/.claude/settings.json`.
@@ -132,23 +133,74 @@ harness add --tool intent
 harness add --tool cosmos
 ```
 
-`auggie`, `codex`, `cursor`, and `gemini` each write one pointer file for that tool: a rules file
-for Auggie's user scope, `~/.codex/AGENTS.md` for Codex, a `.mdc` rule for Cursor, or a one-line
-`GEMINI.md` import for Gemini CLI. `intent` prints guidance rather than writing anything, because
-Intent already reads `AGENTS.md` and a `skills/` directory straight from the repo with no adapter
-needed.
+`codex`, `cursor`, and `gemini` each write one pointer file for that tool: `~/.codex/AGENTS.md` for
+Codex, a `.mdc` rule for Cursor, or a one-line `GEMINI.md` import for Gemini CLI. `intent` prints
+guidance rather than writing anything, because Intent already reads `AGENTS.md` and a `skills/`
+directory straight from the repo with no adapter needed.
 
-`cosmos` is the one that needs explaining. COSMOS has two paths: a conversational Advisor that
-edits no files, and `auggie cloud`, which manages Experts as committable YAML bundles. This harness
-does not yet generate those bundles, so `harness add --tool cosmos` prints guidance rather than
-writing a file: either describe the Expert you want to Cosmos Advisor in plain language, or run
-`auggie cloud expert init` to scaffold a bundle yourself and paste the relevant parts of
-`AGENTS.md` into it.
+`auggie` does more than write a pointer file, because Augment supports most of this harness. What
+follows comes from Augment's documentation as of 2026-09-16 and has not been run against a live
+Auggie; `docs/augment-runbook.md` is how it gets checked. It
+writes three things: `.augment/agents/`, generated from `agents/` because Auggie's subagent
+frontmatter is a different schema; the security hard stops as `toolPermissions` deny rules in
+`.augment/settings.json`; and `AGENTS.md` into `~/.augment/rules/` for workspaces that are not this
+repo. Skills and slash commands need nothing, since Auggie reads `.claude/skills/` and
+`.claude/commands/` directly.
+
+It will refuse to run until `config/models.auggie.conf` exists, and that file is generated rather
+than typed:
+
+```bash
+scripts/resolve-tier.sh --write-conf
+```
+
+Augment's model allowlist is administered per company and an admin can change it without notifying
+users, so the binding is discovered by asking the CLI which models the account actually has rather
+than typed from memory. That command needs `auggie` installed and logged in. `harness build-plugin --tool auggie` then packages the whole set as an
+installable plugin. `docs/augment-runbook.md` walks all of it, in order, on a machine that has
+Auggie.
+
+`cosmos` has two paths: a conversational Advisor that edits no files, and `auggie cloud`, which
+manages Experts as committable YAML bundles. This harness does not yet generate those bundles, so
+`harness add --tool cosmos` prints guidance and points at
+`adapters/cosmos/adversary-advisor-prompt.md`, a worked Advisor prompt for one Expert. Either paste
+that, or run `auggie cloud expert init` to scaffold a bundle yourself and paste the relevant parts
+of `AGENTS.md` into it.
 
 Generating Cosmos bundles from the harness's own agent definitions is planned work, not a shipped
 feature. Do not assume it exists because this section describes the shape it would take.
 
 See `adapters/README.md` for the full table of what each tool reads at project and user scope.
+
+## If you are on Windows
+
+Run everything in this document in Git Bash or WSL 2. The installer, the gate and the hooks are
+bash and there is no PowerShell equivalent. `docs/windows.md` has the setup, the prerequisites Git
+Bash does not ship, and a disclosure about the model-pin hook that matters before you rely on it.
+
+## Pulling in the upstream sources
+
+```bash
+harness upstream
+```
+
+Some of what this harness offers was written by other people and lives in their own repositories.
+Rather than copy that work in, where it would freeze on the day it was taken, the harness lists
+each one in `config/upstream.conf` and clones it to `.upstream/`. Those clones are gitignored: the
+scrub gate does not scan them.
+
+What happens next depends on one field. An entry marked `install=` in `config/upstream.conf` names
+skills that `harness install --user` deploys from the clone, which means running third-party code
+this gate never inspected. That is a deliberate choice, recorded in a file someone reviewed, and the
+gate prints the count on every run. `docs/operating-boundaries.md` covers what it means and how to
+turn it off.
+
+For an entry with no `install=`, nothing is deployed automatically, because the right shape depends
+on which tool you are running. Hand your coding tool the instruction in `docs/upstream-sources.md`
+and it reads the author's source and installs what it needs in its own format.
+
+Skipping this step is fine to start with. The harness works without it; you just get the pinned
+copies in `skills/` rather than what upstream ships today.
 
 ## Running verify
 
@@ -158,7 +210,7 @@ harness verify
 
 This runs `verify.sh`, the scrub gate. It exists because this framework is meant to be carried onto
 machines that are not yours, and a fail-open scrub looks exactly like a passing one. The gate runs
-thirteen checks and asserts, at the end, that it ran all thirteen checks, so a broken check fails loudly
+fourteen checks and asserts, at the end, that it ran all fourteen checks, so a broken check fails loudly
 instead of silently passing nothing:
 
 1. No absolute home paths in tracked files.
@@ -188,6 +240,12 @@ instead of silently passing nothing:
     file is derived, not written, so the gate re-derives it and compares byte for byte. A generator
     that is missing, that errors, or that emits nothing fails here too: an empty regeneration is
     not the same as an up-to-date file.
+14. The Augment tool-permission rules in `templates/project/.augment/settings.json` still give the
+    verdict they claim. Each deny pattern is run against a table of commands and checked: `git
+    merge main` is denied, `git merge-base` is allowed, a force push is denied, a push to `main` is
+    denied, a push to a feature branch is allowed. It proves the patterns are well formed and say
+    what the table says, not that Auggie's own regex engine agrees; that is settled on a machine
+    that has Auggie.
 
 Read the output top to bottom. Each line is `PASS` or `FAIL`. A `FAIL` line is followed by up to ten
 example matches so you can find and fix the problem without re-running with more verbosity.
@@ -201,8 +259,8 @@ what you have staged.
 
 ## A first real task
 
-`docs/first-day.md` now does this job properly: five beats, done for real, with the actual command
-output pasted below each one, ending with a fix, a test, a verify run, and a commit. Read that
+`docs/first-day.md` does this job: five beats, done for real, with the actual command
+output pasted below each one, ending with a fix, a test, and a handoff. Read that
 document for the full walkthrough rather than a summary here.
 
 ## Troubleshooting

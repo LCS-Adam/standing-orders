@@ -352,7 +352,12 @@ resolve() { # resolve <role> -> sets SEL_ID/SEL_SOURCE/SEL_RULE
       return 0
     fi
   else
-    pinned="$(conf_get "$AUGGIE_CONF" "$role" || true)"
+    # FORCE_DISCOVER is set by write_conf --force. Without it, --force let you
+    # overwrite the conf while every value was still read back OUT of that same
+    # conf, so the documented rebind command rewrote the stale bindings
+    # unchanged. The selftest missed it by asserting on exit status only.
+    pinned=""
+    [ "${FORCE_DISCOVER:-0}" = "1" ] || pinned="$(conf_get "$AUGGIE_CONF" "$role" || true)"
     if [ -n "$pinned" ]; then
       SEL_ID="$pinned"; SEL_SOURCE="conf"; SEL_RULE="bound in ${AUGGIE_CONF##*/}"; SEL_EXCLUDED=0; SEL_NOTE=""
       return 0
@@ -380,6 +385,12 @@ write_conf() { # write_conf <force>
   # tiers and dropped two would be read by load_models as a hard failure at
   # best and a wrong binding at worst, so an exit 3 on any tier writes nothing.
   local ids=() rules=()
+  # A rebind means ask the vendor again, not re-read what we wrote last time.
+  # `local` so bash's dynamic scoping hands it to resolve() for these calls and
+  # nothing else: setting it globally made the next plain resolve ignore a real
+  # pin, which the selftest caught immediately.
+  local FORCE_DISCOVER=0
+  [ "$force" != "1" ] || FORCE_DISCOVER=1
   for role in TIER_FRONTIER_THINK TIER_FRONTIER_DO TIER_MID TIER_SMALL; do
     resolve "$role"; report "$role"
     ids+=("$SEL_ID"); rules+=("$SEL_RULE")
@@ -631,10 +642,21 @@ JSON
   run full --write-conf
   is "--write-conf refuses to overwrite an existing conf" "2" "$RC"
   has "  ...saying --force is the way past it" "--force" "$ERR"
+  # --force must ASK AGAIN, not rewrite what it read. This asserted only the
+  # exit status before, and passed while the values came straight back out of
+  # the conf being overwritten: the documented rebind rewrote stale bindings
+  # unchanged. Now the fixture changes underneath and the WRITTEN VALUE has to
+  # follow it.
   run noastra --write-conf --force
   is "--write-conf --force re-discovers" "0" "$RC"
+  is "  ...and the rewritten conf reflects the NEW allowlist, not the old file" \
+     "gpt-5.6-sol" "$(conf_get "$tmp/models.auggie.conf" TIER_MID)"
+
+  # A pin is still a pin without --force. Written fresh rather than inherited
+  # from the step above, which is how the stale-value bug hid here.
+  printf 'TIER_MID=pinned-by-hand\n' > "$tmp/models.auggie.conf"
   run full TIER_MID
-  is "an existing conf is a pin: discovery never overrides it" "gpt-6-astra" "$OUT"
+  is "an existing conf is a pin: discovery never overrides it" "pinned-by-hand" "$OUT"
   has "  ...reported as source=conf" "source=conf" "$ERR"
   rm -f "$tmp/models.auggie.conf"
 

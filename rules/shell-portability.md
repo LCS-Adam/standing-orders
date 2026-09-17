@@ -57,6 +57,37 @@ and a wrong-input failure, so reading the log proves nothing. Either give the su
 log line, observe the hook's durable effect directly, or add a temporary probe that captures the
 raw stdin, trigger it once, and revert.
 
+## bash 3.2 cannot parse a one-line `case` inside a command substitution
+
+The `bash` at /bin on macOS is 3.2, and every script here starts with a `#!` line naming it, so
+that is the interpreter
+whatever else is installed. It rejects this:
+
+```bash
+X=$(
+  while read -r a b; do
+    case "$a" in ''|'#'*) continue ;; esac
+    echo "$a"
+  done < file
+)
+```
+
+with `syntax error near unexpected token ';;'`. The same `case` outside a command substitution is
+fine, and bash 5 accepts both.
+
+**`bash -n` does not catch it.** It parses the substitution lazily, reports nothing, and the script
+dies at runtime on the line it just approved. A syntax check passing is not evidence here.
+
+Write it with parameter expansion instead, which every shell handles:
+
+```bash
+[ -n "$a" ] || continue
+[ "${a#\#}" = "$a" ] || continue
+```
+
+Or put `;;` and `esac` on their own lines. If you need certainty, run the script with the
+interpreter at /bin rather than whichever `bash` is first on PATH: they are different programs on
+this platform, and usually different major versions.
 ## BSD versus GNU tools
 
 macOS ships BSD userland. These differ from GNU in ways that pass on Linux CI and fail on a Mac:

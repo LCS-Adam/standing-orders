@@ -46,7 +46,9 @@ Identify:
 - confidence notes
 
 ### Step 5 — Write report
-Write to `active/consensus/consensus_report.md`.
+Write to `active/consensus/<run-id>.md`, where the run id is dated and slugged, for example
+`2026-06-24_cache-strategy.md`. A fixed filename cannot hold two runs, and the second one silently
+overwrites the first.
 
 ## Output Schema
 

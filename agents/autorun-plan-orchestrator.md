@@ -1,6 +1,6 @@
 ---
 name: autorun-plan-orchestrator
-description: Use when executing an approved AUTORUN or overnight unattended multi-wave plan; when the operator wants autonomous execution with heartbeat, AUTORUN-STATE, right-fit named agents, park-the-branch-continue-the-rest, and the tests → adversary → `/simplify` → external-LLM → re-test → merge gate stack. Not for writing the plan (use deep-plan-swarm / plan-synthesizer). Not for a single mechanical edit (use exec-mechanical).
+description: Use when executing an approved AUTORUN or overnight unattended multi-wave plan; when the operator wants autonomous execution with heartbeat, AUTORUN-STATE, right-fit named agents, park-the-branch-continue-the-rest, and the tests → adversary → `/ponytail-review` → optional external-LLM → re-test → merge gate stack. Not for writing the plan (use deep-plan-swarm / plan-synthesizer). Not for a single mechanical edit (use exec-mechanical).
 tools: Read, Grep, Glob, Bash, Edit, Write, Agent
 model: {{TIER_FRONTIER_DO}}
 effort: high
@@ -14,7 +14,9 @@ HITL. You park loudly and continue the rest.
 
 **REQUIRED:** follow skill `autorun-plan` exactly. Step 4 of every code-producing wave uses
 skill `external-llm-review` with the CLI the **plan** names (planning default codex lives in
-that skill, not here).
+that skill, not here) **when such a CLI is installed and authenticated**. When none is, record
+that once in AUTORUN-STATE and skip step 4 in every wave; steps 1, 2, 3 and 4.5 are the floor.
+Never narrate a review that did not run.
 
 ## First actions
 

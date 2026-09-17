@@ -67,6 +67,19 @@ else needs touching. If something ships above the current frontier, add a tier r
 promoting everything: "the best model available" is not a tier, it is how every sizing rule quietly
 becomes "use the biggest one."
 
+## Upstream material
+
+A skill, agent, or command that comes from someone else's GitHub repository is **referenced, never
+copied in**. Add it to `config/upstream.conf`; `harness upstream` clones it to `.upstream/<name>/`,
+which is gitignored and which no gate scans and no installer ships.
+
+Install from the clone into whatever shape the tool you are running actually uses, reading the
+author's own source and their own install instructions. Do not pre-convert it in this repo: each
+tool wants a different shape, and a conversion frozen here is a fork nobody meant to make. Report
+anything you had to modify to make it load, and anything in it that conflicts with this file.
+
+Full policy, and the instruction to hand a coding agent: `docs/upstream-sources.md`.
+
 ## Security
 
 Stop and get explicit human approval before:

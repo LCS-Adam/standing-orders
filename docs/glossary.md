@@ -9,7 +9,7 @@ truth.
 A directory `harness init` writes into a repo to hold what a diff cannot show: intent, next steps,
 blockers, and decisions. It is complementary to git, not a duplicate of it, and it is the read-first
 location for any session picking up work that a previous session left in flight.
-In depth: `docs/project-management.md:11`
+In depth: `docs/project-management.md` ("The problem")
 
 ## `advisor`
 
@@ -33,19 +33,19 @@ The read-only correctness reviewer dispatched against a merged wave diff: FRONTI
 effort, and it tries specifically to break the change rather than confirm it works. It sweeps a
 fixed taxonomy first (fail-open paths, bypasses, tamper vectors, vacuous assertions) and then hunts
 freely, returning severity-ranked findings; it never edits. It is step 2 of the AUTORUN per-wave
-review gate stack, and it runs before `/simplify` because there is no point simplifying code a
+review gate stack, and it runs before `/ponytail-review` because there is no point simplifying code a
 correctness review is about to rewrite.
-In depth: `agents/adversary.md`, `docs/autorun-hitl-heartbeat.md:39`
+In depth: `agents/adversary.md`, `docs/autorun-hitl-heartbeat.md` ("The per-wave review gate stack")
 
 ## AUTORUN
 
 The full unattended-execution mechanism, run by the `autorun-plan` skill via the
 `autorun-plan-orchestrator` agent, for an approved multi-wave plan meant to run overnight or
 otherwise unattended for a long stretch. Every code-producing wave passes through an ordered review
-gate stack (tests, `adversary`, `/simplify`, external-LLM fold-back, a regression re-run, then
+gate stack (tests, `adversary`, `/ponytail-review`, external-LLM fold-back, a regression re-run, then
 merge) before it lands, and the run maintains a mission-scoped `AUTORUN-STATE-<mission-slug>.md`
 file that gets reconciled against the real world on every wake rather than trusted blindly.
-In depth: `docs/autorun-hitl-heartbeat.md:32`
+In depth: `docs/autorun-hitl-heartbeat.md` ("AUTORUN: the full harness")
 
 ## compaction
 
@@ -55,7 +55,7 @@ original turns going forward. Work continues after compaction; the session does 
 and restart. What survives is a summary, not a full record, so anything that must survive with full
 fidelity, a commit SHA, an exact command, a specific decision and its reasoning, has to be written
 to a durable file before compaction happens.
-In depth: `docs/context-window-management.md:110`
+In depth: `docs/context-window-management.md` ("What compaction does")
 
 ## contract (prompt contract)
 
@@ -65,7 +65,7 @@ worker dispatched as `general-purpose` rather than `Explore` because the latter 
 `Write`, which would silently break the contract). The project-scope workspace-brain module
 generalizes this into a required artifact per triggering task, written to
 `active/contracts/<run-id>.md`.
-In depth: `templates/project/context/multi-agent-inline.md:20`, `templates/project/CLAUDE.md:76`
+In depth: `templates/project/context/multi-agent-inline.md` ("Sub-agent type"), `templates/project/CLAUDE.md` ("Artifact Persistence")
 
 ## context window
 
@@ -74,14 +74,14 @@ reply all live in that same space, and none of it carries over to a new session 
 disk tells the next session where to look. Quality degrades as the window fills because everything
 in it competes for the same fixed amount of the model's attention, not because anything mystical
 happens at some threshold.
-In depth: `docs/context-window-management.md:1`
+In depth: `docs/context-window-management.md` ("Managing the context window")
 
 ## `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`
 
 An environment variable the harness's portable settings set to `85`, controlling the percentage of
 the context window that triggers an automatic compaction. Setting it explicitly rather than relying
 on a tool default keeps the compaction point consistent across machines that install this harness.
-In depth: `config/settings.portable.json:4`
+In depth: `config/settings.portable.json`
 
 ## denylist
 
@@ -104,14 +104,14 @@ are independent knobs. A FRONTIER-DO dispatch at low effort and a MID dispatch a
 both valid combinations for different tasks; the model tiering table in `AGENTS.md` gives an effort
 range per task archetype, but the actual number for a specific agent definition lives in that
 agent's own frontmatter, not in the tier table.
-In depth: `docs/writing-your-own.md`, `agents/exec-subtle.md:7`
+In depth: `docs/writing-your-own.md`, `agents/exec-subtle.md`
 
 ## Environment
 
 An Augment/COSMOS concept: the runtime configuration an Expert deploys into. Not documented in this
 repo beyond the adapter notes; confirm exact scope and configuration surface against Augment's own
 documentation before relying on details beyond what is cited here.
-In depth: `adapters/README.md:38`
+In depth: `adapters/README.md`, the "Tools with no repo surface" section
 
 ## Expert
 
@@ -119,7 +119,7 @@ An Augment/COSMOS concept: a reusable agent template that runs inside an Environ
 two configuration paths for these, and the file-based one (`auggie cloud`) is the one this repo can
 target; the fully managed path's own documentation states you never see or edit the underlying
 files.
-In depth: `adapters/README.md:38`
+In depth: `adapters/README.md`, the "Tools with no repo surface" section
 
 ## external-LLM review
 
@@ -128,7 +128,7 @@ different model family entirely (`codex`, `cursor-agent`, or `gemini`, whichever
 rather than another Claude reviewer. The point is specifically to catch shared model-family blind
 spots that a same-family reviewer, however strong, cannot structurally see; this repo's own
 AUTORUN gate stack states outright that a Claude reviewer is never a substitute for this step.
-In depth: `docs/autorun-hitl-heartbeat.md:59`, `skills/external-llm-review/SKILL.md`
+In depth: `docs/autorun-hitl-heartbeat.md` ("The per-wave review gate stack"), `skills/external-llm-review/SKILL.md`
 
 ## fold-back
 
@@ -136,7 +136,7 @@ The external-LLM review loop's stopping rule: a round of external review applies
 fixed diff goes back for another round rather than being taken on faith. The loop has no numeric
 round cap; it stops only when a round returns no new CRITICAL or HIGH finding, and a new instance of
 an already-known defect class resets the loop instead of being waved through as already reported.
-In depth: `docs/autorun-hitl-heartbeat.md:70`
+In depth: `docs/autorun-hitl-heartbeat.md` ("The per-wave review gate stack")
 
 ## `fork`
 
@@ -148,19 +148,19 @@ choice for that one subagent type, not evidence that inheritance is safe general
 subagent dispatch in this harness is required to state its model explicitly, precisely because
 silent inheritance elsewhere burns frontier capacity on work a smaller tier would handle and hides
 the sizing decision from review.
-In depth: `docs/writing-your-own.md`, `hooks/require-agent-model.sh:6`
+In depth: `docs/writing-your-own.md`, `hooks/require-agent-model.sh` ("`fork` agents are exempt (they always inherit by design).")
 
 ## gate (review gate, human gate, scrub gate)
 
 Three distinct uses of "gate" in this repo. A **review gate** is one step in the AUTORUN per-wave
-stack (tests, adversary, `/simplify`, external-LLM fold-back) that a wave must pass before merging.
+stack (tests, adversary, `/ponytail-review`, external-LLM fold-back) that a wave must pass before merging.
 A **human gate** is a point where auto-proceed-on-rule explicitly does not apply: live judgment
 needed, a real person reached, an untested irreversible action, or a required physical action, and
 these are the only stopping points AUTORUN respects while otherwise running unattended. A **scrub
 gate** is this repo's own `verify.sh`, the check suite that must exit clean before a change to the
 harness itself is considered done.
-In depth: `docs/autorun-hitl-heartbeat.md:39`, `docs/autorun-hitl-heartbeat.md:103`,
-`docs/getting-started.md:159`
+In depth: `docs/autorun-hitl-heartbeat.md` ("The per-wave review gate stack"), `docs/autorun-hitl-heartbeat.md` ("AUTORUN-STATE, parking, and continuing"),
+`docs/getting-started.md` ("Running verify")
 
 ## handoff and resume prompt
 
@@ -170,7 +170,7 @@ copy-pasteable block pasted into that next session; it must be self-sufficient, 
 to the handoff file itself, because the user pastes only the block, never the whole document
 surrounding it. A summary of what happened is not a substitute: a resume prompt says what to do
 next, not what already occurred.
-In depth: `docs/handoff-and-resume.md:17`
+In depth: `docs/handoff-and-resume.md` ("Why a handoff is needed at all")
 
 ## HEARTBEAT
 
@@ -179,7 +179,7 @@ and where the full AUTORUN gate stack would cost more context than it protects. 
 unattended until it finishes or hits a real human gate, with no review gates, no adversarial pass,
 no external-LLM loop, and no improvement rounds; its state file is named `HEARTBEAT-STATE-<mission-slug>.md`
 specifically so a reader can tell, from the filename alone, that the full gate stack did not run.
-In depth: `docs/autorun-hitl-heartbeat.md:119`, `skills/heartbeat/SKILL.md`
+In depth: `docs/autorun-hitl-heartbeat.md` ("Auto-proceed-on-rule"), `skills/heartbeat/SKILL.md`
 
 ## HITL
 
@@ -188,7 +188,7 @@ approve before the run continues. AUTORUN's auto-proceed-on-rule mechanism is ex
 minimizing HITL interruptions to the four cases where a stated pass/fail rule genuinely cannot
 substitute for one: live judgment, reaching a real person, an untested irreversible action, or a
 required physical action.
-In depth: `docs/autorun-hitl-heartbeat.md:103`, `skills/autorun-plan/SKILL.md:3`
+In depth: `docs/autorun-hitl-heartbeat.md` ("AUTORUN-STATE, parking, and continuing"), `skills/autorun-plan/SKILL.md`
 
 ## the host built-in subagent types (`Plan`, `Explore`, `general-purpose`)
 
@@ -199,8 +199,8 @@ read-only and cannot call `Write`, which matters directly for any skill with a p
 contract: dispatching such a skill via `Explore` fails that contract for every worker. General
 mechanical work that needs full tool access but has no dedicated agent definition uses
 `general-purpose`.
-In depth: `docs/planning-large-builds.md:75`, `templates/project/context/multi-agent-inline.md:21`,
-`skills/readme-coauthoring/SKILL.md:287`
+In depth: `docs/planning-large-builds.md` ("Writing the plan"), `templates/project/context/multi-agent-inline.md` ("Sub-agent type"),
+`skills/readme-coauthoring/SKILL.md` ("Process")
 
 ## Level A / B / C autonomy
 
@@ -210,7 +210,7 @@ questions when ambiguity would materially change the solution. Level C is a hard
 actions, production systems, auth, billing, secrets, anything irreversible. A multi-agent run
 launched with a permission-bypass flag is always treated as Level C regardless of what the
 individual task would otherwise warrant.
-In depth: `templates/project/rules/workflow.md:42`, `templates/project/CLAUDE.md:31`
+In depth: `templates/project/rules/workflow.md` ("Level A - Self-Resolvable"), `templates/project/CLAUDE.md` ("Autonomy Policy")
 
 ## `/loop`
 
@@ -228,7 +228,7 @@ server configuration from its own path (Claude Code from `.mcp.json` in a projec
 mcp add`, Codex from `~/.codex/config.toml`, Cursor from `.cursor/mcp.json`, Augment from
 `~/.augment/settings.json`), and this repo's example file is explicit that credentials belong in an
 environment variable, never committed inline.
-In depth: `config/mcp.example.json:2`
+In depth: `config/mcp.example.json`
 
 ## parking
 
@@ -238,7 +238,7 @@ other independent stream keeps running. The skill treats this as a first-class s
 not a failure, stated as "parking is success; guessing is failure," and the close-out report lists
 every parked branch with its reason so a human can pick each one up without re-deriving what
 stopped it.
-In depth: `docs/autorun-hitl-heartbeat.md:92`
+In depth: `docs/autorun-hitl-heartbeat.md` ("AUTORUN-STATE, parking, and continuing")
 
 ## `paths:` frontmatter
 
@@ -247,7 +247,7 @@ into every session at launch, same as `AGENTS.md`. With `paths:`, the rule stays
 window entirely until the agent actually reads a file matching one of the listed paths, which is
 the one mechanism in this repo that genuinely keeps an always-relevant instruction out of every
 session that does not need it.
-In depth: `docs/context-window-management.md:58`, `rules/shell-portability.md:2`
+In depth: `docs/context-window-management.md` ("What actually loads, and when"), `rules/shell-portability.md`
 
 ## phase and nested `CLAUDE.md`
 
@@ -255,7 +255,7 @@ For a multi-phase build, each phase gets its own directory with a short `CLAUDE.
 that phase's stated goal, current status, and task table. It stays out of context until the agent
 works inside that phase's directory, so a build with many phases does not load all of their status
 files at once. `templates/phase/` in this repo is the shipped pattern to copy.
-In depth: `CLAUDE.md:64`, `docs/context-window-management.md:92`
+In depth: `CLAUDE.md` ("Context discipline"), `docs/context-window-management.md` ("The practical levers, in order of payoff")
 
 ## plan mode
 
@@ -271,7 +271,7 @@ The instructions given to a model for a specific call, distinct from the context
 it. A subagent's prompt is everything it starts with, because a fresh subagent dispatch has no
 memory of the calling session's conversation; anything the calling session knows that the subagent
 needs has to be written into that prompt explicitly.
-In depth: `docs/choosing-your-tools.md:234`
+In depth: `docs/choosing-your-tools.md` ("6. Subagents - a separate context window with a return value")
 
 ## rule versus skill versus command versus hook versus context document
 
@@ -286,15 +286,15 @@ skill it never fires because the model judged it relevant, only because someone 
 document** is a flat `<name>.md` file with no invocable frontmatter: not a skill, not a rule unless
 placed under `.claude/rules/`, just a document some other instruction has to load deliberately by
 naming it.
-In depth: `CLAUDE.md:26`, `docs/choosing-your-tools.md:114`, `docs/choosing-your-tools.md:166`
+In depth: `CLAUDE.md` ("Skills, rules, and commands are three different mechanisms"), `docs/choosing-your-tools.md` ("3. Skills - procedures you invoke"), `docs/choosing-your-tools.md` ("4. Slash commands - one-shot invocations")
 
 ## run-id
 
 An identifier substituted into a required-artifact path when the project-scope workspace-brain
-module is in use, for example `active/contracts/<run-id>.md`. The exact format of a run-id is not
-specified in this repo; treat it as whatever stable, unique label the session picks for the task at
-hand, consistent across every artifact path for that same task.
-In depth: `templates/project/CLAUDE.md:76`
+module is in use, for example `active/contracts/<run-id>.md`. The format is `YYYY-MM-DD_<short-slug>`, set by the project `CLAUDE.md` that
+`harness init` scaffolds (its "Run-id format" line). Same-day reruns disambiguate with a slug
+suffix. Whatever label a session picks, it stays the same across every artifact path that run
+writes, which is what makes the artifacts findable afterwards.
 
 ## scope (user versus project)
 
@@ -305,22 +305,26 @@ Project scope is what `harness init` and `harness add` write into one specific r
 when working inside that repository. The workspace-brain module is deliberately project-scope
 rather than user-scope, so its artifact-persistence discipline never appears uninvited in a
 repository that has not opted in.
-In depth: `docs/getting-started.md:62`
+In depth: `docs/getting-started.md` ("User scope versus project scope")
 
 ## session
 
 One continuous run of an agent against a context window, ending at a `/clear`, a new session start,
 or the process exiting. A session has no memory of a prior session's conversation; only what was
 written to a durable file survives the boundary.
-In depth: `docs/context-window-management.md:5`
+In depth: `docs/context-window-management.md` ("Managing the context window")
 
-## `/simplify`
+## `/ponytail-review`
 
-The `simplify` skill, run as step 3 of the AUTORUN per-wave review gate stack, after `adversary` has
-cleared the wave diff for correctness. It is a quality-only pass: reuse what already exists, remove
-over-engineering, fix wrong altitude. It applies its own fixes but never hunts bugs and is never a
-substitute for the `adversary` step that runs before it.
-In depth: `skills/simplify/SKILL.md`, `docs/autorun-hitl-heartbeat.md:39`
+Step 3 of the AUTORUN per-wave review gate stack, after `adversary` has cleared the wave diff for
+correctness. It is a quality-only pass: reuse what already exists, remove over-engineering, fix
+wrong altitude. It never hunts bugs and is never a substitute for the `adversary` step that runs
+before it.
+
+It comes from the ponytail plugin rather than from this repo. The harness used to ship its own
+`simplify` skill for this step, which duplicated a command the host already provides under that
+name; `config/upstream.conf` records the plugin as a dependency and why.
+In depth: `config/upstream.conf` (the ponytail entry), `docs/autorun-hitl-heartbeat.md` ("The per-wave review gate stack")
 
 ## subagent
 
@@ -329,7 +333,7 @@ given a written prompt and (per this repo's own hard rule) an explicit model rat
 inheritance from whatever dispatched it. This repo defines its own subagent roles as files under
 `agents/*.md`, each carrying a `model:` tier pin in its frontmatter that `harness install` resolves
 from `config/models.conf`.
-In depth: `AGENTS.md:54`, `hooks/require-agent-model.sh:2-6`
+In depth: `AGENTS.md` ("Model tiers"), `hooks/require-agent-model.sh` ("Right-fit model gate.")
 
 ## `SWARM CONFIG`
 
@@ -337,7 +341,7 @@ A line an operator or dispatcher writes before fanning out more than one workstr
 agent runs which workstream and on which branch, so a multi-agent dispatch is auditable after the
 fact. It is not a file format or a schema this repo enforces, just a documented convention for
 making a fan-out reviewable.
-In depth: `docs/operating-process.md:85`
+In depth: `docs/operating-process.md` ("Step 3: execute")
 
 ## tier
 
@@ -351,15 +355,15 @@ greenfield design. The two frontier tiers differ by disposition, not raw strengt
 asks "what is really going on, and what should this be?", FRONTIER-DO asks "is this actually right,
 and will it hold?" `config/models.conf` is the single place that binds each tier to a literal model
 name.
-In depth: `AGENTS.md:36`, `config/models.conf`
+In depth: `AGENTS.md` ("Model tiers"), `config/models.conf`
 
 ## wave
 
 One code-producing unit of work inside a multi-phase build, ending in a diff that merges. Every
 wave passes through the same review gate stack before it lands: the plan's test command, `adversary`,
-`/simplify`, an optional external-LLM fold-back, a regression re-run, then merge. "Wave diff" means
+`/ponytail-review`, an optional external-LLM fold-back, a regression re-run, then merge. "Wave diff" means
 the merged diff for one wave, the unit the review stack and the adversarial review operate on.
-In depth: `docs/autorun-hitl-heartbeat.md:39`
+In depth: `docs/autorun-hitl-heartbeat.md` ("The per-wave review gate stack")
 
 ## worktree
 
@@ -382,4 +386,4 @@ throughout as the mechanism for a per-call `agent({model, effort})` dispatch, di
 Agent-tool subagent call which takes `model` but has no `effort` parameter. Confirm the tool's full
 capability surface against your own tool's documentation before relying on details beyond this
 usage.
-In depth: `commands/deep-plan.md:53`, `docs/planning-large-builds.md:77`
+In depth: `commands/deep-plan.md`, `docs/planning-large-builds.md` ("Writing the plan")
