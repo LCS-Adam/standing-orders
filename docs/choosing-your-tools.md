@@ -16,14 +16,13 @@ small and this is the one place it is explained together.
 conversation so far, and whatever files or instructions got loaded into it. It has a
 fixed size. Every file you load into it competes with your actual conversation for that
 space. A model that has to read 3,000 lines of standing instructions before it reads
-your question is a model that has less room left for your question, and research shows
-adherence actually drops as the always-on instruction set grows. This is why the harness
+your question is a model that has less room left for your question, and adherence
+measurably drops as the always-on instruction set grows. This is why the harness
 keeps its always-on core small and pushes everything else behind an on-demand mechanism.
 
 **Enforcement versus context.** Some of the six mechanisms below are text the model
 reads and is expected to follow. Some are code that runs regardless of what the model
-decides. That difference is the single most important thing in this document, so it
-gets its own section before the tour.
+decides. That difference gets its own section before the tour.
 
 ## The one distinction that matters most
 

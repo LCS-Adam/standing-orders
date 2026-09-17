@@ -95,10 +95,11 @@ and running the check twice, once at partition time and once at join time, is wh
 Size each reader's slice by the WORK it carries, not by file count. Raw file size is a trap: one
 group in the source run held 15 GB on disk but only 1.9 MB of text once extracted, while another
 held 86 MB on disk but 22.6 MB of text. Disk footprint and reading work were not even in the same
-order. Size by extracted text volume and cap it (the source run used roughly 60 items or 3 MB of text per
-reader, whichever bound first, and around 40 images per reader for a vision-heavy group), and
-re-check that cap once you see the actual distribution: the source run's spreadsheet group needed a
-lower cap than planned once the ninetieth-percentile file size came in larger than expected.
+order. Size by extracted text volume and cap it (the source run used roughly 60 items or 3 MB of
+text per reader, whichever bound first, and around 40 images per reader for a vision-heavy group),
+and re-check that cap once you see the actual distribution: the source run's spreadsheet group
+needed a lower cap than planned once the ninetieth-percentile file size came in larger than
+expected.
 
 What separates a good partition from a bad one:
 
@@ -131,7 +132,7 @@ never derive a rate from a five-row sample. Numbers written to a row are counts,
 ranges, never a raw field value; locations are a path, sheet, and column, never a cell value. A file
 whose name carries a person's name is cited by a hash of that name, never the name itself.
 
-**To the orchestrator, almost nothing.** The reader's final message is a file path. Nothing more.
+**To the orchestrator, almost nothing.** The reader's final message is nothing but a file path.
 The orchestrator never opens the file itself; a join script does, and it checks three things: every
 expected output file exists, the reported partition size matches what was assigned, and the file set
 in each reader's output reconciles exactly against the group's slice of the Tier 0 accounting. One

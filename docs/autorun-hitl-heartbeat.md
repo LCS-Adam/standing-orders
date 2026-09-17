@@ -44,7 +44,7 @@ Every code-producing wave passes through the same ordered stack before it merges
 |---|---|---|
 | 1 | The test command the plan names, green | Basic correctness the wave claims to have |
 | 2 | `adversary` review of the merged wave diff | Fail-open paths, bypasses, tamper vectors, defect classes the tests did not exercise |
-| 3 | `/ponytail-review` on the wave diff | Reuse, over-engineering, wrong altitude - quality only, never a bug hunt, never a substitute for step 2 |
+| 3 | `/ponytail-review` on the wave diff | Reuse, over-engineering, wrong altitude: quality only, never a bug hunt, never a substitute for step 2 |
 | 4 | External-LLM fold-back loop on the final simplified diff | Shared blind spots a same-family reviewer cannot see |
 | 4.5 | Re-run the test command plus phase-specific tests, after the last step-3/4 fix | Regressions introduced by the review fixes themselves |
 | 5 | Merge | - |
@@ -72,7 +72,7 @@ specifically to break the change: it sweeps a fixed taxonomy first (fail-open, f
 global-versus-local scope mismatches, vacuous assertions, fixtures that pin both sides of a
 contract so they cannot disagree) and then hunts freely. It is read-only and never edits. The
 external-LLM step, covered by the `external-llm-review` skill, is a different model family
-entirely - `codex`, `cursor-agent`, or `gemini`, whichever the plan names - attacking the same
+entirely (`codex`, `cursor-agent`, or `gemini`, whichever the plan names) attacking the same
 diff. The skill states outright that a Claude reviewer, however strong, is never a substitute for
 this step, because shared model-family blind spots are exactly what step 4 is meant to catch and a
 same-family reviewer structurally cannot.
@@ -94,8 +94,8 @@ record, and a state file that describes a different mission is treated as foreig
 reconciled against, or overwritten.
 
 On every wake, the orchestrator reads its own state file, then reconciles it against the actual
-world - `git status`, `git log`, the plan's test command, any locks or sentinels the mission names
-- rather than trusting what the file says happened. State gets rewritten after every meaningful
+world (`git status`, `git log`, the plan's test command, any locks or sentinels the mission names)
+rather than trusting what the file says happened. State gets rewritten after every meaningful
 step, so a crash or an unexpected context clear costs at most one step of progress, not the whole
 run.
 
@@ -144,14 +144,15 @@ external-LLM loop, and no improvement rounds.
 The skill is explicit, in its own words, about what it does not do: no adversary pass, no
 `/ponytail-review`, no external-LLM review or fold-back, no plan-quality judgment. The plan is
 already approved, so heartbeat's job is to execute it, not to re-litigate whether it is a good
-plan. Its state file is also named differently on purpose - `.project-state/HEARTBEAT-STATE-<mission-slug>.md`
-rather than an `AUTORUN-STATE-*` file - specifically so that a future reader of the state file can
-tell which harness ran just from the filename, without opening it. A `HEARTBEAT-STATE` file lying
-around means nobody should assume the full gate stack executed on that run.
+plan. Its state file is also named differently on purpose,
+`.project-state/HEARTBEAT-STATE-<mission-slug>.md` rather than an `AUTORUN-STATE-*` file,
+specifically so that a future reader of the state file can tell which harness ran just from the
+filename, without opening it. A `HEARTBEAT-STATE` file lying around means nobody should assume the
+full gate stack executed on that run.
 
-The honest trade-off here is real and worth stating plainly. The full AUTORUN gate stack - tests,
+The honest trade-off here is real and worth stating plainly. The full AUTORUN gate stack (tests,
 adversarial review, simplification, an external-LLM fold-back loop with no round cap, re-tests
-after every fix - is expensive. It costs context, it costs wall-clock time, and it is worth that
+after every fix) is expensive. It costs context, it costs wall-clock time, and it is worth that
 cost exactly when the thing being reviewed is complex, high-stakes, or produced by a process (like
 an unreviewed synthesis step) that has not already been checked. For a plan that is simple enough
 and has already passed review, running that entire stack again on every wave is pure overhead: it
@@ -170,7 +171,7 @@ extra checking was never going to find anything the original approval missed.
 The deciding question, stated plainly: **would the full gate stack, run again on this specific
 plan, actually catch something the approval process has not already caught?** If the honest answer
 is yes, use `autorun-plan`. If the honest answer is no because the plan is simple and already
-vetted, use `heartbeat`, and do not run both - the `heartbeat` skill says so directly, because
+vetted, use `heartbeat`, and do not run both: the `heartbeat` skill says so directly, because
 running both means paying the AUTORUN cost while pretending you are running the cheap path.
 
 ## HITL reduction done responsibly
@@ -231,7 +232,7 @@ The organizing principle underneath all of this is that decisions bubble up to e
 orchestrator, and that orchestrator decides the next step itself from what its sub-agents returned.
 The document states this as a standing rule: do not prompt the operator for anything the
 orchestrator can resolve from the plan, the repo, and the results already in hand. A human gets
-pulled in at two kinds of moment only - a genuine Level-C hard stop, or a Level-B fork where two
+pulled in at two kinds of moment only: a genuine Level-C hard stop, or a Level-B fork where two
 readings of the situation would lead to materially different outcomes and nothing in the available
 context resolves which one is right. Every other decision, including most of what a less disciplined
 process would stop and ask about, gets made by the orchestrator and reported after the fact rather
@@ -245,8 +246,8 @@ this harness built to catch it.
 **A wrong early decision compounds.** The `autorun-plan` skill documents a real case where an
 operator disabled a component mid-run, the orchestrator noted the change in its state file, and
 then spent hours continuing to harden a control whose only purpose was managing that now-disabled
-component. The skill's rule for this is to treat any premise change - a component disabled, a
-spike returning a verdict, a dependency dropped - as a forced stop-and-reconsider: what work does
+component. The skill's rule for this is to treat any premise change (a component disabled, a
+spike returning a verdict, a dependency dropped) as a forced stop-and-reconsider: what work does
 this make unnecessary, what downstream requirements just lost their justification, and does the
 work in flight right now still earn its place. Noting a premise change in a log and continuing
 anyway is exactly the mistake this rule exists to prevent; sunk cost on an open branch is not a

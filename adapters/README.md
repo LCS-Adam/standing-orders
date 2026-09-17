@@ -25,8 +25,7 @@ file per tool there.
 
 ## Mechanism mapping: Augment
 
-Augment supports far more of this harness than an instruction file. The gap is narrow and specific,
-and it is worth knowing exactly where it falls.
+Augment supports far more of this harness than an instruction file. The gap is narrow and specific.
 
 **How to read the status column.** Every claim in this section was checked against the Augment
 documentation on 2026-09-16, using an offline snapshot of 37 doc pages kept in the personal fork at

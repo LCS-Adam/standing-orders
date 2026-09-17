@@ -46,10 +46,10 @@ was alive, because that is not the question review answers.
 history file a feature writes only if it actually ran, a log directory with real logs in it rather
 than just a placeholder, a config file that has to exist before a feature can be configured at all.
 Absence of a feature's run-history artifact and its config file together is a stronger signal than
-either alone: it means the feature is not just idle, it is unconfigured and cannot currently run.
-The skill also traces reachability transitively (a file reached only through another orphaned file
-is itself an orphan) and checks whether a proposed guard is already enforced structurally before
-anyone writes a rule for it.
+either alone: it means the feature is unconfigured and cannot currently run, rather than merely
+idle. The skill also traces reachability transitively (a file reached only through another
+orphaned file is itself an orphan) and checks whether a proposed guard is already enforced
+structurally before anyone writes a rule for it.
 
 The output is a durable `IN SCOPE` / `OUT OF SCOPE` document, and the governing rule that comes out
 of it is short: a plan phase earns its place only if it touches something on the `IN SCOPE` list.
@@ -149,11 +149,11 @@ plainly as the harness ever states anything: a machine-checkable condition is a 
 it and exits non-zero if unmet. An autonomous loop is only worth wiring at all when the acceptance
 signal is machine-checkable, never model-self-reported.
 
-The reason this has to be true, and not just convenient, is that a model reporting "tests pass" is
-a claim, not a fact. Nothing stops that claim from being wrong: a test that never ran, a green
-result from the wrong tree, a check that measures something adjacent to the real requirement. A
-script that asserts and exits non-zero cannot make that mistake in the same way, because its output
-is a fact about the filesystem or the process, not a summary a model produced about its own work.
+This has to be true, not merely convenient: a model reporting "tests pass" is a claim, not a fact.
+Nothing stops that claim from being wrong: a test that never ran, a green result from the wrong
+tree, a check that measures something adjacent to the real requirement. A script that asserts and
+exits non-zero cannot make that mistake in the same way, because its output is a fact about the
+filesystem or the process, not a summary a model produced about its own work.
 The `autorun-plan` skill's execution rules carry this same principle forward at build time: a
 subagent's "tests pass" is treated as a claim, and the orchestrator re-runs the check itself before
 trusting it. If the acceptance criterion were self-reported instead of scripted, there would be

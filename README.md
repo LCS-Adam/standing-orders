@@ -10,16 +10,15 @@ slash commands, and safety hooks. One command installs the always-on core onto a
 one more sets up a repository.
 
 One instruction set is read by Claude Code, Auggie, Intent, Codex, Cursor, Gemini CLI, Copilot and
-Windsurf, because they converged on `AGENTS.md` and `CLAUDE.md`. Be clear on what that does and
-does not mean: the instruction layer is genuinely shared, while skills, commands and hooks are
-supported by some of those tools and not others. Augment goes furthest. Auggie reads this repo's
-skills and commands with no conversion at all, takes the security hard stops as tool-permission
-rules, and needs only its subagent definitions generated; `harness add --tool auggie` does that.
-Augment's COSMOS takes a different shape again: its Experts are committable YAML bundles applied
-with `auggie cloud`. Every Augment claim in this repository comes from the vendor's documentation
-as of 2026-09-16 and none of it has been run against a live Auggie yet. `adapters/README.md` states
-what each tool consumes and marks each claim; `docs/augment-runbook.md` is the procedure that turns
-those claims into verified ones.
+Windsurf, because they converged on `AGENTS.md` and `CLAUDE.md`. The instruction layer is shared;
+skills, commands and hooks are supported by some of those tools and not others. Augment goes
+furthest. Auggie reads this repo's skills and commands with no conversion at all, takes the
+security hard stops as tool-permission rules, and needs only its subagent definitions generated;
+`harness add --tool auggie` does that. Augment's COSMOS takes a different shape again: its Experts
+are committable YAML bundles applied with `auggie cloud`. Every Augment claim in this repository
+comes from the vendor's documentation as of 2026-09-16 and none of it has been run against a live
+Auggie yet. `adapters/README.md` states what each tool consumes and marks each claim;
+`docs/augment-runbook.md` is the procedure that turns those claims into verified ones.
 
 Most agent setups accumulate as a pile of machine-specific config that cannot leave the laptop it
 grew on. This one is built to be moved, shared, and forked.
@@ -170,8 +169,8 @@ planting each defect class into a scratch copy and confirming a non-zero exit.
 
 ## Documentation
 
-New to agentic coding? Read them in this order, newcomer to specialist. It is a long table and it
-is not a queue, so here is the map:
+New to agentic coding? The table runs newcomer to specialist, but you do not need every row at
+once; the groups below say when each one matters:
 
 - **Day one:** Orientation, Glossary, Getting started, Choosing the right mechanism, Your first day.
 - **Your first week:** Operating process, Worked scenarios, the two context documents, Sizing the

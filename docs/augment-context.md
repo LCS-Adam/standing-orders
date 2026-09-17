@@ -16,7 +16,7 @@ below is one of two things, and each is labelled:
 
 A claim with neither label is a defect. Report it.
 
-## The one thing that changes everything else
+## Retrieval comes first
 
 Augment is built around retrieval, not around filling a window.
 
@@ -96,7 +96,7 @@ context control in the documentation.
 A rule can be marked as requested by the agent rather than always applied, and the docs frame this
 explicitly as a context-usage choice (Docs 2026-09-16, `aug_cli_rules.md:95`). It is the same idea
 as the `paths:` frontmatter this harness already uses for Claude Code rules, described at
-`CLAUDE.md:47`. Same reasoning, same payoff: keep the always-on set small.
+`CLAUDE.md:47`, for the same reason: keep the always-on set small.
 
 ### Narrowing what gets indexed
 

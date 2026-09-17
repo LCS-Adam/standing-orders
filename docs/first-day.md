@@ -54,7 +54,7 @@ Scrubbing ~/projects/agent-harness
 OK all 14 checks passed
 ```
 
-The numbers in that output are not decoration, but be precise about which ones the gate defends.
+Be precise about which numbers in that output the gate actually defends.
 The counts check compares exactly four things against the repo: the agent definitions, the skills,
 the slash commands, and the number of checks the gate runs. Assert one of those four in any
 client-facing document and the build fails when it stops matching. Add a skill while this page

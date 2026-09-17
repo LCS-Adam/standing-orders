@@ -187,17 +187,17 @@ applicable) exits clean.
 
 ## One-page checklist
 
-- [ ] **0. Size it** - no command; answer `AGENTS.md`'s two questions and pick small, bounded, or
+- [ ] **0. Size it:** no command; answer `AGENTS.md`'s two questions and pick small, bounded, or
       large.
-- [ ] **1. Scope it** (skip for a small fix) - `/scope-audit`.
-- [ ] **2. Plan it** (skip for a small fix) - `/deep-plan` (bounded) or `/deep-plan-swarm` (large).
-- [ ] **3. Execute it** - inline (small), or `git worktree add .worktrees/<name> -b <branch>` plus
+- [ ] **1. Scope it** (skip for a small fix): `/scope-audit`.
+- [ ] **2. Plan it** (skip for a small fix): `/deep-plan` (bounded) or `/deep-plan-swarm` (large).
+- [ ] **3. Execute it:** inline (small), or `git worktree add .worktrees/<name> -b <branch>` plus
       Agent dispatch to a listed `agents/` name (bounded/large); `/autorun-plan` for unattended
       multi-wave runs, the `heartbeat` skill (armed with `/loop`) for a watched simple run.
-- [ ] **4. Review it** - the plan's test command, `adversary`, `/ponytail-review`, the test command again;
-      `skills/external-llm-review/SKILL.md` only if a third-party CLI is installed.
-- [ ] **5. Hand off** - `/handoff` before any clear or compact.
-- [ ] **6. Close it** - conventional commit, no AI attribution trailer, branch and PR, never a push
+- [ ] **4. Review it:** the plan's test command, `adversary`, `/ponytail-review`, the test command
+      again; `skills/external-llm-review/SKILL.md` only if a third-party CLI is installed.
+- [ ] **5. Hand off:** `/handoff` before any clear or compact.
+- [ ] **6. Close it:** conventional commit, no AI attribution trailer, branch and PR, never a push
       to `main`; `harness verify` only if you changed the harness itself.
 
 ## Worked example: add a `--json` flag to a small CLI

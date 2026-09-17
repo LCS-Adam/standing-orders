@@ -19,9 +19,9 @@ repo, only produces a report.
 
 Each reviewer runs with a read-only sandbox flag: codex with `--sandbox read-only` (line 65),
 cursor-agent with `--sandbox enabled` (line 81), gemini with a real read-only mode,
-`--approval-mode plan` (line 44). The model itself is never a Claude model - line 94 states
-"model | From the plan. Never `claude-*`." - so this is a deliberate hand-off of one artifact to an
-external vendor's inference endpoint, not a general repo upload.
+`--approval-mode plan` (line 44). The model itself is never a Claude model (line 94 states
+"model | From the plan. Never `claude-*`."), so this is a deliberate hand-off of one artifact to
+an external vendor's inference endpoint, not a general repo upload.
 
 **Cosmos (Augment's cloud platform).** `adapters/README.md`, under "Tools with no repo surface",
 describes COSMOS as "Augment's cloud platform, where reusable agent templates called Experts run

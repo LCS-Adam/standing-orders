@@ -159,9 +159,9 @@ than typed from memory. That command needs `auggie` installed and logged in. `ha
 installable plugin. `docs/augment-runbook.md` walks all of it, in order, on a machine that has
 Auggie.
 
-`cosmos` is the one that still needs explaining. COSMOS has two paths: a conversational Advisor that
-edits no files, and `auggie cloud`, which manages Experts as committable YAML bundles. This harness
-does not yet generate those bundles, so `harness add --tool cosmos` prints guidance and points at
+`cosmos` has two paths: a conversational Advisor that edits no files, and `auggie cloud`, which
+manages Experts as committable YAML bundles. This harness does not yet generate those bundles, so
+`harness add --tool cosmos` prints guidance and points at
 `adapters/cosmos/adversary-advisor-prompt.md`, a worked Advisor prompt for one Expert. Either paste
 that, or run `auggie cloud expert init` to scaffold a bundle yourself and paste the relevant parts
 of `AGENTS.md` into it.
@@ -246,7 +246,7 @@ what you have staged.
 
 ## A first real task
 
-`docs/first-day.md` now does this job properly: five beats, done for real, with the actual command
+`docs/first-day.md` does this job: five beats, done for real, with the actual command
 output pasted below each one, ending with a fix, a test, and a handoff. Read that
 document for the full walkthrough rather than a summary here.
 
