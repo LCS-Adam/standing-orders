@@ -175,6 +175,7 @@ New to agentic coding? Read them in this order, newcomer to specialist.
 | [Managing the context window](docs/context-window-management.md) | Anyone whose sessions degrade over time and wants to know why. |
 | [Watching the context window](docs/context-health.md) | Anyone who wants the status line, and what the published research does and does not support. |
 | [Context in Augment](docs/augment-context.md) | Anyone moving between Claude Code and Auggie, where the context model is different. |
+| [Standing up the Augment side](docs/augment-runbook.md) | Whoever has a machine with Auggie on it and has to turn the documentation claims into verified ones. |
 | [Sizing the model to the task](docs/model-tiering.md) | Anyone dispatching subagents or writing plans that name a tier. |
 | [Writing your own extensions](docs/writing-your-own.md) | Someone authoring a new agent, skill, rule, command, or hook. |
 | [Handing off between sessions](docs/handoff-and-resume.md) | Anyone closing a session that another session must resume. |

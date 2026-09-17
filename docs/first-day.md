@@ -251,4 +251,88 @@ asks you what file to read first instead of already knowing, the block was not s
 
 ## Doing the same in Auggie
 
-This section is filled in once the Augment probes in `adapters/README.md` resolve.
+The five beats above were run on this machine. The five below were not: Auggie has never been
+installed here, so each output block is a placeholder reading
+`<captured on the work machine: runbook step 11>`, and `docs/augment-runbook.md` step 11 is the
+instruction to replace them with real output. Treat an unreplaced placeholder as a claim nobody has
+checked. Everything outside the output blocks comes from Augment's documentation as of 2026-09-16.
+
+Run `docs/augment-runbook.md` steps 1 to 9 before this section: step 5 discovers the model binding,
+and `harness add --tool auggie` refuses to run without it.
+
+### Install and log in
+
+```
+$ npm install -g @augmentcode/auggie
+$ auggie login
+<captured on the work machine: runbook step 11>
+```
+
+### Set the repo up
+
+`harness init` is the same command for both tools; it writes `AGENTS.md`, a `CLAUDE.md` that imports
+it, and the `.project-state/` scaffold. `harness add --tool auggie` is the Augment-specific half.
+
+```
+$ harness init
+$ harness add --tool auggie
+<captured on the work machine: runbook step 11>
+```
+
+Expect the second command to print the four bound model ids, then one line per generated subagent,
+then the settings merge. What it wrote:
+
+- `.augment/agents/`, the subagent set, generated because Auggie's frontmatter is a different schema
+- `.augment/settings.json`, the security hard stops as tool-permission deny rules
+- `~/.augment/rules/harness-core.md`, a copy of `AGENTS.md` for other workspaces
+
+Skills and slash commands need nothing at all. Auggie reads `.claude/skills/` and
+`.claude/commands/` directly.
+
+### The same prompt as beat 3
+
+Same scratch repo, same off-by-one, same instruction. `--print` runs one instruction and exits,
+which is the closest equivalent to `claude -p`:
+
+```
+$ auggie --print --model <TIER_SMALL literal from config/models.auggie.conf> "fix the off-by-one in count.py so test_count.py passes; do not touch the test"
+<captured on the work machine: runbook step 11>
+```
+
+Read the literal out of `config/models.auggie.conf` rather than copying one from anywhere. The
+Augment binding is discovered per account, so the id here is not the id in `config/models.conf`.
+
+### The handoff command
+
+Auggie reads `.claude/commands/`, so the handoff command works with no porting:
+
+```
+$ auggie
+> /handoff
+<captured on the work machine: runbook step 11>
+```
+
+### What the agent can see
+
+```
+$ auggie
+> what rules files are you reading, and which subagents and skills do you have
+<captured on the work machine: runbook step 11>
+```
+
+Expect both `CLAUDE.md` and `AGENTS.md`, 11 subagent definitions, and 13 skills sourced from
+`.claude/skills`.
+
+### Three differences worth knowing before you start
+
+1. **The `@AGENTS.md` import does nothing here.** It is Claude-only syntax. Auggie reads `AGENTS.md`
+   itself, as a separate rules file below `CLAUDE.md` in precedence, so nothing is lost; but if you
+   ever move content out of `AGENTS.md` and behind an import, Auggie stops seeing it.
+2. **Path-scoped rules have no equivalent.** A `.claude/rules/*.md` with a `paths:` header loads
+   only when Claude reads a matching file. The nearest Auggie mechanism is a workspace rule with
+   `type: agent_requested`, which the agent attaches when your `description` looks relevant. Close
+   in spirit, different trigger.
+3. **The model gate is not armed yet.** Under Claude Code, a hook refuses any subagent dispatch that
+   would silently inherit the parent model. Under Auggie the generator refuses to write an agent
+   with no resolved model, which covers everything this repo generates, but a hand-written
+   `.augment/agents/*.md` is not caught. Runbook step 6 is what arms it.
