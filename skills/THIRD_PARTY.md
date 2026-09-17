@@ -31,6 +31,24 @@ harness installs on a machine with no network, and they are frozen at the moment
 When the two disagree, upstream is right about the author's intent and these copies are right about
 what this repo currently ships.
 
+## Converted by hand, from a repository that cannot be installed from
+
+`skills/grill-me/` comes from [Joanium/Skills](https://github.com/Joanium/Skills) (Apache-2.0),
+recorded in `config/upstream.conf` as reference material with no `install=`.
+
+It could not go through the normal upstream path. That repository is over six thousand flat `.md`
+files in one directory: there is no `skills/<name>/SKILL.md` tree for the installer to find, and the
+frontmatter carries a display name with a space in it, which the installer refuses as a directory
+component. So one file was taken and reshaped.
+
+The body is byte-identical to upstream and the file says so in a comment at the top. Only the
+frontmatter changed: `name` became the directory name this repo requires, and the upstream
+`trigger` list was folded into `description` so skill matching still fires on the same phrases.
+Apache-2.0 requires that modifications be stated, which is what that comment and this paragraph do.
+
+Refreshing it is manual. `harness upstream` updates the clone; nothing propagates from the clone
+into `skills/grill-me/`, so diff the two if you want the author's later changes.
+
 ## Retiring them
 
 Not done, and not a one-line change. Whoever does it should know what it touches:

@@ -116,7 +116,7 @@ adds no benefit).
 frontmatter declares `name:` and `description:`. That shape is what makes it a real
 skill: something the Skill tool can list, something invocable by typing `/<name>`, and
 something the harness's skill-matching can surface unprompted when a task looks like a
-match. Twelve skills currently ship in `skills/`:
+match. Thirteen skills currently ship in `skills/`:
 
 | Skill | For |
 |---|---|
@@ -125,6 +125,7 @@ match. Twelve skills currently ship in `skills/`:
 | `deep-plan-swarm` | Heavy multi-agent planning for large or high-stakes work |
 | `external-llm-review` | Getting an independent, non-Claude review of a plan or diff |
 | `heartbeat` | Keeping a simple approved plan running unattended, no review gates |
+| `grill-me` | Interrogating a plan or design until every open decision is resolved |
 | `readme-coauthoring` | Writing or rewriting a project README |
 | `repo-recon` | Read-only inventory of a repo or binary with file:line citations |
 | `requesting-code-review` | Dispatching a review subagent before proceeding |
