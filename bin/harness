@@ -617,6 +617,10 @@ cmd_build_plugin() {
 
 cmd_verify() { exec "$HARNESS_ROOT/verify.sh" "$@"; }
 
+# Upstream sources are CLONED, never vendored. See config/upstream.conf for why
+# and docs/upstream-sources.md for what a tool does with the result.
+cmd_upstream() { exec "$HARNESS_ROOT/scripts/sync-upstream.sh" "$@"; }
+
 cmd_help() {
   cat <<'EOF'
 harness - install this agent framework
@@ -627,6 +631,8 @@ harness - install this agent framework
   harness add --tool <name>    write another tool's pointer file
   harness build-plugin --tool auggie
                                generate plugins/ and the marketplace manifest
+  harness upstream             clone/refresh the repos in config/upstream.conf
+                               into .upstream/, for your tool to read
   harness verify               run the scrub gate
   harness help                 this
 
@@ -638,6 +644,10 @@ Flags:    --force    replace existing files instead of skipping
 
 Tier bindings live in config/models.conf. That is the only file to edit when
 a machine has different model access.
+
+Skills, agents and commands that come from a GitHub repository are referenced in
+config/upstream.conf and cloned by `harness upstream`, not copied into this
+repo. Your coding tool reads the clone and installs what it needs.
 EOF
 }
 
@@ -657,7 +667,8 @@ main() {
     build-plugin) shift; cmd_build_plugin "$@" ;;
     init)    shift; cmd_init "$@" ;;
     add)     shift; cmd_add "$@" ;;
-    verify)  shift; cmd_verify "$@" ;;
+    verify)   shift; cmd_verify "$@" ;;
+    upstream) shift; cmd_upstream "$@" ;;
     help|-h|--help) cmd_help ;;
     *) die "unknown command: $1 (try: harness help)" ;;
   esac

@@ -36,6 +36,18 @@ Expect a version string. Commit nothing yet; the first several steps only read.
 If `auggie login` cannot complete, stop here and sort out account access before continuing. Nothing
 below works without it.
 
+Then pull the upstream sources down, so Auggie has them to read:
+
+```bash
+harness upstream
+```
+
+That clones every repository in `config/upstream.conf` into `.upstream/`, gitignored. It does not
+install anything. Once Auggie is running (step 8), hand it the instruction block in
+`docs/upstream-sources.md`: it reads each cloned repo as its author wrote it and installs what the
+harness needs in Auggie's own format, rather than taking a conversion this repo guessed at. Record
+what it installed, and anything it had to change to make it load, in the answers table.
+
 ## Step 2: does headless mode work on this account
 
 ```bash
@@ -329,6 +341,8 @@ Fill this in as you go. One row per step, and a real answer rather than "done".
 | Step | Question | Command | Answer | Date |
 |---|---|---|---|---|
 | 1 | Auggie installed and logged in | `auggie --version` | | |
+| 1 | Upstream repos cloned | `harness upstream` | | |
+| 8 | What Auggie installed from `.upstream/`, and what it changed | the instruction in `docs/upstream-sources.md` | | |
 | 2 | Is headless mode licensed | `auggie --print --quiet --max-turns 1 "reply PING"` | | |
 | 3 | Is `auggie cloud` available | `auggie cloud --help` | | |
 | 4 | Which rules files are read | `auggie rules list` | | |

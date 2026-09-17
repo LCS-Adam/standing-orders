@@ -10,3 +10,7 @@
 # absolute worktree paths an agent naturally writes there and fails the gate on
 # output that was never meant to ship.
 runtime/
+
+# Upstream clones (scripts/sync-upstream.sh). Read material, not our code:
+# tracked would make this repo a fork of every project it references.
+.upstream/

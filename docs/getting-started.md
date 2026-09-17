@@ -169,6 +169,24 @@ feature. Do not assume it exists because this section describes the shape it wou
 
 See `adapters/README.md` for the full table of what each tool reads at project and user scope.
 
+## Pulling in the upstream sources
+
+```bash
+harness upstream
+```
+
+Some of what this harness offers was written by other people and lives in their own repositories.
+Rather than copy that work in, where it would freeze on the day it was taken, the harness lists
+each one in `config/upstream.conf` and clones it to `.upstream/`. Those clones are gitignored: the
+scrub gate does not scan them and `harness install` does not ship them.
+
+Nothing then installs them automatically, because the right shape depends on which tool you are
+running. Hand your coding tool the instruction in `docs/upstream-sources.md` and it reads the
+author's source and installs what it needs in its own format.
+
+Skipping this step is fine to start with. The harness works without it; you just get the pinned
+copies in `skills/` rather than what upstream ships today.
+
 ## Running verify
 
 ```bash

@@ -28,8 +28,14 @@ grew on. This one is built to be moved, shared, and forked.
 git clone <this-repo> ~/projects/agent-harness
 cd ~/projects/agent-harness
 ./bin/harness install --user     # the always-on core, into ~/.claude
+./bin/harness upstream           # clone the repos in config/upstream.conf into .upstream/
 ./bin/harness verify             # confirm nothing personal or machine-specific came along
 ```
+
+`harness upstream` clones the other projects this harness references rather than copying them in,
+so they stay current and stay the author's. Nothing installs them for you: point your coding tool
+at `.upstream/` and it reads the source and installs what it needs in its own format. See
+`docs/upstream-sources.md`, which has the instruction to paste.
 
 Put `bin/` on your `PATH`, then in any repository you want the project layer in:
 
@@ -184,6 +190,7 @@ New to agentic coding? Read them in this order, newcomer to specialist.
 | [Planning and executing a large build](docs/planning-large-builds.md) | Someone scoping a multi-day or multi-phase change. |
 | [Autonomous execution](docs/autorun-hitl-heartbeat.md) | Someone running an unattended, multi-hour build. |
 | [Tracking work across sessions](docs/project-management.md) | A team keeping project state on disk across sessions and tools. |
+| [Upstream sources](docs/upstream-sources.md) | Anyone wondering why another project's skills are cloned next to this repo rather than copied into it. |
 | [Reference](docs/reference.md) | Anyone who wants the generated, authoritative list of every agent, skill, command, and config key. |
 
 ## Third-party content

@@ -48,6 +48,7 @@ cell each step flips.
 | `hooks/require-agent-model.sh` | the payload shape matches, but the tool name that dispatches a subagent is not documented, so the hook is NOT wired | `toolPermissions` are honoured by Cosmos agents; hooks are not documented there | NOT FOUND; runbook step 6 |
 | The security hard stops | `toolPermissions` deny rules in `.augment/settings.json`, written by `harness add --tool auggie` | the same file is read by Cosmos cloud agents | verified in docs 2026-09-16, `aug_cli_permissions.md`; runbook steps 8 and 12 |
 | Distribution | a plugin tree built by `harness build-plugin --tool auggie`, installed from a GitHub marketplace | not applicable | verified in docs 2026-09-16, `aug_cli_plugins.md`; runbook step 9 |
+| Upstream material from other repos | cloned to `.upstream/` by `harness upstream`, then read and installed by Auggie itself in its own format | the same clones are readable by a Cosmos session on a synced repo, untested | policy, not a vendor claim: `docs/upstream-sources.md`; runbook steps 1 and 8 |
 | `config/models.conf` | `config/models.auggie.conf`, DISCOVERED by `scripts/resolve-tier.sh --write-conf` rather than typed, because the model allowlist is per-company | a bundle's model field is set at `apply` time | verified in docs 2026-09-16, `aug_cli_reference.md`; runbook step 5 |
 
 Three consequences worth stating plainly:
