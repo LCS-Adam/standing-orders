@@ -76,21 +76,20 @@ depends on the target, and the tool doing the installing knows its own format be
 conversion script in this repo could. A script would also have to be rewritten every time an
 upstream author reorganised their repo, which is the staleness problem again in a new costume.
 
-## Sources that are not git repos
+## When a repo and a package are both involved
 
-Not everything ships as a repository, and the manifest only knows how to clone. One entry is in
-this category today:
+Some entries have two halves: a repository to read and a package that actually runs. `graphify` is
+one. `config/upstream.conf` clones `Graphify-Labs/graphify` so a tool can read the source and the
+skill definitions, and the skill itself installs the PyPI package `graphifyy` to do the work:
 
-| Skill | How it actually ships | Install |
-|---|---|---|
-| `graphify` | PyPI package `graphifyy` | `uv tool install graphifyy`, or `pip install graphifyy` |
+```bash
+uv tool install graphifyy        # or: pip install graphifyy
+```
 
-`graphify` turns a folder into a navigable knowledge graph and carries a `references/` directory of
-sub-procedures. Its own `SKILL.md` names no source repository, and the only GitHub link in it is a
-sponsors page, so there is nothing to clone and no URL worth guessing at. A coding tool setting this
-machine up should install the package and take the skill from wherever it is already installed.
-
-If you find the upstream repository, move it into `config/upstream.conf` and delete this row.
+Read the clone to understand it; install the package to run it. The repository URL came from the
+published package's own metadata rather than from the skill file, which names no repo at all, so if
+you are chasing provenance for something else, `Project-URL: Repository` in a wheel's `METADATA` is
+worth checking before concluding a project has no source.
 
 ## Refreshing, and when to do it
 
