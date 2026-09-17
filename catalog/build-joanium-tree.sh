@@ -88,8 +88,17 @@ while IFS=$'\t' read -r file l1 l2; do
   n=$((n+1))
 done < "$MAP"
 
+# The guide goes IN the tree, because that is where someone browsing will be,
+# not in catalog/ where they would have to already know to look. It is versioned
+# in catalog/ and copied here, so a rebuild refreshes it rather than losing it.
+cp "$ROOT/catalog/HOW-TO-USE-THESE-SKILLS.md" "$DEST/HOW-TO-USE-THESE-SKILLS.md" \
+  || die "could not place the usage guide"
+cp "$ROOT/catalog/joanium-taxonomy.md" "$DEST/TAXONOMY.md" \
+  || die "could not place the taxonomy"
+
 want=$(grep -c . "$MAP")
 printf 'built %s skills under %s\n' "$n" "$DEST"
+printf 'start at %s/HOW-TO-USE-THESE-SKILLS.md\n' "$DEST"
 got=$(find "$DEST" -name SKILL.md | wc -l | tr -d ' ')
 [ "$got" -eq "$n" ] || die "wrote $n but only $got SKILL.md exist - something was overwritten"
 [ "$n" -eq "$want" ] || die "assignment has $want rows but only $n were built"
