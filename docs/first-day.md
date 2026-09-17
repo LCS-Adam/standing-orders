@@ -43,21 +43,27 @@ Scrubbing ~/projects/agent-harness
   PASS CLAUDE.md imports AGENTS.md on line 1
   PASS no permission-bypass defaults in shipped settings
   PASS all 7 shell scripts use an absolute-path shebang
-  PASS no banned glyphs in client-facing docs (31 files)
+  PASS no banned glyphs in client-facing docs (37 files)
   PASS no dangling ~/.claude/rules references
   PASS every backticked slash command resolves to commands/, skills/, or the built-in allowlist
-  PASS all 46 files harness install would ship are in the scanned set
+  PASS all 45 files harness install would ship are in the scanned set
   PASS documented counts match (11 agents, 12 skills, 4 commands, 14 checks)
   PASS docs/reference.md matches what scripts/gen-reference.sh generates; plugins/ not compared: config/models.auggie.conf is unbound (docs/augment-runbook.md step 5)
-  PASS all 7 Augment deny rules give the expected verdict on 23 commands
+  PASS all 7 Augment deny rules give the expected verdict on 27 commands
 
 OK all 14 checks passed
 ```
 
-The numbers in that output are not decoration. The counts check reads every count asserted in the
-client-facing docs and fails the build when one of them stops matching the repo, which includes the
-numbers printed above. If you add a skill and this page still says thirteen, the gate goes red and
-tells you so.
+The numbers in that output are not decoration, but be precise about which ones the gate defends.
+The counts check compares exactly four things against the repo: the agent definitions, the skills,
+the slash commands, and the number of checks the gate runs. Assert one of those four in any
+client-facing document and the build fails when it stops matching. Add a skill while this page
+still claims the old number and the gate goes red and tells you so.
+
+Every other number in the block above is a snapshot of one run, dated to the commit that pasted it.
+The file count and the command-table count are not compared by anything, so they can drift quietly,
+and they have done exactly that more than once. Re-paste the block rather than editing a number in
+place.
 
 Exit code was 0. If a check fails, the script prints which one and why; it does not print a partial
 pass.
