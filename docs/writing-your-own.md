@@ -259,6 +259,18 @@ EOF
 shown back to whoever tried to make it. Exiting 0 with no such output - the early-return path
 for a `fork` agent or an explicit `model` argument, shown above - lets the call proceed.
 
+## Marking a deliberate shortcut
+
+A simplification that cuts a real corner gets a `ponytail:` comment naming the ceiling and the
+upgrade path, so the next reader knows it was a decision rather than an oversight: `# ponytail:
+global lock, per-account locks if throughput matters`. Two already exist, one in
+`scripts/gen-reference.sh` about single-line YAML scalars and one in `scripts/resolve-tier.sh`
+about not re-checking the model list for drift.
+
+List them with `git grep -n 'ponytail:'`. That grep is the whole tooling; the convention is
+borrowed from a Claude Code plugin of the same name, but nothing in this repo depends on having it
+installed.
+
 ## Exercises
 
 1. **Path-scoped rule.** Create `.claude/rules/sql-style.md` with `paths: ["**/*.sql"]`
